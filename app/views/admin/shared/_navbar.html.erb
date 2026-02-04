@@ -2,9 +2,11 @@
   <div class="flex-none">
     <div class="text-sm ml-4">
       <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
+      <% if authenticated? %>
       <div class="text-xs text-neutral-content/70">
         当前校区【<%= Thread.current[:campuse].name %>】 当前学期【<%= Thread.current[:semester].name %>】
       </div>
+      <% end %>
     </div>
   </div>
   <% if authenticated? %>
@@ -50,9 +52,7 @@
         </details>
       </li>
     <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-secondary" if authenticated? %>
-
     </ul>
-
   </div>
   <% end %>
 </div>
