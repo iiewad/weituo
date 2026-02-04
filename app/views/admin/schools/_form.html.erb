@@ -1,0 +1,77 @@
+<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses" }) do |form| %>
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+  <legend class="fieldset-legend">学校详情</legend>
+  <label class="label">校名</label>
+  <%= form.text_field :name, class: "input w-full", placeholder: "请输入学校名称" %>
+</fieldset>
+
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
+  <legend class="fieldset-legend">校区管理</legend>
+  
+  <!-- 校区列表 -->
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th></th>
+        <th>校区名称</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody data-campuses-target="tbody">
+      <!-- 现有校区 -->
+      <%= form.fields_for :campuses, item.campuses do |campus_form| %>
+        <tr id="campus_<%= campus_form.object.id %>">
+          <td>
+            <%= campus_form.hidden_field :id %>
+            <%= campus_form.hidden_field :_destroy %>
+          </td>
+          <td>
+            <%= campus_form.text_field :name, class: "input input-xs", placeholder: "校区名称", required: true %>
+          </td>
+          <td>
+            <button type="button" data-action="campuses#deleteRow" class="btn btn-xs btn-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <!-- 添加校区按钮 -->
+  <div class="flex justify-between items-center mt-4">
+    <button type="button" data-action="campuses#addRow" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      添加校区
+    </button>
+  </div>
+  
+  <!-- 新校区模板 -->
+  <template data-campuses-target="template">
+    <%= form.fields_for :campuses, Campuse.new, child_index: "new_campus" do |campus_form| %>
+      <tr id="campus_new">
+        <td>
+          <%= campus_form.hidden_field :id %>
+          <%= campus_form.hidden_field :_destroy %>
+        </td>
+        <td>
+          <%= campus_form.text_field :name, class: "input input-xs", placeholder: "校区名称", required: true %>
+        </td>
+        <td>
+          <button type="button" data-action="campuses#deleteRow" class="btn btn-xs btn-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    <% end %>
+  </template>
+</fieldset>
+
+<%= form.submit "保存", class: "btn btn-primary mt-4" %>
+<% end %>

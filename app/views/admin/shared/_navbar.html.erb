@@ -1,0 +1,23 @@
+<div class="sticky top-0 z-50 navbar bg-neutral text-neutral-content">
+  <div class="flex-none">
+    <span class="text-sm ml-4">
+      <%= link_to "管理平台", root_path, class: " text-xl" %>
+    </span>
+  </div>
+  <% if authenticated? %>
+  <div class="flex-1">
+    <ul class="menu menu-horizontal px-3">
+      <li><%= link_to "学校管理", admin_schools_path %></li>
+      <li><%#= link_to "学员管理", admin_students_path %></li>
+      <li><%#= link_to "班级管理", admin_klasses_path %></li>
+      <li><%#= link_to "学期管理", admin_semesters_path %></li>
+    </ul>
+  </div>
+  <div class="flex-none">
+    <ul class="menu menu-horizontal px-1">
+      <li><%= link_to Current.user.name, "#" %></li>
+      <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-ghost" if authenticated? %>
+    </ul>
+  </div>
+  <% end %>
+</div>
