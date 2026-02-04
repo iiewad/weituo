@@ -3,12 +3,14 @@
     <div class="text-sm ml-4">
       <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
       <div class="text-xs text-neutral-content/70">
+        当前校区【<%= Thread.current[:campuse].name %>】 当前学期【<%= Thread.current[:semester].name %>】
       </div>
     </div>
   </div>
   <% if authenticated? %>
   <div class="flex-1">
     <ul class="menu menu-horizontal px-3">
+      <li><%= link_to "用户管理", admin_users_path %></li>
       <li><%= link_to "学校管理", admin_schools_path %></li>
       <li><%#= link_to "学员管理", admin_students_path %></li>
       <li><%#= link_to "班级管理", admin_klasses_path %></li>
@@ -17,11 +19,40 @@
   </div>
   <div class="flex-none">
     <ul class="menu menu-horizontal px-1">
-      
-      <li><%= link_to Current.user.name, "#" %></li>
-      <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-ghost" if authenticated? %>
-      
+      <li>
+        <details>
+        <summary><%= Current.user.name %></summary>
+        <ul class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm bg-base-100 text-base-content">
+          <li><%= link_to "修改密码", edit_admin_user_path(Current.user) %></li>
+          <li>
+            <div class="dropdown dropdown-left">
+              <summary tabindex="0">校区切换</summary>
+              <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+                <% Current.user.campuses.each do |campuse| %>
+                  <li class="<%= "menu-active" if Thread.current[:campuse] == campuse %>">
+                    <%= link_to campuse.name, switch_thread_campuse_admin_school_campuse_path(school_id: Thread.current[:campuse].school.id, id: campuse.id) %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          </li>
+          <li>
+            <div class="dropdown dropdown-left">
+              <summary tabindex="0">学期切换</summary>
+              <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+                <% Thread.current[:campuse].school.semesters.each do |semester| %>
+                  <li class="<%= "menu-active" if Thread.current[:semester] == semester %>"><%= link_to semester.name, switch_thread_semester_admin_school_semester_path(school_id: Thread.current[:campuse].school.id, id: semester.id) %></li>
+                <% end %>
+              </ul>
+            </div>
+          </li>
+        </ul>
+        </details>
+      </li>
+    <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-secondary" if authenticated? %>
+
     </ul>
+
   </div>
   <% end %>
 </div>

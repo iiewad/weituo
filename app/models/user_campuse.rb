@@ -1,0 +1,5 @@
+class UserCampuse < ApplicationRecord
+  belongs_to :school
+  belongs_to :user
+  belongs_to :campuse
+end

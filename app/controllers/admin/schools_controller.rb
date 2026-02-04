@@ -21,6 +21,13 @@ class Admin::SchoolsController < AdminController
 
   private
     def school_params
-      params.require(:school).permit(:name, campuses_attributes: [ :id, :name, :_destroy ], grade_subjects_attributes: [ :id, :grade_id, :subject_id, :_destroy ], semesters_attributes: [ :id, :name, :start_date, :end_date, :_destroy ])
+      params
+        .require(:school)
+        .permit(:name,
+          campuses_attributes: [ :id, :name, :_destroy ],
+          grade_subjects_attributes: [ :id, :grade_id, :subject_id, :_destroy ],
+          semesters_attributes: [ :id, :name, :start_date, :end_date, :_destroy ],
+          user_campuses_attributes: [ :id, :user_id, :campuse_id, :_destroy ],
+        )
     end
 end

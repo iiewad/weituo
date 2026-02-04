@@ -1,0 +1,31 @@
+<div class="min-h-dvh px-4">
+
+  <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+    <table class="table">
+      <!-- head -->
+      <thead>
+        <tr>
+          <th>
+            <%= render "admin/shared/drawer", item: User.new, drawer_id: "drawer-user-new", button_name: "创建用户", drawer_width: "180", drawer_content: "admin/users/form" %>
+          </th>
+          <th>用户名</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- row 1 -->
+        <% @users.each.with_index(1) do |user, index| %>
+          <tr>
+            <td><%= index %></td>
+            <td>
+              <%= user.name %>
+            </td>
+            <td>
+              <%= render "admin/shared/drawer", item: user, drawer_id: "drawer-user-#{user.id}", button_name: "操作", drawer_width: "180", drawer_content: "admin/users/form" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses grade-subjects semesters" }) do |form| %>
+<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses grade-subjects semesters user-campuses" }) do |form| %>
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
   <legend class="fieldset-legend">学校详情</legend>
   <label class="label">校名</label>
@@ -220,6 +220,83 @@
         </td>
         <td>
           <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    <% end %>
+  </template>
+</fieldset>
+
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
+  <legend class="fieldset-legend">用户校区关联管理</legend>
+  
+  <!-- 用户校区关联列表 -->
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th></th>
+        <th>用户</th>
+        <th>校区</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody data-user-campuses-target="container">
+      <!-- 现有用户校区关联 -->
+      <%= form.fields_for :user_campuses, item.user_campuses do |user_campus_form| %>
+        <tr id="user-campus-<%= user_campus_form.object.id %>" class="nested-fields" data-new-record="false">
+          <td>
+            <%= user_campus_form.hidden_field :id %>
+            <%= user_campus_form.hidden_field :school_id, value: item.id %>
+            <%= user_campus_form.hidden_field :_destroy, value: "false" %>
+          </td>
+          <td>
+            <%= user_campus_form.collection_select :user_id, User.all, :id, :name, { prompt: "选择用户" }, { class: "select select-xs", required: true } %>
+          </td>
+          <td>
+            <%= user_campus_form.collection_select :campuse_id, item.campuses, :id, :name, { prompt: "选择校区" }, { class: "select select-xs", required: true } %>
+          </td>
+          <td>
+            <button type="button" data-action="user-campuses#remove" class="btn btn-xs btn-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <!-- 添加用户校区关联按钮 -->
+  <div class="flex justify-between items-center mt-4">
+    <button type="button" data-action="user-campuses#add" class="btn btn-sm btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      添加用户校区关联
+    </button>
+  </div>
+  
+  <!-- 新用户校区关联模板 -->
+  <template data-user-campuses-target="template">
+    <%= form.fields_for :user_campuses, UserCampuse.new, child_index: "NEW_RECORD" do |user_campus_form| %>
+      <tr id="user-campus-new" class="nested-fields" data-new-record="true">
+        <td>
+          <%= user_campus_form.hidden_field :id %>
+          <%= user_campus_form.hidden_field :school_id, value: item.id %>
+          <%= user_campus_form.hidden_field :_destroy, value: "false" %>
+        </td>
+        <td>
+          <%= user_campus_form.collection_select :user_id, User.all, :id, :name, { prompt: "选择用户" }, { class: "select select-xs", required: true } %>
+        </td>
+        <td>
+          <%= user_campus_form.collection_select :campuse_id, item.campuses, :id, :name, { prompt: "选择校区" }, { class: "select select-xs", required: true } %>
+        </td>
+        <td>
+          <button type="button" data-action="user-campuses#remove" class="btn btn-xs btn-error">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>

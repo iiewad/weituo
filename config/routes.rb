@@ -3,7 +3,16 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :users
     resources :schools do
-      resources :campuses
+      resources :semesters do
+        member do
+          get :switch_thread_semester
+        end
+      end
+      resources :campuses do
+        member do
+          get :switch_thread_campuse
+        end
+      end
       resources :semesters
     end
   end
