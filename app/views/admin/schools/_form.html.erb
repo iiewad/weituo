@@ -1,4 +1,4 @@
-<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses grade-subjects" }) do |form| %>
+<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses grade-subjects semesters" }) do |form| %>
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
   <legend class="fieldset-legend">学校详情</legend>
   <label class="label">校名</label>
@@ -138,6 +138,88 @@
         </td>
         <td>
           <button type="button" data-action="grade-subjects#deleteRow" class="btn btn-xs btn-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    <% end %>
+  </template>
+</fieldset>
+
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
+  <legend class="fieldset-legend">学期管理</legend>
+  
+  <!-- 学期列表 -->
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th></th>
+        <th>学期名称</th>
+        <th>开始日期</th>
+        <th>结束日期</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody data-semesters-target="tbody">
+      <!-- 现有学期 -->
+      <%= form.fields_for :semesters, item.semesters do |semester_form| %>
+        <tr id="semester-<%= semester_form.object.id %>">
+          <td>
+            <%= semester_form.hidden_field :id %>
+            <%= semester_form.hidden_field :_destroy, value: "false" %>
+          </td>
+          <td>
+            <%= semester_form.text_field :name, class: "input input-xs", placeholder: "学期名称", required: true %>
+          </td>
+          <td>
+            <%= semester_form.date_field :start_date, class: "input input-xs", required: true %>
+          </td>
+          <td>
+            <%= semester_form.date_field :end_date, class: "input input-xs", required: true %>
+          </td>
+          <td>
+            <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <!-- 添加学期按钮 -->
+  <div class="flex justify-between items-center mt-4">
+    <button type="button" data-action="semesters#addRow" class="btn btn-sm btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      添加学期
+    </button>
+  </div>
+  
+  <!-- 新学期模板 -->
+  <template data-semesters-target="template">
+    <%= form.fields_for :semesters, Semester.new, child_index: "new_semester" do |semester_form| %>
+      <tr id="semester-new">
+        <td>
+          <%= semester_form.hidden_field :id %>
+          <%= semester_form.hidden_field :_destroy %>
+        </td>
+        <td>
+          <%= semester_form.text_field :name, class: "input input-xs", placeholder: "学期名称", required: true %>
+        </td>
+        <td>
+          <%= semester_form.date_field :start_date, class: "input input-xs", required: true %>
+        </td>
+        <td>
+          <%= semester_form.date_field :end_date, class: "input input-xs", required: true %>
+        </td>
+        <td>
+          <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-error">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>

@@ -4,6 +4,7 @@ Rails.application.routes.draw do
     resources :users
     resources :schools do
       resources :campuses
+      resources :semesters
     end
   end
   resource :session

@@ -1,8 +1,10 @@
 <div class="sticky top-0 z-50 navbar bg-neutral text-neutral-content">
   <div class="flex-none">
-    <span class="text-sm ml-4">
-      <%= link_to "管理平台", root_path, class: " text-xl" %>
-    </span>
+    <div class="text-sm ml-4">
+      <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
+      <div class="text-xs text-neutral-content/70">
+      </div>
+    </div>
   </div>
   <% if authenticated? %>
   <div class="flex-1">
@@ -15,8 +17,10 @@
   </div>
   <div class="flex-none">
     <ul class="menu menu-horizontal px-1">
+      
       <li><%= link_to Current.user.name, "#" %></li>
       <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-ghost" if authenticated? %>
+      
     </ul>
   </div>
   <% end %>
