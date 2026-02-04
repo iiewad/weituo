@@ -259,6 +259,12 @@
             <%= user_campus_form.collection_select :campuse_id, item.campuses, :id, :name, { prompt: "选择校区" }, { class: "select select-xs", required: true } %>
           </td>
           <td>
+            <%= user_campus_form.collection_select :grade_ids, Grade.all, :id, :name, { prompt: "选择年级" }, { class: "select select-xs", multiple: true } %>
+          </td>
+          <td>
+            <%= user_campus_form.collection_select :role, UserCampuse::ROLES.to_a, :first, :last, { prompt: "选择角色" }, { class: "select select-xs" } %>
+          </td>
+          <td>
             <button type="button" data-action="user-campuses#remove" class="btn btn-xs btn-error">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -294,6 +300,12 @@
         </td>
         <td>
           <%= user_campus_form.collection_select :campuse_id, item.campuses, :id, :name, { prompt: "选择校区" }, { class: "select select-xs", required: true } %>
+        </td>
+        <td>
+          <%= user_campus_form.collection_select :grade_ids, Grade.all, :id, :name, { prompt: "选择年级" }, { class: "select select-xs", multiple: true } %>
+        </td>
+        <td>
+          <%= user_campus_form.collection_select :role, UserCampuse::ROLES.to_a, :first, :last, { prompt: "选择角色" }, { class: "select select-xs" } %>
         </td>
         <td>
           <button type="button" data-action="user-campuses#remove" class="btn btn-xs btn-error">
