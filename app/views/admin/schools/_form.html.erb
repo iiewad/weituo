@@ -1,4 +1,4 @@
-<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses" }) do |form| %>
+<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses grade-subjects" }) do |form| %>
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
   <legend class="fieldset-legend">学校详情</legend>
   <label class="label">校名</label>
@@ -18,7 +18,7 @@
       </tr>
     </thead>
     <tbody data-campuses-target="tbody">
-      <!-- 现有校区 -->
+      <!-- 现有校区 --> 
       <%= form.fields_for :campuses, item.campuses do |campus_form| %>
         <tr id="campus_<%= campus_form.object.id %>">
           <td>
@@ -42,7 +42,7 @@
   
   <!-- 添加校区按钮 -->
   <div class="flex justify-between items-center mt-4">
-    <button type="button" data-action="campuses#addRow" class="btn btn-primary">
+    <button type="button" data-action="campuses#addRow" class="btn btn-sm btn-primary">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
       </svg>
@@ -73,5 +73,81 @@
   </template>
 </fieldset>
 
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
+  <legend class="fieldset-legend">年级科目管理</legend>
+  
+  <!-- 年级科目关联列表 -->
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th></th>
+        <th>年级</th>
+        <th>科目</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody data-grade-subjects-target="tbody">
+      <!-- 现有年级科目关联 -->
+      <%= form.fields_for :grade_subjects, item.grade_subjects do |grade_subject_form| %>
+        <tr id="grade-subject-<%= grade_subject_form.object.id %>">
+          <td>
+            <%= grade_subject_form.hidden_field :id %>
+            <%= grade_subject_form.hidden_field :_destroy %>
+          </td>
+          <td>
+            <%= grade_subject_form.collection_select :grade_id, Grade.all, :id, :name, { prompt: "选择年级" }, { class: "select select-xs", required: true } %>
+          </td>
+          <td>
+            <%= grade_subject_form.collection_select :subject_id, Subject.all, :id, :name, { prompt: "选择科目" }, { class: "select select-xs", required: true } %>
+          </td>
+          <td>
+            <button type="button" data-action="grade-subjects#deleteRow" class="btn btn-xs btn-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <!-- 添加年级科目关联按钮 -->
+  <div class="flex justify-between items-center mt-4">
+    <button type="button" data-action="grade-subjects#addRow" class="btn btn-sm btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      添加年级科目
+    </button>
+  </div>
+  
+  <!-- 新年级科目关联模板 -->
+  <template data-grade-subjects-target="template">
+    <%= form.fields_for :grade_subjects, GradeSubject.new, child_index: "new_grade_subject" do |grade_subject_form| %>
+      <tr id="grade-subject-new">
+        <td>
+          <%= grade_subject_form.hidden_field :id %>
+          <%= grade_subject_form.hidden_field :_destroy %>
+        </td>
+        <td>
+          <%= grade_subject_form.collection_select :grade_id, Grade.all, :id, :name, { prompt: "选择年级" }, { class: "select select-xs", required: true } %>
+        </td>
+        <td>
+          <%= grade_subject_form.collection_select :subject_id, Subject.all, :id, :name, { prompt: "选择科目" }, { class: "select select-xs", required: true } %>
+        </td>
+        <td>
+          <button type="button" data-action="grade-subjects#deleteRow" class="btn btn-xs btn-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    <% end %>
+  </template>
+</fieldset>
+
 <%= form.submit "保存", class: "btn btn-primary mt-4" %>
+
 <% end %>

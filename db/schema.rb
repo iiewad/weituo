@@ -10,10 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_04_081933) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_123801) do
   create_table "campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "school_id", null: false
+  end
+
+  create_table "grade_subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "grade_id", null: false
+    t.bigint "school_id", null: false
+    t.bigint "subject_id", null: false
+    t.index ["grade_id"], name: "index_grade_subjects_on_grade_id"
+    t.index ["school_id"], name: "index_grade_subjects_on_school_id"
+    t.index ["subject_id"], name: "index_grade_subjects_on_subject_id"
+  end
+
+  create_table "grades", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "level", null: false
+    t.string "name", null: false
   end
 
   create_table "schools", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -27,6 +41,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_04_081933) do
     t.string "user_agent"
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "code", null: false
+    t.string "name", null: false
   end
 
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|

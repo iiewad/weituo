@@ -7,3 +7,11 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+
+(1..10).each do |i|
+  Grade.create!(name: "年级#{i}", level: i.to_s)
+end
+%w[数学 英语 物理 化学].each do |name|
+  Subject.create!(name: name, code: name.downcase)
+end
