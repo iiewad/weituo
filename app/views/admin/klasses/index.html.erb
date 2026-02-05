@@ -1,0 +1,17 @@
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 flex flex-row">
+  <div>
+    <% if @klass %>
+    <%= render "admin/shared/drawer", item: @klass, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/klasses/form" %>
+    <% end %>
+  </div>
+  <div>
+    <%= render partial: "admin/shared/drawer", locals: { item: Klass.new, drawer_id: "drawer-klass-new", button_name: "创建班级", drawer_width: "180", drawer_content: "admin/klasses/form" } %>
+  </div>
+</fieldset>
+<div class="flex flex-row min-h-1/2 overflow-auto">
+  <div class="basis-1/8 min-h-dvh bg-base-200">
+    <%= render "admin/klasses/menu", grades: @grades %>
+  </div>
+  
+</div>
+

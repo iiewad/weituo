@@ -3,7 +3,7 @@ class Admin::StudentsController < AdminController
     @q = Student.ransack(params[:q])
     @students = @q.result.includes(:grade).where(
       campuse_id: Thread.current[:campuse].id,
-      grade_id: Current.user.grade_ids_by_campus_id(Thread.current[:campuse].id)
+      grade_id: Current.user.grade_ids_by_campuse(Thread.current[:campuse].id)
     ).page(params[:page])
   end
 

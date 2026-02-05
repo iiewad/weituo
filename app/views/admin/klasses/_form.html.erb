@@ -1,0 +1,65 @@
+<%= form_with model: item, url: item.new_record? ? admin_klasses_path : admin_klass_path(item), method: item.new_record? ? :post : :put, class: "w-full" do |form| %>
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-2">
+<legend class="fieldset-legend"><%= item.new_record? ? "创建班级" : "编辑班级" %></legend>
+  <div class="flex flex-row">
+    <div class="basis-1/2">
+      <legend class="fieldset-legend">班级信息</legend>
+      <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
+      <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+
+      <fieldset class="fieldset">
+        <label class="input input-sm">
+          <span class="label">班级序号</span>
+          <%= form.number_field :seq, class: "grow", placeholder: "序号", oninput: "this.value = this.value.replace(/4/g, '')", value: item&.seq %>
+        </label>
+        <p class="label text-xs">班级序号禁止输入4，避免与相同科目与班型的班级序号冲突。</p>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">班级类型</span>
+          <%= form.collection_select :genre, Klass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">年级</span>
+          <%= form.select :grade_id, Thread.current[:school].grades.map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: item&.grade_id %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">科目</span>
+          <%= form.select :subject_id, Thread.current[:school].subjects.map { |subject| [subject.name, subject.id] }, class: "select select-xs", value: item&.subject_id %>
+        </label>
+      </fieldset>
+      
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">科目教师</span>
+          <%= form.select :teacher_id, Thread.current[:campuse].teachers.all.map { |teacher| [teacher.name_with_subject, teacher.id] }, class: "select select-sm", value: item&.teacher_id %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="input input-sm">
+          <span class="label">课程次数</span>
+          <%= form.number_field :times, class: "grow", placeholder: "课程次数", value: item&.times %>
+        </label>
+      </fieldset>
+
+    </div>
+    <div class="basis-1/2">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">班级学员</legend>
+        <%= form.text_area :students_text, disabled: !item.new_record?, class: "textarea h-128", placeholder: "请输入学员姓名，每个姓名占一行", value: item&.students_text %>
+        <div class="label">每个姓名占一行</div>
+      </fieldset>
+    </div>
+  </div>
+  
+  <%= form.submit "保存", class: "btn btn-xs btn-primary" %>
+</fieldset>
+<% end %>
