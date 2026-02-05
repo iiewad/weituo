@@ -15,32 +15,43 @@
   <div class="basis-2/3 w-full flex flex-row">
     <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
       <legend class="fieldset-legend">课程</legend>
-      <div class="tabs tabs-border">
-        <% @klass.courses.each.with_index(1) do |course, index| %>
-        <input type="radio" name="my_tabs_2" class="tab" aria-label="第 <%= index %> 次课程" />
-        <div class="tab-content border-base-300 bg-base-100 p-10">
-          <div class="overflow-x-auto">
-            <table class="table table-xs">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>姓名</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @klass.students.each.with_index(1) do |student, index| %>
-                <tr>
-                  <td><%= index %></td>
-                  <td><%= student.name %></td>
-                  <td></td>
-                </tr>
+      <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+        <table class="table table-sm">
+          <!-- head -->
+          <thead>
+            <tr>
+              <th>课次</th>
+              <% @klass.students.each do |student| %>
+              <th><%= student.name %></th>
+              <% end %>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- row 1 -->
+            <% @klass.courses.each do |course| %>
+            <tr>
+              <th><%= course.seq %></th>
+              <% @klass.students.each do |student| %>
+              <td>
+                <% if course.started? %>
+                <%= render "admin/klasses/attendance_dropdown", course: course, student: student %>
+                <% else %>
+                未开课
                 <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <% end %>
+              </td>
+              <% end %>
+              <td>
+                <% if course.started? %>
+                <%= link_to "全到", "#", class: "btn btn-xs btn-primary" %>
+                <% else %>
+                <%= button_to "开课", start_admin_klass_course_path(@klass, course), method: :put, class: "btn btn-xs btn-primary" %>
+                <% end %>
+              </td>
+            </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
     </fieldset>
   </div>

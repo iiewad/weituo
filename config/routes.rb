@@ -1,7 +1,14 @@
 Rails.application.routes.draw do
   root "admin/students#index"
   namespace :admin do
-    resources :klasses
+    resources :klasses do
+      resources :courses do
+        member do
+          put :start, to: "courses#start"
+        end
+        resources :attendances
+      end
+    end
     resources :teachers
     resources :students
     resources :users

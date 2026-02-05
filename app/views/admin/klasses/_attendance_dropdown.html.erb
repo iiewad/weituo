@@ -1,0 +1,16 @@
+<div class="dropdown dropdown-end relative">
+  <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
+    ✅
+  </div>
+  <div
+    tabindex="0"
+    class="card min-w-40 w-52 dropdown-content bg-base-100 card-border rounded-box z-50 shadow-lg">
+    <div tabindex="0" class="card-body p-2">
+      <h2 class="card-title text-xs mb-2"><%= student.name %>第<%= course.seq %>课考勤</h2>
+      <div class="flex flex-row gap-2">
+      <%= button_to "请假", "#", class: "btn btn-xs btn-warning" %>
+      <%= button_to "缺课", "#", class: "btn btn-xs btn-error" %>
+      </div>
+    </div>
+  </div>
+</div>
