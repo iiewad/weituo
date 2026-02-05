@@ -1,15 +1,29 @@
-<div class="dropdown dropdown-end relative">
+<div class="dropdown relative">
   <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
-    ✅
+    <%#= attendance.id %>
+    <%= attendance&.status_icon %>
   </div>
   <div
     tabindex="0"
-    class="card min-w-40 w-52 dropdown-content bg-base-100 card-border rounded-box z-50 shadow-lg">
+    class="card min-w-40 w-58 dropdown-content bg-base-100 card-border rounded-box z-50 shadow-lg">
     <div tabindex="0" class="card-body p-2">
       <h2 class="card-title text-xs mb-2"><%= student.name %>第<%= course.seq %>课考勤</h2>
       <div class="flex flex-row gap-2">
-      <%= button_to "请假", "#", class: "btn btn-xs btn-warning" %>
-      <%= button_to "缺课", "#", class: "btn btn-xs btn-error" %>
+        <% if attendance.present? %>
+          <% if attendance.status == "normal" %>
+            <%= button_to "缺课", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "absent"), method: :put, class: "btn btn-xs btn-error" %>
+            <%= button_to "事假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
+            <%= button_to "病假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-error" %>
+          <% elsif attendance.status == "absent" %>
+            <%= button_to "事假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
+            <%= button_to "病假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-error" %>
+            <%= button_to "补课销假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "normal"), method: :put, class: "btn btn-xs btn-success" %>
+          <% elsif attendance.status == "personal_leave" || attendance.status == "sick_leave" %>
+            <%= button_to "补课销假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "normal"), method: :put, class: "btn btn-xs btn-success" %>
+          <% end %>
+        <% else %>
+        ❓
+        <% end %>
       </div>
     </div>
   </div>

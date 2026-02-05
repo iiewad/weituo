@@ -6,7 +6,11 @@ Rails.application.routes.draw do
         member do
           put :start, to: "courses#start"
         end
-        resources :attendances
+        resources :attendances do
+          member do
+            put :mark
+          end
+        end
       end
     end
     resources :teachers

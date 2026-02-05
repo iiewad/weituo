@@ -11,7 +11,7 @@ class Admin::KlassesController < AdminController
 
   def show
     @klass = Klass.find(params[:id])
-    @klasses = Klass.includes(:teacher, :grade, :subject, :semester).where(
+    @klasses = Klass.includes(:teacher, :grade, :subject, :semester, courses: :attendances).where(
       campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
       grade_id: Current.user.grade_ids_by_campuse(Thread.current[:campuse].id)
