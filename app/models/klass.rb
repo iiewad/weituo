@@ -6,6 +6,14 @@ class Klass < ApplicationRecord
   belongs_to :teacher
   has_many :klass_students, dependent: :destroy
   has_many :students, through: :klass_students
+  has_many :courses, dependent: :destroy
+  after_create :create_courses
+
+  def create_courses
+    self.times.times do |i|
+      courses.create!(seq: i + 1)
+    end
+  end
 
   GENRE_MAP = {
     "提高班" => "TG",

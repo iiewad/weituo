@@ -9,35 +9,40 @@
   </div>
 </fieldset>
 <div class="flex flex-row min-h-1/2 overflow-auto">
-  <div class="basis-1/8 min-h-dvh bg-base-200">
+  <div class="basis-1/3 min-h-dvh bg-base-200">
     <%= render "admin/klasses/menu", grades: @grades %>
   </div>
-    <div class="basis-7/8">
-    <% if @klass %>
-    <div class="overflow-x-auto h-4/5">
-      <table class="table table-xs table-pin-rows table-pin-cols">
-        <thead>
-          <tr>
-            <th>序号</th>
-            <th>姓名</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @klass.students.order(:name).each.with_index(1) do |student, index| %>
-            <tr>
-              <td><%= index %></td>
-              <td><%= student.name %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-    <% else %>
-      <div class="flex justify-center items-center h-full">
-        <p class="text-lg text-center">请选择班级</p>
+  <div class="basis-2/3 w-full flex flex-row">
+    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+      <legend class="fieldset-legend">课程</legend>
+      <div class="tabs tabs-border">
+        <% @klass.courses.each.with_index(1) do |course, index| %>
+        <input type="radio" name="my_tabs_2" class="tab" aria-label="第 <%= index %> 次课程" />
+        <div class="tab-content border-base-300 bg-base-100 p-10">
+          <div class="overflow-x-auto">
+            <table class="table table-xs">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>姓名</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @klass.students.each.with_index(1) do |student, index| %>
+                <tr>
+                  <td><%= index %></td>
+                  <td><%= student.name %></td>
+                  <td></td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <% end %>
       </div>
-    <% end %>
+    </fieldset>
   </div>
-
 </div>
 
