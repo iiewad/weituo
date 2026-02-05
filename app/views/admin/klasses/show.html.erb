@@ -34,7 +34,7 @@
               <%#= course.seq %>
               <%#= course.attendances.find_by(student: student)&.status_icon %>
               <% if course.started? %>
-              <%= render "admin/klasses/attendance_dropdown", course: course, student: student, attendance: course.attendances.find_by!(student: student) %>
+              <%= render "admin/klasses/attendance_dropdown", course: course, student: student, attendance: course.attendances.find_by(student: student) %>
               <% else %>
               未开课
               <% end %>

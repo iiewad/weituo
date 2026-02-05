@@ -1,7 +1,7 @@
 <div class="dropdown relative">
   <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
     <%#= attendance.id %>
-    <%= attendance&.status_icon %>
+    <%= attendance&.status_icon || "❓" %>
   </div>
   <div
     tabindex="0"
@@ -22,7 +22,7 @@
             <%= button_to "补课销假", mark_admin_klass_course_attendance_path(@klass, course, attendance.id, status: "normal"), method: :put, class: "btn btn-xs btn-success" %>
           <% end %>
         <% else %>
-        ❓
+        ❓ 异常，请联系管理员
         <% end %>
       </div>
     </div>
