@@ -8,4 +8,8 @@ class User < ApplicationRecord
   def grade_ids_by_campus_id(campuse_id)
     user_campuses.where(campuse_id:).collect(&:grade_ids).flatten
   end
+
+  def has_role_by_campuse_id(campuse_id, role)
+    user_campuses.where(campuse_id:).collect(&:role).include?(role)
+  end
 end

@@ -13,7 +13,8 @@
             </div>
           </th>
           <th>学员名</th>
-          <th>手机号</th>
+          <th>层级</th>
+          <th>监护人</th>
           <th>年级</th>
           <th>操作</th>
         </tr>
@@ -27,7 +28,10 @@
               <%= student.name %>
             </td>
             <td>
-              <%= student.phone %>
+              <%= student.layer %>
+            </td>
+            <td>
+              <%= student.guardians.pluck(:name, :phone).map { |name, phone| "#{name} #{phone}" }.join(', ') %>
             </td>
             <td>
               <%= student.grade.name %>
@@ -48,7 +52,8 @@
           </div>
         </th>
         <th>学员名</th>
-        <th>手机号</th>
+        <th>层级</th>
+        <th>监护人</th>
         <th>年级</th>
         <th>操作</th>
       </tr>

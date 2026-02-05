@@ -10,8 +10,10 @@
   <% if authenticated? %>
   <div class="flex-1">
     <ul class="menu menu-horizontal px-3">
+      <% if Current.user.has_role_by_campuse_id(Thread.current[:campuse].id, 'admin') %>
       <li><%= link_to "用户管理", admin_users_path %></li>
       <li><%= link_to "学校管理", admin_schools_path %></li>
+      <% end %>
       <li><%= link_to "学员管理", admin_students_path %></li>
       <li><%#= link_to "班级管理", admin_klasses_path %></li>
       <li><%#= link_to "学期管理", admin_semesters_path %></li>
