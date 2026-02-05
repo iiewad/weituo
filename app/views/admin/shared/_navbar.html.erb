@@ -2,11 +2,9 @@
   <div class="flex-none">
     <div class="text-sm ml-4">
       <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
-      <% if authenticated? %>
       <div class="text-xs text-neutral-content/70">
         当前校区【<%= Thread.current[:campuse].name %>】 当前学期【<%= Thread.current[:semester].name %>】
       </div>
-      <% end %>
     </div>
   </div>
   <% if authenticated? %>
@@ -14,13 +12,13 @@
     <ul class="menu menu-horizontal px-3">
       <li><%= link_to "用户管理", admin_users_path %></li>
       <li><%= link_to "学校管理", admin_schools_path %></li>
-      <li><%#= link_to "学员管理", admin_students_path %></li>
+      <li><%= link_to "学员管理", admin_school_campuse_students_path(school_id: Thread.current[:school].id, campuse_id: Thread.current[:campuse].id) %></li>
       <li><%#= link_to "班级管理", admin_klasses_path %></li>
       <li><%#= link_to "学期管理", admin_semesters_path %></li>
     </ul>
   </div>
   <div class="flex-none">
-    <ul class="menu menu-horizontal px-1 dropdown dropdown-bottom dropdown-end">
+    <ul class="menu menu-horizontal px-1">
       <li>
         <details>
         <summary><%= Current.user.name %></summary>
@@ -52,7 +50,9 @@
         </details>
       </li>
     <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-secondary" if authenticated? %>
+
     </ul>
+
   </div>
   <% end %>
 </div>

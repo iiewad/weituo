@@ -9,4 +9,6 @@ class School < ApplicationRecord
   accepts_nested_attributes_for :user_campuses, reject_if: :all_blank, allow_destroy: true
   has_many :semesters
   accepts_nested_attributes_for :semesters, reject_if: :all_blank, allow_destroy: true
+
+  # has_many :students, through: :campuses
 end

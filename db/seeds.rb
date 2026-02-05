@@ -10,8 +10,15 @@
 
 
 (1..10).each do |i|
-  Grade.create!(name: "年级#{i}", level: i.to_s)
+  Grade.find_or_create_by!(name: "年级#{i}", level: i.to_s)
 end
 %w[数学 英语 物理 化学].each do |name|
   Subject.create!(name: name, code: name.downcase)
+end
+
+1000.times do |i|
+  school = School.first
+  campuse = school.campuses.order('RAND()').first
+  grade = Grade.find(rand(1..10))
+  campuse.students.create!(name: "学员#{i}", phone: "1380000#{i}00", grade: grade, campuse: campuse)
 end

@@ -4,4 +4,8 @@ class User < ApplicationRecord
   has_many :user_campuses
   has_many :campuses, through: :user_campuses
   # normalizes :email_address, with: ->(e) { e.strip.downcase }
+
+  def grade_ids_by_campus_id(campuse_id)
+    user_campuses.where(campuse_id:).collect(&:grade_ids).flatten
+  end
 end

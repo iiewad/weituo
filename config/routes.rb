@@ -9,6 +9,7 @@ Rails.application.routes.draw do
         end
       end
       resources :campuses do
+        resources :students
         member do
           get :switch_thread_campuse
         end

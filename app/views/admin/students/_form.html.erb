@@ -1,0 +1,124 @@
+<%= form_with(
+  model: item,
+  url: item.new_record? ? admin_school_campuse_students_path(school_id: Thread.current[:school].id, campuse_id: Thread.current[:campuse].id) : admin_school_campuse_student_path(school_id: Thread.current[:school].id, campuse_id: Thread.current[:campuse].id, id: item.id),
+  local: true, data: { controller: "guardians" }) do |f| %>
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+  <legend class="fieldset-legend">学员详情</legend>
+  <%= f.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+
+  <label class="label">学员名</label>
+  <%= f.text_field :name, class: "input input-sm w-full" %>
+
+  <label class="label">年级</label>
+  <%= f.select :grade_id, Grade.all.map { |grade| [grade.name, grade.id] }, {}, class: "select select-sm w-full" %>
+
+  <label class="label">手机号</label>
+  <%= f.text_field :phone, class: "input input-sm w-full" %>
+
+  <label class="label">性别</label>
+  <div class="flex items-center space-x-4">
+    <div>
+      <%= f.radio_button :gender, "male", class: "radio radio-primary radio-sm h-4 w-4" %>
+      <label for="male" class="ml-2 text-gray-700">男</label>
+    </div>
+    <div>
+      <%= f.radio_button :gender, "female", class: "radio radio-secondary radio-sm h-4 w-4" %>
+      <label for="female" class="ml-2 text-gray-700">女</label>
+    </div>
+  </div>
+
+  <label class="label">入学日期</label>
+  <%= f.date_field :enrollment_date, class: "input input-sm w-full" %>
+
+  <label class="label">出生日期</label>
+  <%= f.date_field :birthday, class: "input input-sm w-full" %>
+
+  <label class="label">层级</label>
+  <%= f.select :layer, (1..7).map { |layer| [layer, layer] }, {}, class: "select select-sm w-full" %>
+</fieldset>
+
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
+  <legend class="fieldset-legend">监护人信息</legend>
+  
+  <!-- 监护人列表 -->
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th></th>
+        <th>姓名</th>
+        <th>电话</th>
+        <th>关系</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody data-guardians-target="container">
+      <!-- 现有监护人 -->
+      <%= f.fields_for :guardians, item.guardians do |guardian_form| %>
+        <tr id="guardian-<%= guardian_form.object.id %>" class="nested-fields" data-new-record="false">
+          <td>
+            <%= guardian_form.hidden_field :id %>
+            <%= guardian_form.hidden_field :_destroy, value: "false" %>
+          </td>
+          <td>
+            <%= guardian_form.text_field :name, class: "input input-sm w-full", placeholder: "监护人姓名", required: true %>
+          </td>
+          <td>
+            <%= guardian_form.text_field :phone, class: "input input-sm w-full", placeholder: "联系电话", required: true %>
+          </td>
+          <td>
+            <%= guardian_form.text_field :relationship, class: "input input-sm w-full", placeholder: "与学员关系", required: true %>
+          </td>
+          <td>
+            <button type="button" data-action="guardians#remove" class="btn btn-xs btn-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <!-- 添加监护人按钮 -->
+  <div class="flex justify-between items-center mt-4">
+    <button type="button" data-action="guardians#add" class="btn btn-sm btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      添加监护人
+    </button>
+  </div>
+  
+  <!-- 新监护人模板 -->
+  <template data-guardians-target="template">
+    <%= f.fields_for :guardians, Guardian.new, child_index: "NEW_RECORD" do |guardian_form| %>
+      <tr id="guardian-new" class="nested-fields" data-new-record="true">
+        <td>
+          <%= guardian_form.hidden_field :id %>
+          <%= guardian_form.hidden_field :_destroy, value: "false" %>
+        </td>
+        <td>
+          <%= guardian_form.text_field :name, class: "input input-sm w-full", placeholder: "监护人姓名", required: true %>
+        </td>
+        <td>
+          <%= guardian_form.text_field :phone, class: "input input-sm w-full", placeholder: "联系电话", required: true %>
+        </td>
+        <td>
+          <%= guardian_form.text_field :relationship, class: "input input-sm w-full", placeholder: "与学员关系", required: true %>
+        </td>
+        <td>
+          <button type="button" data-action="guardians#remove" class="btn btn-xs btn-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    <% end %>
+  </template>
+</fieldset>
+
+<%= f.submit "保存", class: "btn btn-primary mt-4" %>
+
+<% end %>

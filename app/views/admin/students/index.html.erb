@@ -1,0 +1,59 @@
+<div class="min-h-dvh px-4">
+  <%= render "admin/students/filter_form" %>
+  <div class="overflow-x-auto">
+    <table class="table table-xs table-pin-rows table-pin-cols">
+      <!-- head -->
+      <thead>
+        <tr>
+          <th>
+            <div class="join">
+              <%= link_to_previous_page @students, '«', class: "join-item btn btn-xs btn-primary" %>
+              <button class="join-item btn btn-xs btn-square"><%= @students.current_page %></button>
+              <%= link_to_next_page @students, '»', class: "join-item btn btn-xs btn-primary" %>
+            </div>
+          </th>
+          <th>学员名</th>
+          <th>手机号</th>
+          <th>年级</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- row 1 -->
+        <% @students.each.with_index(1) do |student, index| %>
+          <tr>
+            <td><%= index %></td>
+            <td>
+              <%= student.name %>
+            </td>
+            <td>
+              <%= student.phone %>
+            </td>
+            <td>
+              <%= student.grade.name %>
+            </td>
+            <td>
+              <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "操作", drawer_width: "180", drawer_content: "admin/students/form" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+      <tfoot>
+      <tr>
+        <th>
+          <div class="join">
+            <%= link_to_previous_page @students, '«', class: "join-item btn btn-xs btn-primary" %>
+            <button class="join-item btn btn-xs btn-square"><%= @students.current_page %></button>
+            <%= link_to_next_page @students, '»', class: "join-item btn btn-xs btn-primary" %>
+          </div>
+        </th>
+        <th>学员名</th>
+        <th>手机号</th>
+        <th>年级</th>
+        <th>操作</th>
+      </tr>
+    </tfoot>
+    </table>
+  </div>
+</div>
+            <%#= render "admin/shared/drawer", item: User.new, drawer_id: "drawer-user-new", button_name: "创建用户", drawer_width: "180", drawer_content: "admin/users/form" %>
