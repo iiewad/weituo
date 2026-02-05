@@ -8,12 +8,16 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-
+school = School.first
 (1..10).each do |i|
   Grade.find_or_create_by!(name: "年级#{i}", level: i.to_s)
 end
 %w[数学 英语 物理 化学].each do |name|
-  Subject.create!(name: name, code: name.downcase)
+  subject = Subject.find_or_create_by!(name: name, code: name.downcase)
+  5.times do |i|
+    campuse = school.campuses.order('RAND()').first
+    subject.teachers.create!(name: "教师#{i}", phone: "1380000#{i}00", campuse_id: campuse.id)
+  end
 end
 
 1000.times do |i|

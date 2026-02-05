@@ -1,0 +1,54 @@
+<div class="min-h-dvh px-4">
+  <%#= render "admin/students/filter_form" %>
+  <div class="overflow-x-auto">
+    <table class="table table-xs">
+      <!-- head -->
+      <thead>
+        <tr>
+          <th>
+              <%= render "admin/shared/drawer", item: Teacher.new, drawer_id: "drawer-teacher-new", button_name: "创建教师", drawer_width: "180", drawer_content: "admin/teachers/form" %>
+          </th>
+          <th>姓名</th>
+          <th>电话</th>
+          <th>科目</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- row 1 -->
+        <% @teachers.each.with_index(1) do |teacher, index| %>
+          <tr>
+            <td><%= index %></td>
+            <td>
+              <%= teacher.name %>
+            </td>
+            <td>
+              <%= teacher.phone %>
+            </td>
+            <td>
+              <%= teacher.subject.name %>
+            </td>
+            <td>
+              <%= render "admin/shared/drawer", item: teacher, drawer_id: "drawer-teacher-#{teacher.id}", button_name: "操作", drawer_width: "180", drawer_content: "admin/teachers/form" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+      <tfoot>
+      <tr>
+        <th>
+          <div class="join">
+            <%= link_to_previous_page @teachers, '«', class: "join-item btn btn-xs btn-primary" %>
+            <button class="join-item btn btn-xs btn-square"><%= @teachers.current_page %></button>
+            <%= link_to_next_page @teachers, '»', class: "join-item btn btn-xs btn-primary" %>
+          </div>
+        </th>
+        <th>姓名</th>
+        <th>电话</th>
+        <th>科目</th>
+        <th>操作</th>
+      </tr>
+    </tfoot>
+    </table>
+  </div>
+</div>

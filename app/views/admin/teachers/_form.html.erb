@@ -1,0 +1,19 @@
+<%= form_with(
+  model: item,
+  url: item.new_record? ? admin_teachers_path : admin_teacher_path(id: item.id),
+  local: true) do |f| %>
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+  <legend class="fieldset-legend"><%= item.new_record? ? "创建教师" : "更新教师" %></legend>
+  <%= f.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+
+  <label class="label">教师名</label>
+  <%= f.text_field :name, class: "input input-sm w-full" %>
+
+  <label class="label">电话</label>
+  <%= f.text_field :phone, class: "input input-sm w-full" %>
+
+  <label class="label">科目</label>
+  <%= f.select :subject_id, Subject.all.map { |subject| [subject.name, subject.id] }, {}, class: "select select-sm w-full" %>
+  <%= f.submit "保存", class: "btn btn-sm btn-primary" %>
+</fieldset>
+<% end %>
