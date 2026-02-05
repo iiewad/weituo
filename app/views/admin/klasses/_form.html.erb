@@ -24,15 +24,15 @@
 
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">年级</span>
-          <%= form.select :grade_id, Thread.current[:school].grades.map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: item&.grade_id %>
+          <span class="label">所属年级</span>
+          <%= form.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: item&.grade_id %>
         </label>
       </fieldset>
 
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">科目</span>
-          <%= form.select :subject_id, Thread.current[:school].subjects.map { |subject| [subject.name, subject.id] }, class: "select select-xs", value: item&.subject_id %>
+          <span class="label">所属科目</span>
+          <%= form.select :subject_id, Current.user.subjects_by_campuse(Thread.current[:campuse].id).map { |subject| [subject.name, subject.id] }, class: "select select-xs", value: item&.subject_id %>
         </label>
       </fieldset>
       
@@ -54,8 +54,7 @@
     <div class="basis-1/2">
       <fieldset class="fieldset">
         <legend class="fieldset-legend">班级学员</legend>
-        <%= form.text_area :students_text, disabled: !item.new_record?, class: "textarea h-128", placeholder: "请输入学员姓名，每个姓名占一行", value: item&.students_text %>
-        <div class="label">每个姓名占一行</div>
+        <%= form.text_area :students_text, disabled: !item.new_record?, class: "textarea h-128", placeholder: "请输入学员姓名\n每个姓名占一行", value: item&.students_text %>
       </fieldset>
     </div>
   </div>

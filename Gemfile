@@ -68,3 +68,4 @@ group :test do
 end
 gem "ransack"
 gem "kaminari"
+gem "aasm"

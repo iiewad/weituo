@@ -4,6 +4,11 @@ class User < ApplicationRecord
   has_many :user_campuses
   has_many :campuses, through: :user_campuses
   # normalizes :email_address, with: ->(e) { e.strip.downcase }
+  def subjects_by_campuse(campuse_id)
+    campuse = Campuse.find(campuse_id)
+    Subject.where(id: campuse.school.grade_subjects.map(&:subject_id))
+    # campuse.school.grade_subjects.map(&:subject)
+  end
 
   def grade_ids_by_campuse(campuse_id)
     user_campuses.where(campuse_id: campuse_id).pluck(:grade_ids).flatten

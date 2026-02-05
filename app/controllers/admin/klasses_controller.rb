@@ -20,16 +20,25 @@ class Admin::KlassesController < AdminController
   end
 
   def create
-    @klass = Klass.new(klass_params)
+    @klass = Klass.new(klass_params.except(:students_text))
+
     if @klass.save!
-      redirect_to admin_klasses_path, notice: "班级创建成功"
+      params[:klass][:students_text].split("\n").each do |line|
+        line.strip!
+        next if line.blank?
+        student = Thread.current[:campuse].students.where(grade_id: @klass.grade_id).find_by(name: line)
+        next if student.blank?
+
+        @klass.klass_students.create!(student_id: student.id)
+      end
+      redirect_to admin_klass_path(@klass), notice: "班级创建成功"
     else
-      render :new
+      redirect_to admin_klasses_path, notice: "班级创建失败"
     end
   end
 
   private
     def klass_params
-      params.require(:klass).permit(:campuse_id, :semester_id, :genre, :seq, :times, :grade_id, :subject_id, :teacher_id)
+      params.require(:klass).permit(:campuse_id, :semester_id, :genre, :seq, :times, :grade_id, :subject_id, :teacher_id, :students_text)
     end
 end

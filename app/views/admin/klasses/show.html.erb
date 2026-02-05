@@ -12,5 +12,32 @@
   <div class="basis-1/8 min-h-dvh bg-base-200">
     <%= render "admin/klasses/menu", grades: @grades %>
   </div>
+    <div class="basis-7/8">
+    <% if @klass %>
+    <div class="overflow-x-auto h-4/5">
+      <table class="table table-xs table-pin-rows table-pin-cols">
+        <thead>
+          <tr>
+            <th>序号</th>
+            <th>姓名</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @klass.students.order(:name).each.with_index(1) do |student, index| %>
+            <tr>
+              <td><%= index %></td>
+              <td><%= student.name %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% else %>
+      <div class="flex justify-center items-center h-full">
+        <p class="text-lg text-center">请选择班级</p>
+      </div>
+    <% end %>
+  </div>
+
 </div>
 
