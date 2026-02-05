@@ -10,7 +10,7 @@ class Admin::StudentsController < AdminController
   def create
     @student = Student.new(student_params)
     if @student.save
-      redirect_to admin_school_campuse_students_path(Thread.current[:campuse].school_id, Thread.current[:campuse].id), notice: "学员创建成功"
+      redirect_to admin_students_path, notice: "学员创建成功"
     else
       render "admin/students/form"
     end
@@ -19,7 +19,7 @@ class Admin::StudentsController < AdminController
   def update
     @student = Student.find(params[:id])
     @student.update(student_params)
-    redirect_to admin_school_campuse_students_path(Thread.current[:campuse].school_id, Thread.current[:campuse].id), notice: "学员信息更新成功"
+    redirect_to admin_students_path, notice: "学员信息更新成功"
   end
 
   private

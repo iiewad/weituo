@@ -1,6 +1,6 @@
 <%= form_with(
   model: item,
-  url: item.new_record? ? admin_school_campuse_students_path(school_id: Thread.current[:school].id, campuse_id: Thread.current[:campuse].id) : admin_school_campuse_student_path(school_id: Thread.current[:school].id, campuse_id: Thread.current[:campuse].id, id: item.id),
+  url: item.new_record? ? admin_students_path : admin_student_path(id: item.id),
   local: true, data: { controller: "guardians" }) do |f| %>
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
   <legend class="fieldset-legend">学员详情</legend>

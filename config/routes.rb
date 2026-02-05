@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   root "admin/schools#index"
   namespace :admin do
+    resources :students
     resources :users
     resources :schools do
       resources :semesters do
@@ -9,7 +10,6 @@ Rails.application.routes.draw do
         end
       end
       resources :campuses do
-        resources :students
         member do
           get :switch_thread_campuse
         end
