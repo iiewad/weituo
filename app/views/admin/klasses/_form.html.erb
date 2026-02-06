@@ -8,8 +8,15 @@
       <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
 
       <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">班型</span>
+          <%= form.collection_select :genre, Klass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
         <label class="input input-sm">
-          <span class="label">班级序号</span>
+          <span class="label">序号</span>
           <%= form.number_field :seq, class: "grow", placeholder: "序号", oninput: "this.value = this.value.replace(/4/g, '')", value: item&.seq %>
         </label>
         <p class="label text-xs">班级序号禁止输入4，避免与相同科目与班型的班级序号冲突。</p>
@@ -17,36 +24,29 @@
 
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">班级类型</span>
-          <%= form.collection_select :genre, Klass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
-        </label>
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">所属年级</span>
+          <span class="label">年级</span>
           <%= form.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: item&.grade_id %>
         </label>
       </fieldset>
 
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">所属科目</span>
+          <span class="label">科目</span>
           <%= form.select :subject_id, Current.user.subjects_by_campuse(Thread.current[:campuse].id).map { |subject| [subject.name, subject.id] }, class: "select select-xs", value: item&.subject_id %>
         </label>
       </fieldset>
       
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">科目教师</span>
+          <span class="label">教师</span>
           <%= form.select :teacher_id, Thread.current[:campuse].teachers.all.map { |teacher| [teacher.name_with_subject, teacher.id] }, class: "select select-sm", value: item&.teacher_id %>
         </label>
       </fieldset>
 
       <fieldset class="fieldset">
         <label class="input input-sm">
-          <span class="label">课程次数</span>
-          <%= form.number_field :times, class: "grow", placeholder: "课程次数", value: item&.times %>
+          <span class="label">课次</span>
+          <%= form.number_field :times, class: "grow", placeholder: "课次", value: item&.times %>
         </label>
       </fieldset>
 
