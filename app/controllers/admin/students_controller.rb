@@ -5,6 +5,20 @@ class Admin::StudentsController < AdminController
       campuse_id: Thread.current[:campuse].id,
       grade_id: Current.user.grade_ids_by_campuse(Thread.current[:campuse].id)
     ).page(params[:page])
+    if params[:filter].present?
+      ks = KlassStudent.includes(:semester_klass).where(
+        semester_klasses: {
+          semester_id: Thread.current[:semester].id
+        }
+      )
+      if params[:filter] == "in_class"
+        @students = @students.where(id: ks.where(status: "in").pluck(:student_id))
+      elsif params[:filter] == "out_class"
+        @students = @students.where(id: ks.where(status: "out").pluck(:student_id))
+      elsif params[:filter] == "not_in_class"
+        @students = @students.where.not(id: ks.where(status: %w[in out]).pluck(:student_id))
+      end
+    end
   end
 
   def create
