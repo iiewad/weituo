@@ -1,6 +1,6 @@
 <ul class="menu bg-base-200 rounded-box w-56">
   <% grades.each do |grade| %>
-    <li class="<%= "menu-disabled" if grade.semester_klasses.empty? %>">
+    <li class="<%= "menu-disabled" if grade.semester_klasses.where(semester_id: Thread.current[:semester].id).empty? %>">
       <details <%= "open" if grade.klasses.present? && @klass.in?(grade.klasses) %>>
         <summary><%= grade.name %></summary>
         <ul>
