@@ -25,14 +25,11 @@
           </tr>
         </thead>
         <tbody>
-          <!-- row 1 -->
           <% @klass.students.each do |student| %>
           <tr>
             <th><%= student.name %></th>
             <% @klass.courses.each do |course| %>
             <td>
-              <%#= course.seq %>
-              <%#= course.attendances.find_by(student: student)&.status_icon %>
               <% if course.started? %>
               <%= render "admin/klasses/attendance_dropdown", course: course, student: student, attendance: course.attendances.find_by(student: student) %>
               <% else %>
@@ -46,15 +43,17 @@
         <tfoot>
           <tr>
             <td></td>
-          <% @klass.courses.each do |course| %>
-            <td>
-              <% if course.started? %>
-              <%= button_to "已开课", start_admin_klass_course_path(@klass, course), method: :put, class: "btn btn-xs btn-primary btn-disabled" %>
-              <% else %>
-              <%= button_to "开课", start_admin_klass_course_path(@klass, course), method: :put, class: "btn btn-xs btn-primary" %>
+            <% if @klass.students.exists?%>
+              <% @klass.courses.each do |course| %>
+                <td>
+                  <% if course.started? %>
+                  <%= button_to "已开课", start_admin_klass_course_path(@klass, course), method: :put, class: "btn btn-xs btn-primary btn-disabled" %>
+                  <% else %>
+                  <%= button_to "开课", start_admin_klass_course_path(@klass, course), method: :put, class: "btn btn-xs btn-primary" %>
+                  <% end %>
+                </td>
               <% end %>
-            </td>
-          <% end %>
+            <% end %>
           </tr>
 
         </tfoot>
