@@ -1,7 +1,7 @@
 class KlassStudent < ApplicationRecord
   include AASM
 
-  belongs_to :klass
+  belongs_to :semester_klass
   belongs_to :student
 
   enum :status, [ :out, :in ]

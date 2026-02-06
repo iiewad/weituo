@@ -34,12 +34,12 @@ class Attendance < ApplicationRecord
     event :mark_quit do
       after do
         ks = KlassStudent.find_by!(
-          klass_id: course.klass_id,
+          semester_klass_id: course.semester_klass_id,
           student_id: student.id
         )
         ks.mark_out! if ks.status == "in"
         # 课程之后未开课的课程提前创建退课考勤记录
-        course.klass.courses.where("seq > ?", course.seq).each do |c|
+        course.semester_klass.courses.where("seq > ?", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(student: student)
           attendance.update!(status: "quit")
         end
@@ -50,12 +50,12 @@ class Attendance < ApplicationRecord
     event :mark_transfer do
       after do
         ks = KlassStudent.find_by!(
-          klass_id: course.klass_id,
+          semester_klass_id: course.semester_klass_id,
           student_id: student.id
         )
         ks.mark_out! if ks.status == "in"
         # 此课程之后的考勤，状态改为转出
-        course.klass.courses.where("seq > ?", course.seq).each do |c|
+        course.semester_klass.courses.where("seq > ?", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(student: student)
           attendance.update!(status: "transfer")
         end

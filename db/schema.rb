@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_06_062359) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_06_093331) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.integer "status", default: 1, null: false
@@ -23,7 +23,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_062359) do
   end
 
   create_table "courses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "klass_id", null: false
+    t.bigint "semester_klass_id"
     t.integer "seq", null: false
     t.date "start_date"
   end
@@ -50,7 +50,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_062359) do
   end
 
   create_table "klass_students", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "klass_id", null: false
+    t.bigint "semester_klass_id"
     t.integer "status", default: 1
     t.bigint "student_id", null: false
   end
@@ -58,16 +58,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_062359) do
   create_table "klasses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "campuse_id", null: false
     t.string "genre", null: false
-    t.bigint "grade_id", null: false
-    t.bigint "semester_id", null: false
     t.integer "seq", null: false
     t.bigint "subject_id", null: false
     t.bigint "teacher_id", null: false
-    t.integer "times", null: false
   end
 
   create_table "schools", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
+  end
+
+  create_table "semester_klasses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "grade_id", null: false
+    t.bigint "klass_id", null: false
+    t.bigint "semester_id", null: false
+    t.integer "times", null: false
+    t.datetime "updated_at", null: false
+    t.index ["klass_id", "semester_id"], name: "index_semester_klasses_on_klass_id_and_semester_id", unique: true
   end
 
   create_table "semesters", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|

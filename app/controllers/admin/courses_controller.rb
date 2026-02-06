@@ -1,8 +1,9 @@
 class Admin::CoursesController < AdminController
   def start
-    @klass = Klass.find(params[:klass_id])
-    @course = @klass.courses.find(params[:id])
+    @sk = SemesterKlass.find(params[:semester_klass_id])
+    @klass = @sk.klass
+    @course = @sk.courses.find(params[:id])
     @course.start!
-    redirect_to admin_klass_path(@klass), notice: "考勤已开始"
+    redirect_to admin_semester_klass_path(@sk), notice: "考勤已开始"
   end
 end

@@ -4,7 +4,6 @@
   <div class="flex flex-row">
     <div class="basis-1/2">
       <legend class="fieldset-legend">班级信息</legend>
-      <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
       <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
 
       <fieldset class="fieldset">
@@ -24,13 +23,6 @@
 
       <fieldset class="fieldset">
         <label class="select select-sm">
-          <span class="label">年级</span>
-          <%= form.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: item&.grade_id %>
-        </label>
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <label class="select select-sm">
           <span class="label">科目</span>
           <%= form.select :subject_id, Current.user.subjects_by_campuse(Thread.current[:campuse].id).map { |subject| [subject.name, subject.id] }, class: "select select-xs", value: item&.subject_id %>
         </label>
@@ -43,18 +35,23 @@
         </label>
       </fieldset>
 
-      <fieldset class="fieldset">
-        <label class="input input-sm">
-          <span class="label">课次</span>
-          <%= form.number_field :times, class: "grow", placeholder: "课次", value: item&.times %>
-        </label>
+      <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+        <legend class="fieldset-legend">课次设置</legend>
+          <%= form.fields_for :semester_klasses, item.new_record? ? [SemesterKlass.new] : item.semester_klasses do |semester_klass_form| %>
+          <%= semester_klass_form.hidden_field :id %>
+          <%= semester_klass_form.hidden_field :semester_id, value: Thread.current[:semester].id %>
+          <div class="join">
+          <%= semester_klass_form.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, class: "select select-xs", value: semester_klass_form.object.grade_id %>
+          <%= semester_klass_form.number_field :times, class: "input input-sm join-item", placeholder: "课次", value: semester_klass_form.object.times %>
+          </div>
+          <% end %>
       </fieldset>
 
     </div>
     <div class="basis-1/2">
       <fieldset class="fieldset">
         <legend class="fieldset-legend">班级学员</legend>
-        <%= form.text_area :students_text, class: "textarea h-128", placeholder: "请输入学员姓名\n每个姓名占一行", value: item&.students_text %>
+        <%= form.text_area :students_text, class: "textarea h-128", placeholder: "请输入学员姓名\n每个姓名占一行", value: @sk&.students_text %>
       </fieldset>
     </div>
   </div>

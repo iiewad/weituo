@@ -1,16 +1,16 @@
 <ul class="menu bg-base-200 rounded-box w-56">
   <% grades.each do |grade| %>
-    <li class="<%= "menu-disabled" if grade.klasses.empty? %>">
+    <li class="<%= "menu-disabled" if grade.semester_klasses.empty? %>">
       <details <%= "open" if grade.klasses.present? && @klass.in?(grade.klasses) %>>
         <summary><%= grade.name %></summary>
         <ul>
           <% grade.subjects.each do |subject| %>
-          <li class="<%= "menu-disabled" if subject.klasses.where(grade: grade).empty? %>">
-            <details <%= "open" if subject.klasses.any? { |k| k.grade == grade && k == @klass } %>>
+          <li class="<%= "menu-disabled" if @sks.where(klasses: { subject_id: subject.id }).empty? %>">
+            <details <%= "open" if @sks.where(klasses: { subject_id: subject.id }).any? && @sk.in?(@sks.where(klasses: { subject_id: subject.id })) %>>
               <summary><%= subject.name %></summary>
               <ul>
-                <% subject.klasses.where(grade: grade).order(:subject_id, :seq).each do |klass| %>
-                  <li class="<%= "menu-active" if klass == @klass %>"><%= link_to klass.name, admin_klass_path(klass.id) %></li>
+                <% @sks.where(klasses: { subject_id: subject.id }).order(:seq).each do |sk| %>
+                  <li class="<%= "menu-active" if sk.klass == @klass %>"><%= link_to sk.name, admin_semester_klass_path(sk.id) %></li>
                 <% end %>
               </ul>
             </details>

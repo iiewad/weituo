@@ -1,19 +1,13 @@
 class Klass < ApplicationRecord
   belongs_to :campuse
-  belongs_to :semester
-  belongs_to :grade
   belongs_to :subject
   belongs_to :teacher
   has_many :klass_students, dependent: :destroy
   has_many :students, through: :klass_students
   has_many :courses, dependent: :destroy
-  after_create :create_courses
-
-  def create_courses
-    self.times.times do |i|
-      courses.create!(seq: i + 1)
-    end
-  end
+  has_many :semester_klasses, dependent: :destroy
+  has_many :semesters, through: :semester_klasses
+  accepts_nested_attributes_for :semester_klasses, reject_if: :all_blank, allow_destroy: true
 
   GENRE_MAP = {
     "提高班" => "TG",
@@ -24,12 +18,4 @@ class Klass < ApplicationRecord
   }
 
   GENRE_MAP_REVERSE = GENRE_MAP.invert
-
-  def name
-    "#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
-  end
-
-  def students_text
-    students.map(&:name).join("\n")
-  end
 end
