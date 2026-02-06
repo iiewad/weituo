@@ -31,7 +31,7 @@
             <% @klass.courses.each do |course| %>
             <td>
               <% if course.started? %>
-              <%= render "admin/klasses/attendance_dropdown", course: course, student: student, attendance: course.attendances.find_by(student: student) %>
+              <%= render "admin/klasses/attendance_dropdown", klass_student: @klass.klass_students.find_by(student: student), course: course, student: student, attendance: course.attendances.find_by(student: student) %>
               <% else %>
               未开课
               <% end %>

@@ -1,0 +1,2 @@
+module KlassStudentsHelper
+end

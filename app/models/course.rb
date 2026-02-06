@@ -5,7 +5,7 @@ class Course < ApplicationRecord
   def start!(date = Date.today)
     update!(start_date: date)
     klass.students.each do |student|
-      Attendance.create!(course: self, student: student)
+      attendances.find_or_create_by(student: student)
     end
   end
 
