@@ -54,7 +54,7 @@
     <div class="basis-1/2">
       <fieldset class="fieldset">
         <legend class="fieldset-legend">班级学员</legend>
-        <%= form.text_area :students_text, disabled: !item.new_record?, class: "textarea h-128", placeholder: "请输入学员姓名\n每个姓名占一行", value: item&.students_text %>
+        <%= form.text_area :students_text, class: "textarea h-128", placeholder: "请输入学员姓名\n每个姓名占一行", value: item&.students_text %>
       </fieldset>
     </div>
   </div>
