@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_06_093331) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_07_085821) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.integer "status", default: 1, null: false
@@ -81,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_093331) do
     t.date "end_date", null: false
     t.string "name", null: false
     t.bigint "school_id", null: false
+    t.integer "seq"
     t.date "start_date", null: false
   end
 
