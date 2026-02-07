@@ -1,0 +1,43 @@
+<div class="min-h-dvh px-4 flex flex-row">
+  <div class="flex flex-col w-full">
+  <%= render "admin/semester_klasses/filter_form" %>
+  <div class="overflow-x-auto w-full">
+    <table class="table">
+      <!-- head -->
+      <thead>
+        <tr>
+          <th></th>
+          <th>名称</th>
+          <th>年级</th>
+          <th>科目</th>
+          <th>教师</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- row 1 -->
+        <% @sks.each.with_index(1) do |sk, index| %>
+          <tr>
+            <td><%= index %></td>
+            <td>
+              <%= sk.name %>
+            </td>
+            <td>
+              <%= sk.grade.name %>
+            </td>
+            <td>
+              <%= sk.klass.subject.name %>
+            </td>
+            <td>
+              <%= sk.klass.teacher.name %>
+            </td>
+            <td>
+              <%= render "admin/shared/drawer", item: sk, drawer_id: "drawer-cp-klass-#{sk.id}", button_name: "复制", drawer_width: "180", drawer_content: "admin/semester_klasses/copy_form" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  </div>
+</div>

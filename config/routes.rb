@@ -2,6 +2,10 @@ Rails.application.routes.draw do
   root "admin/students#index"
   namespace :admin do
     resources :semester_klasses do
+      collection do
+        get :copy
+        post :copy_create
+      end
       resources :klass_students do
         member do
           put :out, to: "klass_students#out"

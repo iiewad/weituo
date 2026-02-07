@@ -14,6 +14,14 @@ class SemesterKlass < ApplicationRecord
     end
   end
 
+  def self.ransackable_associations(auth_object = nil)
+    [ "courses", "grade", "klass", "klass_students", "semester", "students" ]
+  end
+  def self.ransackable_attributes(auth_object = nil)
+  [ "created_at", "grade_id", "id", "klass_id", "semester_id", "times", "updated_at" ]
+  end
+
+
   def name
     "#{grade.level}#{klass.subject.name[0]}#{Klass::GENRE_MAP_REVERSE[klass.genre][0]}#{klass.seq}"
   end

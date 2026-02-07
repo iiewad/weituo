@@ -1,0 +1,46 @@
+<div class="card card-border border-base-300 card-sm w-full">
+  <div class="card-body gap-4 flex flex-row">
+    <!-- 使用Ransack最佳实践优化的搜索表单 -->
+    <%= search_form_with model: @q, url: copy_admin_semester_klasses_path, method: :get, class: "flex-1 flex gap-2" do |f| %>
+      <!-- 学期筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
+      <div class="relative">
+        <%= f.collection_select :semester_id_eq, Thread.current[:school].semesters.where.not(id: Thread.current[:semester].id), :id, :name, 
+          { 
+            include_blank: "选择学期", 
+            selected: params[:q].try(:[], :semester_id_eq) 
+          }, 
+          class: "select select-sm w-full" 
+        %>
+      </div>
+
+      <!-- 年级筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
+      <div class="relative">
+        <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name, 
+          { 
+            include_blank: "选择年级", 
+            selected: params[:q].try(:[], :grade_id_eq) 
+          }, 
+          class: "select select-sm w-full" %>
+      </div>
+      
+      <!-- 班型筛选 - 使用Klass::GENRE_MAP的正确格式，添加空白选项 -->
+      <div class="relative">
+        <%= f.select :klass_genre_eq, 
+          Klass::GENRE_MAP.map { |name, code| [name, code] }, 
+          { 
+            include_blank: "选择班型", 
+            selected: params[:q].try(:[], :klass_genre_eq) 
+          }, 
+          class: "select select-sm w-full" %>
+      </div>
+      
+      <!-- 搜索按钮 -->
+      <%= f.submit "筛选", class: "btn btn-sm btn-neutral ml-2" %>
+      
+      <!-- 清除筛选按钮 -->
+      <% if params[:q].present? %>
+        <%= link_to "清除", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-error ml-1" %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -5,6 +5,9 @@
     <% end %>
   </div>
   <div>
+    <%= link_to "复制班级", copy_admin_semester_klasses_path, class: "join-item btn btn-xs btn-neutral" %>
+  </div>
+  <div>
     <%= render partial: "admin/shared/drawer", locals: { item: Klass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "180", drawer_content: "admin/klasses/form" } %>
   </div>
 </fieldset>

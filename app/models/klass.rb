@@ -9,6 +9,14 @@ class Klass < ApplicationRecord
   has_many :semesters, through: :semester_klasses
   accepts_nested_attributes_for :semester_klasses, reject_if: :all_blank, allow_destroy: true
 
+  def self.ransackable_attributes(auth_object = nil)
+    [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
+  end
+  def self.ransackable_attributes(auth_object = nil)
+    [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
+  end
+
+
   GENRE_MAP = {
     "提高班" => "TG",
     "精英班" => "JY",

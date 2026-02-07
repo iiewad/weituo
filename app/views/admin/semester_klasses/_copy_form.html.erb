@@ -1,0 +1,79 @@
+<%= form_with model: SemesterKlass.new, url: copy_create_admin_semester_klasses_path, local: true do |f| %>
+<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
+  <legend class="fieldset-legend">复制 <%= item.name %>到本学期</legend>
+  <div class="flex flex-row gap-2">
+    <div class="basic w-1/2">
+      <legend class="fieldset-legend">班级信息</legend>
+      <%= f.hidden_field :klass_id, value: item.klass.id %>
+      <%= f.hidden_field :semester_id, value: Thread.current[:semester].id %>
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">班型</span>
+          <%# 显示当前值但禁止修改，添加hidden字段保存值 %>
+          <select class="select select-sm" disabled>
+            <option value="<%= item.klass.genre %>" selected><%= Klass::GENRE_MAP.key(item.klass.genre) %></option>
+          </select>
+          <%= f.hidden_field :genre, value: item.klass.genre %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="input input-sm">
+          <span class="label">序号</span>
+          <%= f.number_field :seq, class: "grow", value: item.klass.seq, disabled: true %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">科目</span>
+          <%# 显示当前值但禁止修改，添加hidden字段保存值 %>
+          <select class="select select-xs" disabled>
+            <% subject = Current.user.subjects_by_campuse(Thread.current[:campuse].id).find_by(id: item.klass.subject_id) %>
+            <option value="<%= item.klass.subject_id %>" selected><%= subject&.name %></option>
+          </select>
+          <%= f.hidden_field :subject_id, value: item.klass.subject_id %>
+        </label>
+      </fieldset>
+      
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">教师</span>
+          <%# 显示当前值但禁止修改，添加hidden字段保存值 %>
+          <select class="select select-sm" disabled>
+            <% teacher = Thread.current[:campuse].teachers.find_by(id: item.klass.teacher_id) %>
+            <option value="<%= item.klass.teacher_id %>" selected><%= teacher&.name_with_subject %></option>
+          </select>
+          <%= f.hidden_field :teacher_id, value: item.klass.teacher_id %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="select select-sm">
+          <span class="label">年级</span>
+          <%# 显示当前值但禁止修改，添加hidden字段保存值 %>
+          <select class="select select-xs" disabled>
+            <% grade = Current.user.grades_by_campuse(Thread.current[:campuse].id).find_by(id: item.grade_id) %>
+            <option value="<%= item.grade_id %>" selected><%= grade&.name %></option>
+          </select>
+          <%= f.hidden_field :grade_id, value: item.grade_id %>
+        </label>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <label class="input input-sm">
+          <span class="label">课次</span>
+          <%= f.number_field :times, class: "grow", value: item.times %>
+        </label>
+      </fieldset>
+    </div>
+    <div class="basis-1/2">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">班级学员</legend>
+        <%= f.text_area :students_text, class: "textarea h-128", value: item.students_text %>
+      </fieldset>
+    </div>
+  </div>
+  <%= f.submit "复制到当前学期", class: "btn btn-sm btn-primary" %>
+</fieldset>
+<% end %>
