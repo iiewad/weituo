@@ -3,9 +3,20 @@
 # This model initially had no columns defined. If you add columns to the
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
-#
-one: {}
-# column: value
-#
-two: {}
-# column: value
+
+  # create_table "semester_klasses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  #   t.datetime "created_at", null: false
+  #   t.bigint "grade_id", null: false
+  #   t.bigint "klass_id", null: false
+  #   t.bigint "semester_id", null: false
+  #   t.integer "times", null: false
+  #   t.datetime "updated_at", null: false
+  #   t.index ["klass_id", "semester_id"], name: "index_semester_klasses_on_klass_id_and_semester_id", unique: true
+  # end
+sk_1:
+  id: 1
+  grade_id: 7
+  klass_id: 1
+  semester_id: 1
+  times: 16
+

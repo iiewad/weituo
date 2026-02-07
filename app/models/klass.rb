@@ -9,6 +9,13 @@ class Klass < ApplicationRecord
   has_many :semesters, through: :semester_klasses
   accepts_nested_attributes_for :semester_klasses, reject_if: :all_blank, allow_destroy: true
 
+  # 确保同一个校区内，科目+班型+序号的组合是唯一的
+  validates :seq, uniqueness: {
+    scope: [ :campuse_id, :subject_id, :genre ],
+    message: "班级信息已存在，不可重复"
+  }
+
+
   def self.ransackable_attributes(auth_object = nil)
     [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
   end

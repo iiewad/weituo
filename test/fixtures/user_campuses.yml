@@ -3,9 +3,34 @@
 # This model initially had no columns defined. If you add columns to the
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
-#
-one: {}
-# column: value
-#
-two: {}
-# column: value
+
+  # create_table "user_campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  #   t.bigint "campuse_id", null: false
+  #   t.datetime "created_at", null: false
+  #   t.json "grade_ids"
+  #   t.string "role", default: ""
+  #   t.bigint "school_id", null: false
+  #   t.datetime "updated_at", null: false
+  #   t.bigint "user_id", null: false
+  #   t.index ["campuse_id"], name: "index_user_campuses_on_campuse_id"
+  #   t.index ["school_id"], name: "index_user_campuses_on_school_id"
+  #   t.index ["user_id"], name: "index_user_campuses_on_user_id"
+  # end
+
+uc_1:
+  id: 1
+  school_id: 1
+  campuse_id: 1
+  user_id: 1
+  grade_ids: ['7', '8', '9']
+  role: 'admin'
+
+uc_2:
+  id: 2
+  school_id: 1
+  campuse_id: 1
+  user_id: 2
+  grade_ids: ['8', '9']
+  role: 'manager'
+
+  

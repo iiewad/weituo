@@ -4,8 +4,13 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-one: {}
-# column: value
-#
-two: {}
-# column: value
+  # create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  #   t.bigint "course_id", null: false
+  #   t.integer "status", default: 1, null: false
+  #   t.bigint "student_id", null: false
+  # end
+
+att_1:
+  course_id: 1
+  status: 'normal'
+  student_id: 1

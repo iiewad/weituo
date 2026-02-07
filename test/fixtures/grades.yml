@@ -4,8 +4,15 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-one: {}
-# column: value
-#
-two: {}
-# column: value
+grade_7:
+  id: 7
+  level: 7
+  name: '七年级'
+grade_8:
+  id: 8
+  level: 8
+  name: '八年级'
+grade_9:
+  id: 9
+  level: 9
+  name: '九年级'

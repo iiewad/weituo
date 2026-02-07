@@ -4,8 +4,34 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-one: {}
-# column: value
-#
-two: {}
-# column: value
+<% 10.times do |i| %>
+  student_7_<%= i + 1 %>:
+    id: <%= i + 1 %>
+    campuse_id: 1
+    name: '学生<%= i + 1 %>'
+    phone: '1380000000<%= i + 1 %>'
+    birthday: '2000-01-01'
+    grade_id: 7
+<% end %>
+
+<% 10.times do |i| %>
+  student_8_<%= i + 1 %>:
+    id: <%= i + 10 + 1 %>
+    campuse_id: 1
+    name: '学生<%= i + 1 %>'
+    phone: '1380000000<%= i + 1 %>'
+    birthday: '2000-01-01'
+    grade_id: 8
+<% end %>
+
+<% 10.times do |i| %>
+  student_9_<%= i + 1 %>:
+    id: <%= i + 20 + 1 %>
+    campuse_id: 1
+    name: '学生<%= i + 1 %>'
+    phone: '1380000000<%= i + 1 %>'
+    birthday: '2000-01-01'
+    grade_id: 9
+<% end %>
+
+

@@ -4,8 +4,18 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-one: {}
-# column: value
-#
-two: {}
-# column: value
+semester_1:
+  id: 1
+  school: 1
+  name: '春'
+  start_date: '2025-01-01'
+  end_date: '2025-03-01'
+  seq: 1
+
+semester_2:
+  id: 2
+  school: 1
+  name: '秋'
+  start_date: '2025-07-01'
+  end_date: '2025-10-01'
+  seq: 2
