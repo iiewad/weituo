@@ -17,7 +17,7 @@ class Admin::SemesterKlassesController < AdminController
         q: params[:q],
       ), notice: "复制成功"
     else
-      render :copy
+      render :copy, alert: "复制失败"
     end
   end
   def show

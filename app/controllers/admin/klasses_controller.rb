@@ -28,7 +28,7 @@ class Admin::KlassesController < AdminController
       sk.add_students_by_text(params[:klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级创建成功"
     else
-      redirect_to admin_semester_klasses_path, notice: "班级创建失败"
+      redirect_to admin_semester_klasses_path, alert: "班级创建失败"
     end
   end
 
@@ -39,7 +39,7 @@ class Admin::KlassesController < AdminController
       sk.add_students_by_text(params[:klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级更新成功"
     else
-      redirect_to admin_semester_klasses_path, notice: "班级更新失败"
+      redirect_to admin_semester_klasses_path, alert: "班级更新失败"
     end
   end
 

@@ -28,13 +28,13 @@
   </div>
 
   <label class="label">入学日期</label>
-  <%= f.date_field :enrollment_date, class: "input input-sm w-full" %>
+  <%= f.date_field :in_date, class: "input input-sm w-full", value: item.in_date&.strftime("%Y-%m-%d") || Date.today.strftime("%Y-%m-%d") %>
 
-  <label class="label">出生日期</label>
-  <%= f.date_field :birthday, class: "input input-sm w-full" %>
+  <label class="label">生日</label>
+  <%= f.date_field :birthday, class: "input input-sm w-full", value: item.birthday&.strftime("%Y-%m-%d") %>
 
-  <label class="label">层级</label>
-  <%= f.select :layer, (1..7).map { |layer| [layer, layer] }, {}, class: "select select-sm w-full" %>
+  <label class="label">学员分层</label>
+  <%= f.select :layer, (1..7).map { |layer| [layer, layer] }, { prompt: "学员分层" }, class: "select select-sm w-full" %>
 </fieldset>
 
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">
