@@ -1,7 +1,7 @@
 require "test_helper"
 
 class CourseTest < ActiveSupport::TestCase
-  # test "the truth" do
-  #   assert true
-  # end
+  test "fixtures init" do
+    assert_equal 16, courses.count
+  end
 end

@@ -15,7 +15,7 @@ class Attendance < ApplicationRecord
     state :transfer
 
     event :mark_personal_leave do
-      transitions from: [ :absent, :normal ], to: :personal_leave
+      transitions from: [ :absent, :normal ], to: :personal_leave, guard: -> { course.started? }
     end
 
     event :mark_absent do

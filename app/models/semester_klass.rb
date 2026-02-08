@@ -21,9 +21,8 @@ class SemesterKlass < ApplicationRecord
   [ "created_at", "grade_id", "id", "klass_id", "semester_id", "times", "updated_at" ]
   end
 
-
   def name
-    "#{grade.level}#{klass.subject.name[0]}#{Klass::GENRE_MAP_REVERSE[klass.genre][0]}#{klass.seq}"
+    "#{grade.level}#{klass.name}"
   end
 
   def students_text

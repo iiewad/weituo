@@ -10,7 +10,7 @@
   #   t.bigint "student_id", null: false
   # end
 
-att_1:
-  course_id: 1
-  status: 'normal'
-  student_id: 1
+# att_1:
+#   course_id: 1
+#   status: 'normal'
+#   student_id: 1

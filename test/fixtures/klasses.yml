@@ -5,6 +5,7 @@
 # below each fixture, per the syntax in the comments below
 #
 klass_1:
+  id: 1
   subject_id: 1
   genre: 'TG'
   subject_id: 1
