@@ -25,14 +25,7 @@ class Admin::KlassesController < AdminController
 
     if @klass.save!
       sk = @klass.semester_klasses.find_by!(semester_id: Thread.current[:semester].id)
-      params[:klass][:students_text].split("\n").each do |line|
-        line.strip!
-        next if line.blank?
-        student = Thread.current[:campuse].students.where(grade_id: sk.grade_id).find_by(name: line)
-        next if student.blank?
-
-        sk.klass_students.create!(student_id: student.id)
-      end
+      sk.add_students_by_text(params[:klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级创建成功"
     else
       redirect_to admin_semester_klasses_path, notice: "班级创建失败"
@@ -43,35 +36,7 @@ class Admin::KlassesController < AdminController
     @klass = Klass.find(params[:id])
     if @klass.update(klass_params.except(:students_text))
       sk = @klass.semester_klasses.find_by!(semester_id: Thread.current[:semester].id)
-      params[:klass][:students_text].split("\n").each do |line|
-        line.strip!
-        next if line.blank?
-        if line.split(" ").length == 2
-          student_name, operator_str = line.split(" ")
-          student = Thread.current[:campuse].students.where(grade_id: @klass.semester_klasses.first.grade_id).find_by(name: student_name)
-          next if student.blank?
-          course_seq = operator_str[0]
-          operator = operator_str[1]
-          if operator == "+"
-            sk.klass_students.find_or_create_by(student_id: student.id)
-            # 课程之前的考勤标记为 absent
-            course = sk.courses.find_by(seq: course_seq)
-            next if course.blank?
-            sk.courses.where("seq < ?", course_seq).each do |course|
-              attendance = course.attendances.find_or_create_by(student_id: student.id)
-              attendance.update!(status: "absent")
-            end
-            # 课程之后的考勤标记为 normal
-            sk.courses.where("seq >= ? AND start_date IS NOT NULL", course_seq).each do |course|
-              course.attendances.find_or_create_by(student_id: student.id)
-            end
-          end
-        elsif line.split(" ").length == 1
-          student = Thread.current[:campuse].students.where(grade_id: @klass.semester_klasses.first.grade_id).find_by(name: line)
-          next if student.blank?
-          sk.klass_students.find_or_create_by(student_id: student.id)
-        end
-      end
+      sk.add_students_by_text(params[:klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级更新成功"
     else
       redirect_to admin_semester_klasses_path, notice: "班级更新失败"

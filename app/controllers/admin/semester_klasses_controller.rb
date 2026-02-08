@@ -11,14 +11,7 @@ class Admin::SemesterKlassesController < AdminController
   def copy_create
     @sk = SemesterKlass.new(semester_klass_params.except(:students_text))
     if @sk.save
-      semester_klass_params[:students_text].split("\n").each do |line|
-        line.strip!
-        next if line.blank?
-        student = Thread.current[:campuse].students.where(grade_id: @sk.grade_id).find_by(name: line)
-        next if student.blank?
-
-        @sk.klass_students.create!(student_id: student.id)
-      end
+      @sk.add_students_by_text(semester_klass_params[:students_text])
       redirect_to copy_admin_semester_klasses_path(
         cp_sk_id: @sk.id,
         q: params[:q],

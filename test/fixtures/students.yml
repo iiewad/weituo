@@ -8,7 +8,7 @@
   student_7_<%= i + 1 %>:
     id: <%= i + 1 %>
     campuse_id: 1
-    name: '学生<%= i + 1 %>'
+    name: '7_学生<%= i + 1 %>'
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 7
@@ -18,7 +18,7 @@
   student_8_<%= i + 1 %>:
     id: <%= i + 10 + 1 %>
     campuse_id: 1
-    name: '学生<%= i + 1 %>'
+    name: '8_学生<%= i + 1 %>'
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 8
@@ -28,7 +28,7 @@
   student_9_<%= i + 1 %>:
     id: <%= i + 20 + 1 %>
     campuse_id: 1
-    name: '学生<%= i + 1 %>'
+    name: '9_学生<%= i + 1 %>'
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 9
