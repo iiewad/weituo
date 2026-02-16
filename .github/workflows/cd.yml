@@ -1,0 +1,37 @@
+name: CD
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      RAILS_ENV: production
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+      KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CACHE_DATABASE_URL: ${{ secrets.CACHE_DATABASE_URL }}
+      QUEUE_DATABASE_URL: ${{ secrets.QUEUE_DATABASE_URL }}
+      CABLE_DATABASE_URL: ${{ secrets.CABLE_DATABASE_URL }}
+      BLAZER_DATABASE_URL: ${{ secrets.BLAZER_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+      - run: gem install kamal
+      - uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - uses: docker/setup-buildx-action@v3
+      - run: kamal lock release
+      - run: kamal redeploy
+      - run: kamal prune all
