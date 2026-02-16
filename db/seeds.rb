@@ -7,8 +7,23 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+school = School.find_or_create_by!(name: "维拓")
+campuse = school.campuses.find_or_create_by!(name: "校区1")
+campuse2 = school.campuses.find_or_create_by!(name: "校区2")
 
-school = School.first
+user_admin = User.create!(name: "admin", password: "password")
+UserCampuse.find_or_create_by!(user_id: user_admin.id, campuse_id: campuse.id, role: "admin", school_id: school.id)
+UserCampuse.find_or_create_by!(user_id: user_admin.id, campuse_id: campuse2.id, role: "admin", school_id: school.id)
+campuse_manager = User.create!(name: "user1", password: "password")
+UserCampuse.find_or_create_by!(user_id: campuse_manager.id, campuse_id: campuse.id, role: "manager", school_id: school.id)  
+campuse2_manager = User.create!(name: "user2", password: "password")
+UserCampuse.find_or_create_by!(user_id: campuse2_manager.id, campuse_id: campuse2.id, role: "manager", school_id: school.id)
+
+# 根据春季/暑假/秋季/寒假 确定学期时间
+Semester.find_or_create_by!(name: "#{Date.today.year}学年第一学期", start_date: Date.today, end_date: Date.today + 1.month, school_id: school.id)
+Semester.find_or_create_by!(name: "#{Date.today.year}学年第二学期", start_date: Date.today + 1.month, end_date: Date.today + 2.months, school_id: school.id)
+Semester.find_or_create_by!(name: "#{Date.today.year}学年第三学期", start_date: Date.today + 2.months, end_date: Date.today + 3.months, school_id: school.id)
+Semester.find_or_create_by!(name: "#{Date.today.year}学年第四学期", start_date: Date.today + 3.months, end_date: Date.today + 4.months, school_id: school.id)
 (1..10).each do |i|
   Grade.find_or_create_by!(name: "年级#{i}", level: i.to_s)
 end
@@ -24,5 +39,5 @@ end
   school = School.first
   campuse = school.campuses.order('RAND()').first
   grade = Grade.find(rand(1..10))
-  campuse.students.create!(name: "学员#{i}", phone: "1380000#{i}00", grade: grade, campuse: campuse)
+  campuse.students.create!(name: "#{grade.level}学员#{i}", phone: "1380000#{i}00", grade: grade, campuse: campuse)
 end

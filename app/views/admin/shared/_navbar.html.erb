@@ -3,7 +3,9 @@
     <div class="text-sm ml-4">
       <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
       <div class="text-xs text-neutral-content/70">
+      <% if authenticated? %>
         当前校区【<%= Thread.current[:campuse].name %>】 当前学期【<%= Thread.current[:semester].name %>】
+      <% end %>
       </div>
     </div>
   </div>
