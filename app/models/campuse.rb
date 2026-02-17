@@ -4,4 +4,5 @@ class Campuse < ApplicationRecord
   has_many :users, through: :user_campuses
   has_many :students
   has_many :teachers
+  has_many :day_schools
 end

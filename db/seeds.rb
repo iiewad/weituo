@@ -19,6 +19,15 @@ UserCampuse.find_or_create_by!(user_id: campuse_manager.id, campuse_id: campuse.
 campuse2_manager = User.create!(name: "user2", password: "password")
 UserCampuse.find_or_create_by!(user_id: campuse2_manager.id, campuse_id: campuse2.id, role: "manager", school_id: school.id)
 
+campuse.day_schools.find_or_create_by!(name: "一中", campuse_id: campuse.id)
+campuse.day_schools.find_or_create_by!(name: "二中", campuse_id: campuse.id)
+campuse.day_schools.find_or_create_by!(name: "三中", campuse_id: campuse.id)
+campuse.day_schools.find_or_create_by!(name: "四中", campuse_id: campuse.id)
+campuse2.day_schools.find_or_create_by!(name: "一中", campuse_id: campuse2.id)
+campuse2.day_schools.find_or_create_by!(name: "二中", campuse_id: campuse2.id)
+campuse2.day_schools.find_or_create_by!(name: "三中", campuse_id: campuse2.id)
+campuse2.day_schools.find_or_create_by!(name: "四中", campuse_id: campuse2.id)
+
 # 根据春季/暑假/秋季/寒假 确定学期时间
 Semester.find_or_create_by!(name: "#{Date.today.year}学年第一学期", start_date: Date.today, end_date: Date.today + 1.month, school_id: school.id)
 Semester.find_or_create_by!(name: "#{Date.today.year}学年第二学期", start_date: Date.today + 1.month, end_date: Date.today + 2.months, school_id: school.id)

@@ -35,6 +35,9 @@
 
   <label class="label">学员分层</label>
   <%= f.select :layer, (1..7).map { |layer| [layer, layer] }, { prompt: "学员分层" }, class: "select select-sm w-full" %>
+
+  <label class="label">日校</label>
+  <%= f.select :day_school_id, DaySchool.where(campuse_id: Thread.current[:campuse].id).map { |day_school| [day_school.name, day_school.id] }, { prompt: "日校" }, class: "select select-sm w-full" %>
 </fieldset>
 
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 mt-4">

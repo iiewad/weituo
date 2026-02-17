@@ -13,6 +13,7 @@
             </div>
           </th>
           <th>学员名</th>
+          <th>日校</th>
           <th>层级</th>
           <th>监护人</th>
           <th>年级</th>
@@ -26,6 +27,9 @@
             <td><%= index %></td>
             <td>
               <%= student.name %>
+            </td>
+            <td>
+              <%= student.day_school&.name || "无" %>
             </td>
             <td>
               <%= student.layer %>

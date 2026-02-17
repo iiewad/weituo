@@ -1,5 +1,6 @@
 class Student < ApplicationRecord
   paginates_per 30
+  belongs_to :day_school, optional: true
   belongs_to :campuse
   belongs_to :grade, optional: true
   has_many :guardians, dependent: :destroy
