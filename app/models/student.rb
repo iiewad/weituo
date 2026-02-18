@@ -12,6 +12,11 @@ class Student < ApplicationRecord
     [ "name" ]
   end
 
+  def update_grade
+    target_grade = Grade.find_by(level: grade.level.to_i + 1)
+    update!(grade_id: target_grade.id) if target_grade.present?
+  end
+
   def self.add_by_text(campuse_id, str)
     campuse = Campuse.find(campuse_id)
     str.split("\n").each do |line|
