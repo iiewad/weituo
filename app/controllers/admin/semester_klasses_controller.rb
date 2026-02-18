@@ -21,7 +21,7 @@ class Admin::SemesterKlassesController < AdminController
     end
   end
   def show
-    @sk = SemesterKlass.find(params[:id])
+    @sk = Thread.current[:semester].semester_klasses.find(params[:id])
     @klass = @sk.klass
     @sks = SemesterKlass.includes(:klass).where(
       klasses: { campuse_id: Thread.current[:campuse].id },
