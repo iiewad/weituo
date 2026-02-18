@@ -10,7 +10,7 @@
   <%= f.text_field :name, class: "input input-sm w-full" %>
 
   <label class="label">年级</label>
-  <%= f.select :grade_id, Grade.all.map { |grade| [grade.name, grade.id] }, {}, class: "select select-sm w-full" %>
+  <%= f.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, {}, class: "select select-sm w-full" %>
 
   <label class="label">性别</label>
   <div class="flex items-center space-x-4">

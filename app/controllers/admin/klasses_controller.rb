@@ -21,7 +21,8 @@ class Admin::KlassesController < AdminController
   end
 
   def create
-    @klass = Klass.new(klass_params.except(:students_text))
+    teacher = Teacher.find(params[:klass][:teacher_id])
+    @klass = Klass.new(klass_params.except(:students_text).merge(subject_id: teacher.subject_id))
 
     if @klass.save!
       sk = @klass.semester_klasses.find_by!(semester_id: Thread.current[:semester].id)
@@ -34,7 +35,8 @@ class Admin::KlassesController < AdminController
 
   def update
     @klass = Klass.find(params[:id])
-    if @klass.update(klass_params.except(:students_text))
+    teacher = Teacher.find(params[:klass][:teacher_id])
+    if @klass.update(klass_params.except(:students_text).merge(subject_id: teacher.subject_id))
       sk = @klass.semester_klasses.find_by!(semester_id: Thread.current[:semester].id)
       sk.add_students_by_text(params[:klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级更新成功"
@@ -45,6 +47,6 @@ class Admin::KlassesController < AdminController
 
   private
     def klass_params
-      params.require(:klass).permit(:campuse_id, :genre, :seq, :subject_id, :teacher_id, :students_text, semester_klasses_attributes: [ :id, :semester_id, :grade_id, :times, :_destroy ])
+      params.require(:klass).permit(:campuse_id, :genre, :seq, :teacher_id, :students_text, semester_klasses_attributes: [ :id, :semester_id, :grade_id, :times, :_destroy ])
     end
 end
