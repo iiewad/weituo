@@ -35,7 +35,7 @@
               <%= student.layer %>
             </td>
             <td>
-              <%= student.guardians.pluck(:name, :phone).map { |name, phone| "#{name} #{phone}" }.join(', ') %>
+              <%= student.guardians.pluck(:relationship, :phone).map { |name, phone| "#{name} #{phone}" }.join(', ') %>
             </td>
             <td>
               <%= student.grade.name %>
