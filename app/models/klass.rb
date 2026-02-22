@@ -15,8 +15,9 @@ class Klass < ApplicationRecord
   def self.ransackable_attributes(auth_object = nil)
     [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
   end
-  def self.ransackable_attributes(auth_object = nil)
-    [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
+  
+  def self.ransackable_associations(auth_object = nil)
+    [ "campuse", "subject", "teacher", "semester_klasses", "semesters" ]
   end
 
   def name

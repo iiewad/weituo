@@ -1,0 +1,26 @@
+<div class="mb-4 flex flex-wrap gap-4">
+  <%= search_form_for @q, url: admin_klasses_path, html: { class: "flex flex-wrap gap-4" } do |f| %>
+    <%= f.hidden_field :genre_eq %>
+    
+    <div class="flex items-center gap-2">
+      <%= f.label :genre_eq, "班型", class: "text-sm font-medium" %>
+      <div class="flex flex-wrap gap-1">
+        <button type="button" class="btn btn-xs <%= params.dig(:q, :genre_eq).blank? ? 'btn-primary' : 'btn-outline' %>" onclick="document.getElementById('q_genre_eq').value = ''; this.form.submit();">全部</button>
+        
+        <% Klass::GENRE_MAP_REVERSE.invert.each do |name, value| %>
+          <button type="button" class="btn btn-xs <%= params.dig(:q, :genre_eq) == value ? 'btn-primary' : 'btn-outline' %>" onclick="document.getElementById('q_genre_eq').value = '<%= value %>'; this.form.submit();"><%= name %></button>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <%= f.label :teacher_id_eq, "教师", class: "text-sm font-medium" %>
+      <%= f.grouped_collection_select :teacher_id_eq, @klass_subjects, :teachers, :name, :id, :name, { include_blank: "全部" }, class: "select select-xs" %>
+    </div>
+    
+    <div class="flex items-end gap-2">
+      <%= f.submit "筛选", class: "btn btn-xs btn-primary" %>
+      <%= link_to "重置", admin_klasses_path, class: "btn btn-xs btn-outline" %>
+    </div>
+  <% end %>
+</div>

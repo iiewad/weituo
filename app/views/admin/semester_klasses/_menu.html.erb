@@ -1,0 +1,23 @@
+<ul class="menu bg-base-200 rounded-box w-56">
+  <% grades.each do |grade| %>
+    <li class="<%= "menu-disabled" if grade.semester_klasses.where(semester_id: Thread.current[:semester].id).empty? %>">
+      <details <%= "open" if grade.klasses.present? && @klass.in?(grade.klasses) %>>
+        <summary><%= grade.name %></summary>
+        <ul>
+          <% grade.subjects.each do |subject| %>
+          <li class="<%= "menu-disabled" if @sks.where(klasses: { subject_id: subject.id }).empty? %>">
+            <details <%= "open" if @sks.where(klasses: { subject_id: subject.id }).any? && @sk.in?(@sks.where(klasses: { subject_id: subject.id })) %>>
+              <summary><%= subject.name %></summary>
+              <ul>
+                <% @sks.where(klasses: { subject_id: subject.id }).order(:seq).each do |sk| %>
+                  <li class="<%= "menu-active" if sk.klass == @klass %>"><%= link_to sk.name, admin_semester_klass_path(sk.id) %></li>
+                <% end %>
+              </ul>
+            </details>
+          </li>
+          <% end %>
+        </ul>
+      </details>
+    </li>
+  <% end %>
+</ul>

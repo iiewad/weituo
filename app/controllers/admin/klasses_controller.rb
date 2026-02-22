@@ -1,13 +1,26 @@
 class Admin::KlassesController < AdminController
   def index
-    @sks = SemesterKlass.includes(:klass).where(
-      klasses: { campuse_id: Thread.current[:campuse].id },
-      semester_id: Thread.current[:semester].id,
-    )
-    @klasses = Klass.where(
-      id: @sks.map(&:klass_id)
-    )
-    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
+    @q = Thread.current[:campuse].klasses.joins(:semester_klasses).where(
+      semester_klasses: { grade_id: Current.user.grade_ids_by_campuse(Thread.current[:campuse].id) }
+    ).ransack(params[:q])
+    @klasses = @q.result(distinct: true)
+    @klass_subjects = Thread.current[:school].subjects.includes(:teachers).uniq
+    @menu_hash = []
+    @klass_subjects.each do |subject|
+      Klass::GENRE_MAP.values.each do |kg|
+        sks = SemesterKlass.joins(:klass).where(
+          klasses: { genre: kg, subject_id: subject.id }
+        )
+        klasses = sks.includes(:klass).map(&:klass)
+        teachers = klasses.map(&:teacher).uniq
+        @menu_hash << {
+        s_n: subject.name,
+        s_id: subject.id,
+        k_g: kg,
+        teachers: teachers.map { |teacher| { id: teacher.id, name: teacher.name } }
+      }
+      end
+    end
   end
 
   def show

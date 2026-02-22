@@ -1,4 +1,15 @@
 class Admin::SemesterKlassesController < AdminController
+  def index
+    @sks = SemesterKlass.includes(:klass).where(
+      klasses: { campuse_id: Thread.current[:campuse].id },
+      semester_id: Thread.current[:semester].id,
+    )
+    @klasses = Klass.where(
+      id: @sks.map(&:klass_id)
+    )
+    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
+  end
+
   def copy
     @q = SemesterKlass.ransack(params[:q])
     @sks = @q.result.includes(:klass).where.not(
