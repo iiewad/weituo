@@ -2,9 +2,10 @@ class Admin::CampusesController < AdminController
   def switch_thread_campuse
     @campuse = Campuse.find(params[:id])
     session[:current_campuse_id] = @campuse.id
-    Thread.current[:current_campuse] = @campuse
+    Thread.current[:campuse] = @campuse
     redirect_to request.referrer, notice: "校区切换成功"
   end
+
   def update
     @school = School.find(params[:school_id])
     @campus = @school.campuses.find(params[:id])
@@ -14,6 +15,7 @@ class Admin::CampusesController < AdminController
       render :index
     end
   end
+
   private
     def campus_params
       params.require(:campuse).permit(:name)

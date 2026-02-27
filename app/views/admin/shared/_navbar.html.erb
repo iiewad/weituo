@@ -1,65 +1,98 @@
-<div class="sticky top-0 z-50 navbar bg-neutral text-neutral-content">
-  <div class="flex-none">
-    <div class="text-sm ml-4">
-      <%= link_to "维拓校务管理平台", root_path, class: " text-xl font-bold" %>
-      <div class="text-xs text-neutral-content/70">
-      <% if authenticated? %>
-        当前校区【<%= Thread.current[:campuse].name %>】 当前学期【<%= Thread.current[:semester].name %>】
-      <% end %>
+<div class="sticky top-0 z-50 navbar bg-primary text-primary-content shadow-md overflow-hidden">
+  <div class="container mx-auto flex items-center justify-between">
+    <div class="flex items-center px-4">
+      <div>
+        <%= link_to "维拓校务管理平台", root_path, class: "text-xl font-bold transition-colors hover:text-primary-content/90" %>
+        <div class="text-xs text-primary-content/70 mt-1">
+          <% if authenticated? %>
+            当前校区：<%= Thread.current[:campuse].name %> | 当前学期：<%= Thread.current[:semester].name %>
+          <% end %>
+        </div>
       </div>
     </div>
-  </div>
-  <% if authenticated? %>
-  <div class="flex-1">
-    <ul class="menu menu-horizontal px-3">
-      <% if Current.user.has_role_by_campuse_id(Thread.current[:campuse].id, 'admin') %>
-      <li><%= link_to "用户管理", admin_users_path %></li>
-      <li><%= link_to "学校管理", admin_schools_path %></li>
-      <li><%= link_to "教师管理", admin_teachers_path %></li>
-      <% end %>
-      <li><%= link_to "学员管理", admin_students_path %></li>
-      <li><%#= link_to "班级管理", admin_klasses_path %></li>
-
-      <li><%= link_to "班级管理", admin_semester_klasses_path %></li>
-      <li><%#= link_to "学期管理", admin_semesters_path %></li>
-    </ul>
-  </div>
-  <div class="flex-none">
-    <ul class="menu menu-horizontal px-1">
-      <li>
-        <details>
-        <summary><%= Current.user.name %></summary>
-        <ul class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm bg-base-100 text-base-content">
-          <!--<li><%#= link_to "修改密码", edit_admin_user_path(Current.user) %></li>-->
+    
+    <% if authenticated? %>
+    <div class="hidden md:flex items-center flex-1 justify-center">
+      <ul class="menu menu-horizontal px-1 space-x-1">
+        <% if Current.user.has_role_by_campuse_id(Thread.current[:campuse].id, 'admin') %>
           <li>
-            <div class="dropdown dropdown-left">
-              <summary tabindex="0">校区切换</summary>
-              <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-                <% Current.user.campuses.each do |campuse| %>
-                  <li class="<%= "menu-active" if Thread.current[:campuse] == campuse %>">
-                    <%= link_to campuse.name, switch_thread_campuse_admin_school_campuse_path(school_id: Thread.current[:campuse].school.id, id: campuse.id) %>
-                  </li>
-                <% end %>
-              </ul>
-            </div>
+            <%= link_to "用户管理", admin_users_path, class: "rounded-md hover:bg-primary-content/10 transition-colors" %>
           </li>
           <li>
-            <div class="dropdown dropdown-left">
-              <summary tabindex="0">学期切换</summary>
-              <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-                <% Thread.current[:campuse].school.semesters.each do |semester| %>
-                  <li class="<%= "menu-active" if Thread.current[:semester] == semester %>"><%= link_to semester.name, switch_thread_semester_admin_school_semester_path(school_id: Thread.current[:campuse].school.id, id: semester.id) %></li>
-                <% end %>
-              </ul>
-            </div>
+            <%= link_to "学校管理", admin_schools_path, class: "rounded-md hover:bg-primary-content/10 transition-colors" %>
           </li>
-        </ul>
-        </details>
-      </li>
-    <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-secondary" if authenticated? %>
+          <li>
+            <%= link_to "教师管理", admin_teachers_path, class: "rounded-md hover:bg-primary-content/10 transition-colors" %>
+          </li>
+        <% end %>
+        <li class="relative">
+          <details class="group">
+            <summary class="rounded-md hover:bg-primary-content/10 transition-colors cursor-pointer">
+              学员管理
+            </summary>
+            <ul class="absolute left-0 menu bg-base-100 rounded-lg z-20 w-52 p-2 shadow-lg border border-base-200 text-base-content transition-all duration-200">
+              <li>
+                <%= link_to "在班学员", admin_students_path(filter: "in_class"), class: "rounded-md hover:bg-base-100 transition-colors" %>
+              </li>
+              <li>
+                <%= link_to "未入班学员", admin_students_path(filter: "not_in_class"), class: "rounded-md hover:bg-base-100 transition-colors" %>
+              </li>
+              <li>
+                <%= link_to "有退课学员", admin_students_path(filter: "out_class"), class: "rounded-md hover:bg-base-100 transition-colors" %>
+              </li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <%= link_to "班级管理", admin_semester_klasses_path, class: "rounded-md hover:bg-primary-content/10 transition-colors" %>
+        </li>
+      </ul>
+    </div>
+    
+    <div class="flex items-center px-4 gap-2">
+      <ul class="menu menu-horizontal space-x-2 items-center">
+        <li class="relative">
+          <details class="group">
+            <summary class="flex items-center gap-2 rounded-full hover:bg-primary-content/10 transition-colors cursor-pointer p-1">
+              <span><%= Current.user.name %></span>
+            </summary>
+            <ul class="absolute right-0 menu bg-base-100 rounded-lg z-20 w-56 p-2 shadow-lg border border-base-200 text-base-content transition-all duration-200">
+              <!--<li><%#= link_to "修改密码", edit_admin_user_path(Current.user) %></li>-->
+              <li class="relative">
+                <details class="group">
+                  <summary class="cursor-pointer hover:bg-base-100 rounded-md">
+                    校区切换
+                  </summary>
+                  <ul class="absolute right-0 menu bg-base-100 rounded-lg z-30 w-48 p-2 shadow-md border border-base-200 -mt-2">
+                    <% Current.user.campuses.each do |campuse| %>
+                      <li class="<%= "bg-primary text-primary-content" if Thread.current[:campuse] == campuse %>">
+                        <%= link_to campuse.name, switch_thread_campuse_admin_school_campuse_path(school_id: Thread.current[:campuse].school.id, id: campuse.id), data: { turbo_prefetch: false}, class: "rounded-md hover:bg-base-100 transition-colors" %>
+                      </li>
+                    <% end %>
+                  </ul>
+                </details>
+              </li>
+              <li class="relative">
+                <details class="group">
+                  <summary class="cursor-pointer hover:bg-base-100 rounded-md">
+                    学期切换
+                  </summary>
+                  <ul class="absolute right-0 menu bg-base-100 rounded-lg z-30 w-48 p-2 shadow-md border border-base-200 -mt-2">
+                    <% Thread.current[:campuse].school.semesters.each do |semester| %>
+                      <li class="<%= "bg-primary text-primary-content" if Thread.current[:semester] == semester %>">
+                        <%= link_to semester.name, switch_thread_semester_admin_school_semester_path(school_id: Thread.current[:campuse].school.id, id: semester.id), data: { turbo_prefetch: false }, class: "rounded-md hover:bg-base-100 transition-colors" %>
+                      </li>
+                    <% end %>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </details>
+        </li>
+        <%= button_to "注销", session_path, method: :delete, class: "btn btn-sm btn-outline btn-primary-content/80 hover:bg-primary-content/10 transition-colors" if authenticated? %>
 
-    </ul>
-
+      </ul>
+    </div>
+    <% end %>
   </div>
-  <% end %>
 </div>

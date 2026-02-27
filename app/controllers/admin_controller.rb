@@ -3,7 +3,7 @@ class AdminController < ApplicationController
   private
     def set_thread_current
       session[:current_campuse_id] ||= Current.user.campuses.first.id
-      Thread.current[:campuse] = Current.user.campuses.first
+      Thread.current[:campuse] = Campuse.find(session[:current_campuse_id])
       session[:current_school_id] ||= Thread.current[:campuse].school.id
       Thread.current[:school] = Thread.current[:campuse].school
       session[:current_semester_id] ||= Thread.current[:campuse].school.semesters.current.id

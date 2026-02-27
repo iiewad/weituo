@@ -12,12 +12,6 @@
     <% end %>
 
     <div class="basis w-3/5">
-      <%= link_to "在班", admin_students_path(filter: "in_class"), method: :get, class: "btn btn-xs btn-outline btn-success #{"btn-active" if params[:filter] == "in_class"}" %>
-      <%= link_to "未入班", admin_students_path(filter: "not_in_class"), method: :get, class: "btn btn-xs btn-outline #{"btn-active" if params[:filter] == "not_in_class"}" %>
-      <%= link_to "有退课", admin_students_path(filter: "out_class"), method: :get, class: "btn btn-xs btn-outline btn-secondary #{"btn-active" if params[:filter] == "out_class"}" %>
-    </div>
-
-    <div class="basis w-3/5">
       <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-new", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/students/form" %>
     </div>
   </div>
