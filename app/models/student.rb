@@ -9,7 +9,7 @@ class Student < ApplicationRecord
   accepts_nested_attributes_for :guardians, reject_if: :all_blank, allow_destroy: true
 
   def self.ransackable_attributes(auth_object = nil)
-    [ "name" ]
+    [ "name", "grade_id" ]
   end
 
   def update_grade

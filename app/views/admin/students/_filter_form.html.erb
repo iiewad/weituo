@@ -5,6 +5,9 @@
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 opacity-70 shrink-0"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd"></path></svg>
       <%= f.search_field :name_cont, placeholder: "姓名搜索", class: "grow" %>
     </label>
+    <label class="join-item input-border flex input input-xs items-center gap-2 w-auto">
+      <%= f.select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse]).order(:level).map { |g| [g.name, g.id] }, prompt: "年级", class: "select select-xs" %>
+    </label>
     <%= f.submit "查找", class: "join-item btn btn-xs btn-neutral" %>
     <% end %>
 
