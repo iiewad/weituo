@@ -7,9 +7,9 @@ Rails.application.routes.draw do
         post :copy_create
       end
       resources :klass_students do
-        member do
-          put :out, to: "klass_students#out"
-        end
+        # member do
+        #   put :out, to: "klass_students#out"
+        # end
       end
       resources :courses do
         member do

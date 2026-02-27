@@ -22,21 +22,25 @@
             <% @sk.courses.each do |course| %>
             <th>第<%= course.seq %>课</th>
             <% end %>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
-          <% @sk.students.each do |student| %>
+          <% @sk.klass_students.each do |ks| %>
           <tr>
-            <th><%= student.name %></th>
+            <th><%= ks.student.name %></th>
             <% @sk.courses.each do |course| %>
             <td>
               <% if course.started? %>
-              <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: @sk.klass_students.find_by(student: student), course: course, student: student, attendance: course.attendances.find_by(student: student) %>
+              <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: course.attendances.find_by(student: ks.student) %>
               <% else %>
               未开课
               <% end %>
             </td>
             <% end %>
+            <td>
+              <%= button_to "删除", admin_semester_klass_klass_student_path(@sk, ks), method: :delete, data: { confirm: 'sure?'}, class: "btn btn-xs btn-secondary" %>
+            </td>
           </tr>
           <% end %>
         </tbody>
