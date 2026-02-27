@@ -3,12 +3,7 @@
 # This model initially had no columns defined. If you add columns to the
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
-#
-  # create_table "courses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-  #   t.bigint "semester_klass_id"
-  #   t.integer "seq", null: false
-  #   t.date "start_date"
-  # end
+
 <% 16.times do |i| %>
 sk_<%= i %>_course_<%= i + 1 %>:
   semester_klass_id: 1

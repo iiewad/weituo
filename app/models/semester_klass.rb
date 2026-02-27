@@ -1,12 +1,28 @@
 class SemesterKlass < ApplicationRecord
-  belongs_to :klass
+  belongs_to :campuse
+  belongs_to :subject
+  belongs_to :teacher
   belongs_to :semester
   has_many :courses, dependent: :destroy
   belongs_to :grade
   has_many :klass_students, dependent: :destroy
   has_many :students, through: :klass_students
-  # 一个学期不允许有两个klass
-  validates :semester_id, uniqueness: { scope: :klass_id, message: "该班级已在该学期中存在" }
+  
+  # 确保同一个校区内，科目+班型+序号的组合是唯一的
+  validates :seq, uniqueness: {
+    scope: [ :campuse_id, :subject_id, :genre ],
+    message: "班级信息已存在，不可重复"
+  }
+
+  GENRE_MAP = {
+    "提高班" => "TG",
+    "精英班" => "JY",
+    "创新班" => "XZ",
+    "兴趣班" => "XQ",
+    "超常班" => "CC"
+  }
+
+  GENRE_MAP_REVERSE = GENRE_MAP.invert
 
   after_create :create_courses
 
@@ -17,14 +33,13 @@ class SemesterKlass < ApplicationRecord
   end
 
   def self.ransackable_associations(auth_object = nil)
-    [ "courses", "grade", "klass", "klass_students", "semester", "students" ]
+    [ "courses", "grade", "klass_students", "semester", "students" ]
   end
   def self.ransackable_attributes(auth_object = nil)
-  [ "created_at", "grade_id", "id", "klass_id", "semester_id", "times", "updated_at" ]
+  [ "created_at", "grade_id", "id", "semester_id", "times", "updated_at" ]
   end
 
   def add_students_by_text(text)
-    campuse = klass.campuse
     text.split("\n").each do |line|
       line.strip!
       next if line.blank?
@@ -59,11 +74,21 @@ class SemesterKlass < ApplicationRecord
     end
   end
 
-  def name
-    "#{grade.level}#{klass.name}"
-  end
-
   def students_text
     students.map(&:name).join("\n")
   end
+
+  def self.ransackable_attributes(auth_object = nil)
+    [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
+  end
+  
+  def self.ransackable_associations(auth_object = nil)
+    [ "campuse", "subject", "teacher", "semester_klasses", "semesters" ]
+  end
+
+  def name
+    "#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
+  end
+
+
 end

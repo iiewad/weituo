@@ -1,13 +1,22 @@
 class Admin::SemesterKlassesController < AdminController
   def index
-    @sks = SemesterKlass.includes(:klass).where(
-      klasses: { campuse_id: Thread.current[:campuse].id },
+    @sks = SemesterKlass.where(
+      campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
     )
-    @klasses = Klass.where(
-      id: @sks.map(&:klass_id)
-    )
     @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
+  end
+  
+  def create
+    @sk = SemesterKlass.new(semester_klass_params.except(:students_text))
+    @sk.subject = @sk.teacher.subject
+
+    if @sk.save!
+      @sk.add_students_by_text(params[:semester_klass][:students_text])
+      redirect_to admin_semester_klass_path(sk), notice: "班级创建成功"
+    else
+      redirect_to admin_semester_klasses_path, alert: "班级创建失败"
+    end
   end
 
   def copy
@@ -31,21 +40,18 @@ class Admin::SemesterKlassesController < AdminController
       render :copy, alert: "复制失败"
     end
   end
+
   def show
     @sk = Thread.current[:semester].semester_klasses.find(params[:id])
-    @klass = @sk.klass
-    @sks = SemesterKlass.includes(:klass).where(
-      klasses: { campuse_id: Thread.current[:campuse].id },
+    @sks = SemesterKlass.where(
+      campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
-    )
-    @klasses =  Klass.where(
-      id: @sks.map(&:klass_id)
     )
     @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
   end
 
   private
   def semester_klass_params
-    params.require(:semester_klass).permit(:semester_id, :klass_id, :grade_id, :times, :students_text)
+    params.require(:semester_klass).permit(:campuse_id, :genre, :seq, :times, :teacher_id, :semester_id, :grade_id, :students_text)
   end
 end
