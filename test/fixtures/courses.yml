@@ -5,7 +5,7 @@
 # below each fixture, per the syntax in the comments below
 
 <% 16.times do |i| %>
-sk_<%= i %>_course_<%= i + 1 %>:
+sk_1_course_<%= i + 1 %>:
   semester_klass_id: 1
   seq: <%= i + 1 %>
 <% end %>

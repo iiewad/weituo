@@ -11,6 +11,7 @@
 #   end
 
 ks_1:
+  id: 1
   semester_klass_id: 1
   status: 'in'
   student_id: 1

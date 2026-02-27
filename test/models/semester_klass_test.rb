@@ -52,18 +52,18 @@ class SemesterKlassTest < ActiveSupport::TestCase
     text = "7_学生3"
     sk.add_students_by_text(text)
     assert_equal 1, sk.students.where(name: "7_学生3").count
-    assert_equal "normal", course.attendances.find_by(student_id: sk.students.find_by(name: "7_学生3").id).status
+    assert_equal "normal", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生3").id).id).status
     # 插班情况
     text = "7_学生4 4+"
     sk.add_students_by_text(text)
     assert_equal 1, sk.students.where(name: "7_学生4").count
     # 插班课程之前的考勤应该标记为 absent
     sk.courses.where("seq < ?", 4).each do |course|
-      assert_equal "absent", course.attendances.find_by(student_id: sk.students.find_by(name: "7_学生4").id).status
+      assert_equal "absent", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生4").id).id).status
     end
     # 插班课程之后的考勤应该标记为 normal
     sk.courses.where("seq >= ? AND start_date IS NOT NULL", 4).each do |course|
-      assert_equal "normal", course.attendances.find_by(student_id: sk.students.find_by(name: "7_学生4").id).status
+      assert_equal "normal", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生4").id).id).status
     end
   end
 end
