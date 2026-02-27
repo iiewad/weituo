@@ -8,9 +8,9 @@ class SemesterKlass < ApplicationRecord
   has_many :klass_students, dependent: :destroy
   has_many :students, through: :klass_students
   
-  # 确保同一个校区内，科目+班型+序号的组合是唯一的
-  validates :seq, uniqueness: {
-    scope: [ :campuse_id, :subject_id, :genre ],
+  # 确保一个学期内，科目+班型+序号的组合是唯一的
+  validates :semester_id, uniqueness: {
+    scope: [ :campuse_id, :subject_id, :genre, :seq ],
     message: "班级信息已存在，不可重复"
   }
 
@@ -87,7 +87,7 @@ class SemesterKlass < ApplicationRecord
   end
 
   def name
-    "#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
+    "#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
   end
 
 

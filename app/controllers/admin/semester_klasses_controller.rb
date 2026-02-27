@@ -11,13 +11,25 @@ class Admin::SemesterKlassesController < AdminController
     @sk = SemesterKlass.new(semester_klass_params.except(:students_text))
     @sk.subject = @sk.teacher.subject
 
-    if @sk.save!
+    if @sk.save
       @sk.add_students_by_text(params[:semester_klass][:students_text])
       redirect_to admin_semester_klass_path(sk), notice: "班级创建成功"
     else
-      redirect_to admin_semester_klasses_path, alert: "班级创建失败"
+      redirect_to admin_semester_klasses_path, alert: "班级创建失败，#{@sk.errors.full_messages.join("；")}"
     end
   end
+
+  def update
+    @sk = SemesterKlass.find(params[:id])
+    teacher = Teacher.find(params[:semester_klass][:teacher_id])
+    if @sk.update(semester_klass_params.except(:students_text).merge(subject_id: teacher.subject_id))
+      @sk.add_students_by_text(params[:semester_klass][:students_text])
+      redirect_to admin_semester_klass_path(@sk), notice: "班级更新成功"
+    else
+      redirect_to admin_semester_klasses_path, alert: "班级更新失败，#{@sk.errors.full_messages.join("；")}"
+    end
+  end
+    
 
   def copy
     @q = SemesterKlass.ransack(params[:q])

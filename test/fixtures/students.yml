@@ -12,6 +12,7 @@
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 7
+    day_school_id: 1
 <% end %>
 
 <% 10.times do |i| %>
@@ -22,6 +23,7 @@
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 8
+    day_school_id: 1
 <% end %>
 
 <% 10.times do |i| %>
@@ -32,6 +34,7 @@
     phone: '1380000000<%= i + 1 %>'
     birthday: '2000-01-01'
     grade_id: 9
+    day_school_id: 1
 <% end %>
 
 

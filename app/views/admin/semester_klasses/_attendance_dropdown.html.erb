@@ -1,0 +1,37 @@
+<div class="dropdown relative">
+  <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
+    <%#= attendance.id %>
+    <%= attendance&.status_icon || "❓" %>
+  </div>
+  <div
+    tabindex="0"
+    class="card min-w-40 w-48 dropdown-content bg-base-100 card-border rounded-box z-50 shadow-lg">
+    <div tabindex="0" class="card-body p-2">
+      <h2 class="card-title text-xs mb-2"><%= student.name %>第<%= course.seq %>课考勤</h2>
+      <div class="flex flex-wrap gap-2">
+      <% if attendance.present? %>
+        <% if attendance.status == "normal" %>
+          <%= button_to "缺课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "absent"), method: :put, class: "btn btn-xs btn-error" %>
+          <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
+          <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-error" %>
+          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-success" %>
+          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-success" %>
+        <% elsif attendance.status == "absent" %>
+          <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
+          <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-error" %>
+          <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "normal"), method: :put, class: "btn btn-xs btn-success" %>
+          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-success" %>
+          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-success" %>
+        <% elsif attendance.status == "personal_leave" || attendance.status == "sick_leave" %>
+          <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "normal"), method: :put, class: "btn btn-xs btn-success" %>
+        <% elsif attendance.status == "quit" || attendance.status == "transfer" %>
+          退课或转班，不能操作
+        <% end %>
+      <% else %>
+      ❓ 异常，请联系管理员
+      <% end %>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@
       <fieldset class="fieldset">
         <label class="select select-sm">
           <span class="label">班型</span>
-          <%= form.collection_select :genre, Klass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
+          <%= form.collection_select :genre, SemesterKlass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
         </label>
       </fieldset>
 
@@ -19,7 +19,7 @@
           <span class="label">序号</span>
           <%= form.number_field :seq, class: "grow", placeholder: "序号", oninput: "this.value = this.value.replace(/4/g, '')", value: item&.seq %>
         </label>
-        <p class="label text-xs">班级序号禁止输入4，避免与相同科目与班型的班级序号冲突。</p>
+        <p class="label text-xs">班级序号禁止输入4, 避免与相同科目与班型的班级序号冲突。</p>
       </fieldset>
 
       <fieldset class="fieldset">
