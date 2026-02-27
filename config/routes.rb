@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       end
       resources :courses do
         member do
+          post :insert_students
           put :start, to: "courses#start"
         end
         resources :attendances do

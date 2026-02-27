@@ -10,7 +10,7 @@
               <summary><%= subject.name %></summary>
               <ul>
                 <% @sks.where(subject_id: subject.id, grade_id: grade.id ).order(:seq).each do |sk| %>
-                  <li class="<%= "menu-active" if sk == @sk %>"><%= link_to sk.name, admin_semester_klass_path(sk.id) %></li>
+                  <li class="<%= "menu-active" if sk == @sk %>"><%= link_to "#{sk.name}(#{sk.teacher.name})", admin_semester_klass_path(sk.id) %></li>
                 <% end %>
               </ul>
             </details>

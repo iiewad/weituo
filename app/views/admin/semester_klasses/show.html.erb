@@ -58,6 +58,8 @@
                   <% else %>
                   <%= button_to "开课", start_admin_semester_klass_course_path(@sk, course), method: :put, class: "btn btn-xs btn-primary" %>
                   <% end %>
+                  <br />
+                  <%= render partial: "admin/shared/drawer", locals: { item: course, drawer_id: "drawer-insert-student-#{@sk.id}-#{course.id}", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/semester_klasses/insert_students_form" } %>
                 </td>
               <% end %>
             <% end %>
