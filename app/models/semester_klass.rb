@@ -10,7 +10,7 @@ class SemesterKlass < ApplicationRecord
   
   # 确保一个学期内，科目+班型+序号的组合是唯一的
   validates :semester_id, uniqueness: {
-    scope: [ :campuse_id, :subject_id, :genre, :seq ],
+    scope: [ :campuse_id, :grade_id, :subject_id, :genre, :seq ],
     message: "班级信息已存在，不可重复"
   }
 
@@ -33,10 +33,10 @@ class SemesterKlass < ApplicationRecord
   end
 
   def self.ransackable_associations(auth_object = nil)
-    [ "courses", "grade", "klass_students", "semester", "students" ]
+    [ "courses", "grade", "klass_students", "semester", "students", "teacher" ]
   end
   def self.ransackable_attributes(auth_object = nil)
-  [ "created_at", "grade_id", "id", "semester_id", "times", "updated_at" ]
+    [ "campuse_id", "created_at", "genre", "grade_id", "id", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
   end
 
   def add_students_by_text(text)
@@ -77,13 +77,9 @@ class SemesterKlass < ApplicationRecord
   def students_text
     students.map(&:name).join("\n")
   end
-
-  def self.ransackable_attributes(auth_object = nil)
-    [ "campuse_id", "genre", "id", "seq", "subject_id", "teacher_id" ]
-  end
   
   def self.ransackable_associations(auth_object = nil)
-    [ "campuse", "subject", "teacher", "semester_klasses", "semesters" ]
+    [ "campuse", "courses", "grade", "klass_students", "semester", "students", "subject", "teacher" ]
   end
 
   def name

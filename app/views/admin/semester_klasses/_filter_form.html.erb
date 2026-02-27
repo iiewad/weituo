@@ -4,9 +4,9 @@
     <%= search_form_with model: @q, url: copy_admin_semester_klasses_path, method: :get, class: "flex-1 flex gap-2" do |f| %>
       <!-- 学期筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
       <div class="relative">
-        <%= f.collection_select :semester_id_eq, Thread.current[:school].semesters.where.not(id: Thread.current[:semester].id), :id, :name, 
+        <%= f.collection_select :semester_id_eq, @semesters, :id, :name, 
           { 
-            include_blank: "选择学期", 
+            include_blank: "选择学期",
             selected: params[:q].try(:[], :semester_id_eq) 
           }, 
           class: "select select-sm w-full" 
@@ -17,19 +17,29 @@
       <div class="relative">
         <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name, 
           { 
-            include_blank: "选择年级", 
+            include_blank: params[:q].try(:[], :grade_id_eq).blank? ? "选择年级" : "全部",
             selected: params[:q].try(:[], :grade_id_eq) 
           }, 
           class: "select select-sm w-full" %>
       </div>
-      
-      <!-- 班型筛选 - 使用Klass::GENRE_MAP的正确格式，添加空白选项 -->
+
       <div class="relative">
-        <%= f.select :klass_genre_eq, 
-          Klass::GENRE_MAP.map { |name, code| [name, code] }, 
+        <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name) %>
+        <%= f.select :teacher_id_eq, options,
+          {
+            include_blank: "选择教师",
+            selected: params[:q].try(:[], :teacher_id_eq)
+          },
+          class: "select select-sm w-full" %>
+      </div>
+      
+      <!-- 班型筛选 - 使用SemesterKlass::GENRE_MAP的正确格式，添加空白选项 -->
+      <div class="relative">
+        <%= f.select :genre_eq, 
+          SemesterKlass::GENRE_MAP.map { |name, code| [name, code] }, 
           { 
-            include_blank: "选择班型", 
-            selected: params[:q].try(:[], :klass_genre_eq) 
+            include_blank: "选择班型",
+            selected: params[:q].try(:[], :genre_eq) 
           }, 
           class: "select select-sm w-full" %>
       </div>

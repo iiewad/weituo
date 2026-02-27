@@ -7,6 +7,9 @@
   <div>
     <%= render partial: "admin/shared/drawer", locals: { item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "180", drawer_content: "admin/semester_klasses/form" } %>
   </div>
+  <div>
+    <%= link_to "复制历史班级", copy_admin_semester_klasses_path(), class: "btn btn-xs btn-info" %>
+  </div>
 </fieldset>
 <div class="flex flex-row min-h-1/2 overflow-auto">
   <div class="basis-1/8 min-h-dvh bg-base-200">

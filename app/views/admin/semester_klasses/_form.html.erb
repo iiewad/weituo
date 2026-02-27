@@ -32,8 +32,8 @@
       <fieldset class="fieldset">
         <label class="select select-sm">
           <span class="label">教师</span>
-          <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name) %>
-          <%= form.select :teacher_id, options, class: "select select-sm", value: item&.teacher_id %>
+          <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id) %>
+          <%= form.select :teacher_id, options, class: "select select-sm" %>
         </label>
       </fieldset>
 
