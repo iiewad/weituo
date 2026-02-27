@@ -50,25 +50,25 @@ class SemesterKlass < ApplicationRecord
         course_seq = operator_str[0]
         operator = operator_str[1]
         if operator == "+"
-          klass_students.find_or_create_by(student_id: student.id)
+          klass_student = klass_students.find_or_create_by(student_id: student.id)
           # 课程之前的考勤标记为 absent
           course = courses.find_by(seq: course_seq)
           next if course.blank?
           courses.where("seq < ?", course_seq).each do |course|
-            attendance = course.attendances.find_or_create_by(student_id: student.id)
+            attendance = course.attendances.find_or_create_by(klass_student_id: klass_student.id)
             attendance.update!(status: "absent")
           end
           # 课程之后的考勤标记为 normal
           courses.where("seq >= ? AND start_date IS NOT NULL", course_seq).each do |course|
-            course.attendances.find_or_create_by(student_id: student.id)
+            attendance = course.attendances.find_or_create_by(klass_student_id: klass_student.id)
           end
         end
       elsif line.split(" ").length == 1
-        klass_students.find_or_create_by(student_id: student.id)
+        klass_student = klass_students.find_or_create_by(student_id: student.id)
         course = courses.find_by(seq: 1)
         next if course.blank?
         courses.where("seq >= ? AND start_date IS NOT NULL", 1).each do |course|
-          course.attendances.find_or_create_by(student_id: student.id)
+          attendance = course.attendances.find_or_create_by(klass_student_id: klass_student.id)
         end
       end
     end

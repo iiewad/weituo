@@ -3,6 +3,7 @@ class KlassStudent < ApplicationRecord
 
   belongs_to :semester_klass
   belongs_to :student
+  has_many :attendances, dependent: :destroy
 
   enum :status, [ :out, :in ]
 
