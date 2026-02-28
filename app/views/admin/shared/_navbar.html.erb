@@ -1,4 +1,4 @@
-<div class="sticky top-0 z-50 navbar bg-primary text-primary-content shadow-md">
+<div class="sticky top-0 z-50 navbar bg-primary text-primary-content shadow-md overflow-y-auto">
   <div class="container mx-auto flex items-center justify-between">
     <div class="flex items-center px-4">
       <div>
@@ -65,7 +65,7 @@
                   </summary>
                   <ul class="absolute right-0 menu bg-base-100 rounded-lg z-50 w-48 p-2 shadow-md border border-base-200 -mt-2">
                     <% Current.user.campuses.each do |campuse| %>
-                      <li class="<%= "bg-primary text-primary-content" if Thread.current[:campuse] == campuse %>">
+                      <li class="<%= "menu-active" if Thread.current[:campuse] == campuse %>">
                         <%= link_to campuse.name, switch_thread_campuse_admin_school_campuse_path(school_id: Thread.current[:campuse].school.id, id: campuse.id), data: { turbo_prefetch: false}, class: "rounded-md hover:bg-base-100 transition-colors" %>
                       </li>
                     <% end %>
@@ -79,7 +79,7 @@
                   </summary>
                   <ul class="absolute right-0 menu bg-base-100 rounded-lg z-50 w-48 p-2 shadow-md border border-base-200 -mt-2">
                     <% Thread.current[:campuse].school.semesters.each do |semester| %>
-                      <li class="<%= "bg-primary text-primary-content" if Thread.current[:semester] == semester %>">
+                      <li class="<%= "menu-active" if Thread.current[:semester] == semester %>">
                         <%= link_to semester.name, switch_thread_semester_admin_school_semester_path(school_id: Thread.current[:campuse].school.id, id: semester.id), data: { turbo_prefetch: false }, class: "rounded-md hover:bg-base-100 transition-colors" %>
                       </li>
                     <% end %>
