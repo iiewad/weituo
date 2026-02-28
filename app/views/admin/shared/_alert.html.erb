@@ -1,25 +1,10 @@
-<!--
-<div role="alert" class="alert alert-info alert-soft">
-  <span>12 unread messages. Tap to see.</span>
-</div>
-<div role="alert" class="alert alert-success alert-soft">
-  <span>Your purchase has been confirmed!</span>
-</div>
-<div role="alert" class="alert alert-warning alert-soft">
-  <span>Warning: Invalid email address!</span>
-</div>
-<div role="alert" class="alert alert-error alert-soft">
-  <span>Error! Task failed successfully.</span>
-</div>
--->
-
-  <% if alert = flash[:alert] %>
-    <div role="alert" class="alert alert-error alert-soft">
-      <span><%= alert %></span>
-    </div>
-  <% end %>
-  <% if notice = flash[:notice] %>
-  <div role="alert" class="alert alert-success alert-soft">
-    <span><%= notice %></span>
+<% if alert = flash[:alert] %>
+  <div role="alert" class="alert alert-error alert-soft">
+    <span><%= alert %></span>
   </div>
-  <% end %>
+<% end %>
+<% if notice = flash[:notice] %>
+<div role="alert" class="alert alert-success alert-soft">
+  <span><%= notice %></span>
+</div>
+<% end %>
