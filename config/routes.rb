@@ -23,7 +23,6 @@ Rails.application.routes.draw do
         end
       end
     end
-    resources :klasses
     resources :teachers
     resources :students
     resources :users
