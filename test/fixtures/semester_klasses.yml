@@ -4,7 +4,7 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 
-sk_1:
+sk_math_1:
   id: 1
   campuse_id: 1
   subject_id: 1
@@ -15,3 +15,24 @@ sk_1:
   semester_id: 1
   times: 16
 
+sk_math_2:
+  id: 2
+  campuse_id: 1
+  subject_id: 1
+  teacher_id: 1
+  seq: 2
+  genre: 'TG'
+  grade_id: 7
+  semester_id: 2
+  times: 16
+
+sk_eng_1:
+  id: 3
+  campuse_id: 1
+  subject_id: 2
+  teacher_id: 3
+  seq: 1
+  genre: 'TG'
+  grade_id: 7
+  semester_id: 2
+  times: 16

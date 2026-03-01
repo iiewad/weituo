@@ -15,7 +15,15 @@ semester_1:
 semester_2:
   id: 2
   school: 1
-  name: '秋'
+  name: '夏'
   start_date: '2025-07-01'
   end_date: '2025-10-01'
   seq: 2
+
+semester_3:
+  id: 3
+  school: 1
+  name: '秋'
+  start_date: '2025-10-01'
+  end_date: '2026-01-01'
+  seq: 3

@@ -3,7 +3,7 @@ require "test_helper"
 class AttendanceTest < ActiveSupport::TestCase
   # before_create :check_course_started
   test "create attendance" do
-    course = semester_klasses(:sk_1).courses.first
+    course = semester_klasses(:sk_math_1).courses.first
     attendance = course.attendances.new(
       klass_student_id: klass_students(:ks_1).id
     )
@@ -13,7 +13,7 @@ class AttendanceTest < ActiveSupport::TestCase
 
   test "mark absent" do
     ks = klass_students(:ks_1)
-    course = semester_klasses(:sk_1).courses.first
+    course = semester_klasses(:sk_math_1).courses.first
     course.start!
     attendance = course.attendances.find_by(klass_student_id: ks.id)
     attendance.mark_absent!

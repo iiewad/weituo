@@ -12,6 +12,21 @@ class Student < ApplicationRecord
     [ "name", "grade_id" ]
   end
 
+  def join_klass(sk, course_seq: 1)
+    return if sk.grade_id != grade_id || sk.campuse_id != campuse_id
+    ks = klass_students.find_or_create_by(semester_klass_id: sk.id)
+    course = sk.courses.find_by(seq: course_seq)
+    return if course.blank?
+
+    sk.courses.where("seq < ?", course_seq).each do |course|
+      attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
+      attendance.update!(status: "absent")
+    end
+    sk.courses.where("seq >= ? AND start_date IS NOT NULL", course_seq).each do |course|
+      attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
+    end
+  end
+
   def update_grade
     target_grade = Grade.find_by(level: grade.level.to_i + 1)
     update!(grade_id: target_grade.id) if target_grade.present?

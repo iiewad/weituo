@@ -1,7 +1,6 @@
 class AdminController < ApplicationController
   before_action :set_thread_current, if: :authenticated?
-  def index
-  end
+  def index;end
   private
     def set_thread_current
       session[:current_campuse_id] ||= Current.user.campuses.first.id

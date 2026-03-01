@@ -2,10 +2,10 @@ require "test_helper"
 
 class SemesterKlassTest < ActiveSupport::TestCase
   test "fixtures init" do
-    assert_equal 1, SemesterKlass.count
+    assert_equal 2, SemesterKlass.count
     assert_equal "7数提1", SemesterKlass.first.name
-    assert_equal 1, semester_klasses(:sk_1).klass_students.count
-    assert_equal 16, semester_klasses(:sk_1).courses.count
+    assert_equal 1, semester_klasses(:sk_math_1).klass_students.count
+    assert_equal 16, semester_klasses(:sk_math_1).courses.count
   end
 
   # # 一个学期不允许有两个klass
@@ -34,7 +34,7 @@ class SemesterKlassTest < ActiveSupport::TestCase
 
   test "should add students by text" do
     # 学员不存在不会被添加
-    sk = semester_klasses(:sk_1)
+    sk = semester_klasses(:sk_math_1)
     text = "未录入学员"
     sk.add_students_by_text(text)
     assert_nil sk.students.find_by(name: "未录入学员")

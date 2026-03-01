@@ -15,3 +15,9 @@ ks_1:
   semester_klass_id: 1
   status: 'in'
   student_id: 1
+
+ks_2:
+  id: 2
+  semester_klass_id: 2
+  status: 'in'
+  student_id: 1
