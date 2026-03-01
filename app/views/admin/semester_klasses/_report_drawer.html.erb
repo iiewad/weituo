@@ -1,0 +1,159 @@
+<div class="drawer" id="report-drawer">
+  <div class="drawer-content flex flex-col">
+    <!-- 抽屉标题 -->
+    <div class="flex items-center justify-between p-4 border-b">
+      <h3 class="text-lg font-semibold">班级报表</h3>
+      <button class="btn btn-ghost btn-circle" onclick="document.getElementById('report-drawer').classList.remove('drawer-open')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    
+    <!-- 率值卡片 -->
+    <div class="p-4">
+      <div class="flex flex-row justify-between w-full gap-4">
+        <div class="card card-border border-base-300 basis-1/3">
+          <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+            <div class="stat">
+              <div class="stat-figure">
+                <div class="radial-progress" style="--value:<%= @semester_klass.new_rate * 100 %>;--size:3rem;" role="progressbar">
+                    <%= (@semester_klass.new_rate * 100).round(0) %>
+                </div>
+              </div>
+              <div class="stat-title">新增</div>
+              <div class="stat-value"><%= @semester_klass.new_students.count %><span class="text-sm">/<%= @semester_klass.students.count %></span>
+              </div>
+              <div class="stat-action">
+                <button class="btn btn-sm btn-outline" onclick="showStudentList('new')">查看列表</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card card-border border-base-300 basis-1/3">
+          <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+            <div class="stat">
+              <div class="stat-figure">
+                <div class="radial-progress" style="--value:<%= @semester_klass.expand_rate * 100 %>;--size:3rem;" role="progressbar">
+                    <%= (@semester_klass.expand_rate * 100).round(0) %>
+                </div>
+              </div>
+              <div class="stat-title">拓科</div>
+              <div class="stat-value"><%= @semester_klass.expand_students.count %><span class="text-sm">/<%= @semester_klass.students.count %></span>
+              </div>
+              <div class="stat-action">
+                <button class="btn btn-sm btn-outline" onclick="showStudentList('expand')">查看列表</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card card-border border-base-300 basis-1/3">
+          <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+            <div class="stat">
+              <div class="stat-figure">
+                <div class="radial-progress" style="--value:<%= @semester_klass.reserve_rate * 100 %>;--size:3rem;" role="progressbar">
+                    <%= (@semester_klass.reserve_rate * 100).round(0) %>
+                </div>
+              </div>
+              <div class="stat-title">预留</div>
+              <div class="stat-value"><%= @semester_klass.reserve_students.count %><span class="text-sm">/<%= @semester_klass.students.count %></span>
+              </div>
+              <div class="stat-action">
+                <button class="btn btn-sm btn-outline" onclick="showStudentList('reserve')">查看列表</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 学员列表 -->
+    <div class="flex-1 p-4 border-t">
+      <h4 class="text-md font-medium mb-3" id="student-list-title">学员列表</h4>
+      <div class="overflow-x-auto">
+        <table class="table table-xs">
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>年级</th>
+              <th>性别</th>
+              <th>联系方式</th>
+            </tr>
+          </thead>
+          <tbody id="student-list-body">
+            <!-- 学员列表将通过 JavaScript 动态填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 学员数据
+  const studentData = {
+    new: [
+      <% @semester_klass.new_students.each do |student| %>
+        {
+          name: "<%= student.name %>",
+          grade: "<%= student.grade&.name || '未知' %>",
+          gender: "<%= student.gender == 'male' ? '男' : '女' %>",
+          contact: "<%= student.guardians.first&.phone || '无' %>"
+        },
+      <% end %>
+    ],
+    expand: [
+      <% @semester_klass.expand_students.each do |student| %>
+        {
+          name: "<%= student.name %>",
+          grade: "<%= student.grade&.name || '未知' %>",
+          gender: "<%= student.gender == 'male' ? '男' : '女' %>",
+          contact: "<%= student.guardians.first&.phone || '无' %>"
+        },
+      <% end %>
+    ],
+    reserve: [
+      <% @semester_klass.reserve_students.each do |student| %>
+        {
+          name: "<%= student.name %>",
+          grade: "<%= student.grade&.name || '未知' %>",
+          gender: "<%= student.gender == 'male' ? '男' : '女' %>",
+          contact: "<%= student.guardians.first&.phone || '无' %>"
+        },
+      <% end %>
+    ]
+  };
+  
+  // 显示学员列表
+  function showStudentList(type) {
+    const titles = {
+      new: '新增学员列表',
+      expand: '拓科学员列表',
+      reserve: '预留学员列表'
+    };
+    
+    document.getElementById('student-list-title').textContent = titles[type];
+    
+    const students = studentData[type];
+    const tbody = document.getElementById('student-list-body');
+    
+    if (students.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">暂无学员</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = students.map(student => `
+      <tr>
+        <td>${student.name}</td>
+        <td>${student.grade}</td>
+        <td>${student.gender}</td>
+        <td>${student.contact}</td>
+      </tr>
+    `).join('');
+  }
+  
+  // 初始化时显示新增学员列表
+  document.addEventListener('DOMContentLoaded', function() {
+    showStudentList('new');
+  });
+</script>

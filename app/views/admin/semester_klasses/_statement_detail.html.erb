@@ -1,5 +1,72 @@
-新增学员：<%= item.new_students.map(&:name).join(", ") %>
-<br />
-拓科学员：<%= item.expand_students.map(&:name).join(", ") %>
-<br />
-保留学员：<%= item.reserve_students.map(&:name).join(", ") %>
+<div class="flex flex-row justify-between w-full">
+<div class="card card-border border-base-300 basis-1/3">
+  <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+    <div class="stat">
+      <div class="stat-figure">
+        <div class="radial-progress" style="--value:<%= item.new_rate * 100 %>;--size:3rem;" role="progressbar">
+            <%= item.new_rate * 100 %>
+        </div>
+      </div>
+      <div class="stat-title">新增</div>
+      <div class="stat-value"><%= item.new_students.count %><span class="text-sm">/<%= item.current_active_students.count %></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card card-border border-base-300 basis-1/3">
+  <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+    <div class="stat">
+      <div class="stat-figure">
+        <div class="radial-progress" style="--value:<%= item.expand_rate * 100 %>;--size:3rem;" role="progressbar">
+            <%= item.expand_rate * 100 %>
+        </div>
+      </div>
+      <div class="stat-title">拓科</div>
+      <div class="stat-value"><%= item.expand_students.count %><span class="text-sm">/<%= item.current_active_students.count %></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card card-border border-base-300 basis-1/3">
+  <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
+    <div class="stat">
+      <div class="stat-figure">
+        <div class="radial-progress" style="--value:<%= item.reserve_rate * 100 %>;--size:3rem;" role="progressbar">
+            <%= item.reserve_rate * 100 %>
+        </div>
+      </div>
+      <div class="stat-title">预留</div>
+      <div class="stat-value"><%= item.reserve_students.count %><span class="text-sm">/<%= item.current_active_students.count %></span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="rounded-box border border-base-content/5 bg-base-100 overflow-x-auto mt-4">
+  <table class="table table-xs">
+    <thead>
+      <tr>
+        <th></th>
+        <th>姓名</th>
+        <th>xx</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% item.current_active_students.each.with_index(1) do |student, index| %>
+      <tr>
+        <th><%= index %></th>
+        <td><%= student.name %></td>
+        <td></td>
+      </tr>
+      <% end %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th></th>
+        <th>Name</th>
+        <th>xx</th>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
