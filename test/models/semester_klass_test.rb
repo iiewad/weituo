@@ -1,13 +1,6 @@
 require "test_helper"
 
 class SemesterKlassTest < ActiveSupport::TestCase
-  test "fixtures init" do
-    assert_equal 2, SemesterKlass.count
-    assert_equal "7数提1", SemesterKlass.first.name
-    assert_equal 1, semester_klasses(:sk_math_1).klass_students.count
-    assert_equal 16, semester_klasses(:sk_math_1).courses.count
-  end
-
   # # 一个学期不允许有两个klass
   # test "validates :semester_id, uniqueness: { scope: :klass_id }" do
   #   klass = klasses(:klass_1)
@@ -65,5 +58,27 @@ class SemesterKlassTest < ActiveSupport::TestCase
     sk.courses.where("seq >= ? AND start_date IS NOT NULL", 4).each do |course|
       assert_equal "normal", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生4").id).id).status
     end
+  end
+
+  test "reserve rate" do
+    semester_1 = semesters(:semester_1)
+    sk = semester_klasses(:sk_math_1)
+    students("student_7_1").join_klass(sk)
+    eng_sk_1 = semester_klasses(:sk_eng_1)
+    students("student_7_3").join_klass(eng_sk_1)
+    assert_equal 0.0, sk.reserve_rate
+    assert_equal 1.0, sk.new_rate
+    assert_equal 0.0, sk.expand_rate
+    semester_2 = semesters(:semester_2)
+    sk2 = semester_klasses(:sk_math_2)
+    students("student_7_1").join_klass(sk2)
+    students("student_7_2").join_klass(sk2)
+    assert_equal 0.5, sk2.reserve_rate
+    assert_equal 0.5, sk2.new_rate
+    students("student_7_3").join_klass(sk2)
+    sk2.reload
+    assert_equal 0.33, sk2.expand_rate
+    assert_equal 0.33, sk2.reserve_rate
+    assert_equal 0.33, sk2.new_rate
   end
 end

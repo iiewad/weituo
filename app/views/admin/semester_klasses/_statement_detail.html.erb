@@ -1,0 +1,5 @@
+新增学员：<%= item.new_students.map(&:name).join(", ") %>
+<br />
+拓科学员：<%= item.expand_students.map(&:name).join(", ") %>
+<br />
+保留学员：<%= item.reserve_students.map(&:name).join(", ") %>

@@ -8,22 +8,30 @@ semester_1:
   id: 1
   school: 1
   name: '春'
-  start_date: '2025-01-01'
-  end_date: '2025-03-01'
+  start_date: "2026-03-02"
+  end_date: "2026-07-01"
   seq: 1
 
 semester_2:
   id: 2
   school: 1
-  name: '夏'
-  start_date: '2025-07-01'
-  end_date: '2025-10-01'
+  name: '暑假'
+  start_date: "2026-07-02"
+  end_date: "2026-09-01"
   seq: 2
 
 semester_3:
   id: 3
   school: 1
   name: '秋'
-  start_date: '2025-10-01'
-  end_date: '2026-01-01'
+  start_date: "2026-09-02"
+  end_date: "2026-12-01"
   seq: 3
+
+semester_4:
+  id: 4
+  school: 1
+  name: '寒假'
+  start_date: "2026-12-02"
+  end_date: "2027-03-01"
+  seq: 4

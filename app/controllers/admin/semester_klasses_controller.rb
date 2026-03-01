@@ -1,7 +1,7 @@
 class Admin::SemesterKlassesController < AdminController
   def statement
     @q = SemesterKlass.ransack(params[:q])
-    @sks = @q.result.joins(:semester).where(
+    @sks = @q.result.includes(:semester).where(
       campuse_id: Thread.current[:campuse].id,
     )
     @semesters = Semester.where(

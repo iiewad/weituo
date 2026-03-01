@@ -11,4 +11,15 @@ class School < ApplicationRecord
   accepts_nested_attributes_for :semesters, reject_if: :all_blank, allow_destroy: true
 
   # has_many :students, through: :campuses
+  def history_semesters
+    Semester.history(id)
+  end
+
+  def current_semester
+    Semester.current(id)
+  end
+
+  def previous_semester
+    Semester.previous(id)
+  end
 end

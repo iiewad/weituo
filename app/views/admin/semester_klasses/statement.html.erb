@@ -15,7 +15,7 @@
             <th>班级人数</th>
             <th>预留率</th>
             <th>拓科率</th>
-            <th>预留2</th>
+            <!-- <th>预留2</th> -->
             <th>新增率</th>
             <th>详情</th>
           </tr>
@@ -30,11 +30,11 @@
             <td><%= sk.teacher.name %></td>
             <td><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></td>
             <td><%= sk.name %></td>
-            <td><%= sk.klass_students.count %></td>
-            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
-            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
-            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
-            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
+            <td><%= sk.current_active_students.count %></td>
+            <td><%= sk.reserve_rate * 100 %>%</td>
+            <td><%= sk.expand_rate * 100 %>%</td>
+            <!-- <td></td> -->
+            <td><%= sk.new_rate * 100 %>%</td>
             <td><%= render "admin/shared/drawer", item: sk, drawer_id: "statement-drawer-#{sk.id}", button_name: "详情", drawer_width: "180", drawer_content: "statement_detail" %></td>
           </tr>
           <% end %>
@@ -51,7 +51,7 @@
             <th>班级人数</th>
             <th>预留率</th>
             <th>拓科率</th>
-            <th>预留2</th>
+            <!-- <th>预留2</th> -->
             <th>新增率</th>
             <th>详情</th>
           </tr>

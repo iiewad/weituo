@@ -72,4 +72,94 @@ class SemesterKlass < ApplicationRecord
   def name
     "#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
   end
+
+  def inactive_students
+    students.where(klass_students: { status: "out" })
+  end
+
+  def current_active_students
+    students.where(klass_students: { status: "in" })
+  end
+
+  # 预留率 = 上学期有就读相同学科的学员人数 / 当前班级人数
+  # 新学生：未在历史学期中任何班级的学员
+  def new_students
+    current_students = current_active_students
+    return [] if current_students.empty?
+    
+    # 历史学期（当前学期之前的所有学期）
+    history_semesters = semester.related_history_semesters
+    return current_students if history_semesters.blank?
+    
+    # 历史学期所有班级的学生
+    history_klasses = SemesterKlass.where(
+      semester_id: history_semesters.pluck(:id),
+      campuse_id: campuse_id
+    )
+    
+    history_students = history_klasses.map(&:current_active_students).flatten.uniq
+    
+    current_students - history_students
+  end
+  
+  # 拓科学生：上学期读过其他学科但未读相同学科的学员
+  def expand_students
+    current_students = current_active_students
+    return [] if current_students.empty?
+    
+    # 上学期
+    last_semester = semester.related_previous_semester
+    return [] if last_semester.blank?
+    
+    # 上学期相同科目的班级
+    last_same_subject_sks = last_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
+    last_same_subject_students = last_same_subject_sks.map(&:current_active_students).flatten.uniq
+    
+    # 上学期所有科目的班级（同一校区）
+    last_all_sks = last_semester.semester_klasses.where(campuse_id: campuse_id)
+    last_all_students = last_all_sks.map(&:current_active_students).flatten.uniq
+    
+    # 上学期在任何班级就读过，但未在相同学科班级就读过的学生
+    (current_students & last_all_students) - last_same_subject_students
+  end
+  
+  # 保留学生：上学期有就读相同学科的学员
+  def reserve_students
+    current_students = current_active_students
+    return [] if current_students.empty?
+    
+    # 上学期
+    last_semester = semester.related_previous_semester
+    return [] if last_semester.blank?
+    
+    # 上学期同科目班级
+    last_klasses = last_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
+    last_students = last_klasses.map(&:current_active_students).flatten.uniq
+    
+    current_students & last_students
+  end
+  
+  # 新增率
+  def new_rate
+    current_students = current_active_students
+    return 0.0 if current_students.empty?
+    
+    (new_students.size.to_f / current_students.size).round(2)
+  end
+
+  # 拓科率
+  def expand_rate
+    current_students = current_active_students
+    return 0.0 if current_students.empty?
+    
+    (expand_students.size.to_f / current_students.size).round(2)
+  end
+
+  # 保留率
+  def reserve_rate
+    current_students = current_active_students
+    return 0.0 if current_students.empty?
+    
+    (reserve_students.size.to_f / current_students.size).round(2)
+  end
 end
