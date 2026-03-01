@@ -3,8 +3,8 @@
   <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
     <div class="stat">
       <div class="stat-figure">
-        <div class="radial-progress" style="--value:<%= item.new_rate * 100 %>;--size:3rem;" role="progressbar">
-            <%= item.new_rate * 100 %>
+        <div class="radial-progress" style="--value:<%= (item.new_rate * 100).round(2) %>;--size:3rem;" role="progressbar">
+            <%= (item.new_rate * 100).round(2) %>
         </div>
       </div>
       <div class="stat-title">新增</div>
@@ -17,8 +17,8 @@
   <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
     <div class="stat">
       <div class="stat-figure">
-        <div class="radial-progress" style="--value:<%= item.expand_rate * 100 %>;--size:3rem;" role="progressbar">
-            <%= item.expand_rate * 100 %>
+        <div class="radial-progress" style="--value:<%= (item.expand_rate * 100).round(2) %>;--size:3rem;" role="progressbar">
+            <%= (item.expand_rate * 100).round(2) %>
         </div>
       </div>
       <div class="stat-title">拓科</div>
@@ -31,8 +31,8 @@
   <div class="stats overflow-hidden bg-base-100 w-full shadow-[0_.1rem_.5rem_-.3rem_#0003]">
     <div class="stat">
       <div class="stat-figure">
-        <div class="radial-progress" style="--value:<%= item.reserve_rate * 100 %>;--size:3rem;" role="progressbar">
-            <%= item.reserve_rate * 100 %>
+        <div class="radial-progress" style="--value:<%= (item.reserve_rate * 100).round(2) %>;--size:3rem;" role="progressbar">
+            <%= (item.reserve_rate * 100).round(2) %>
         </div>
       </div>
       <div class="stat-title">预留</div>
