@@ -1,8 +1,11 @@
 class Admin::SemesterKlassesController < AdminController
   def statement
     @q = SemesterKlass.ransack(params[:q])
-    @sks = @q.result.includes(:semester).where(
+    @sks = @q.result.joins(:semester, :grade, :subject).where(
       campuse_id: Thread.current[:campuse].id,
+    ).order(
+      # 排序: 先按学期序号升序，再按年级升序，按班型升序，再按班级序号升序
+      "semesters.seq asc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc"
     )
     @semesters = Semester.where(
       school_id: Thread.current[:school].id
