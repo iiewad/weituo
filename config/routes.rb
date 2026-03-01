@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :semester_klasses do
       collection do
+        get :statement
         get :copy
         post :copy_create
       end

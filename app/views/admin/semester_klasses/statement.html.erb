@@ -1,0 +1,62 @@
+<div class="min-h-dvh px-4">
+  <div class="flex flex-col w-full">
+    <%= render "admin/semester_klasses/filter_form", form_url: statement_admin_semester_klasses_path %>
+    <div class="rounded-box border border-base-content/5 bg-base-100 overflow-x-auto p-4 mt-4">
+      <table class="table table-xs">
+        <thead>
+          <tr>
+            <th></th>
+            <th>学期</th>
+            <th>年级</th>
+            <th>科目</th>
+            <th>教师</th>
+            <th>班型</th>
+            <th>班级名</th>
+            <th>班级人数</th>
+            <th>预留率</th>
+            <th>拓科率</th>
+            <th>预留2</th>
+            <th>新增率</th>
+            <th>详情</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @sks.each.with_index(1) do |sk, i| %>
+          <tr>
+            <th><%= i %></th>
+            <td><%= sk.semester.name %></td>
+            <td><%= sk.grade.name %></td>
+            <td><%= sk.subject.name %></td>
+            <td><%= sk.teacher.name %></td>
+            <td><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></td>
+            <td><%= sk.name %></td>
+            <td><%= sk.klass_students.count %></td>
+            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
+            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
+            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
+            <td><%= !sk.ended? ? "未结课" : "xx" %></td>
+            <td><%= render "admin/shared/drawer", item: sk, drawer_id: "statement-drawer-#{sk.id}", button_name: "详情", drawer_width: "180", drawer_content: "statement_detail" %></td>
+          </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th></th>
+            <th>学期</th>
+            <th>年级</th>
+            <th>科目</th>
+            <th>教师</th>
+            <th>班型</th>
+            <th>班级名</th>
+            <th>班级人数</th>
+            <th>预留率</th>
+            <th>拓科率</th>
+            <th>预留2</th>
+            <th>新增率</th>
+            <th>详情</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

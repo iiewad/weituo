@@ -39,6 +39,11 @@ class SemesterKlass < ApplicationRecord
     [ "campuse_id", "created_at", "genre", "grade_id", "id", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
   end
 
+  # 结课判断：如果所有课程都有开始时间，则结课
+  def ended?
+    !courses.exists?(start_date: nil)
+  end
+
   def add_students_by_text(text)
     text.split("\n").each do |line|
       line.strip!

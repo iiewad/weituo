@@ -1,4 +1,14 @@
 class Admin::SemesterKlassesController < AdminController
+  def statement
+    @q = SemesterKlass.ransack(params[:q])
+    @sks = @q.result.joins(:semester).where(
+      campuse_id: Thread.current[:campuse].id,
+    )
+    @semesters = Semester.where(
+      school_id: Thread.current[:school].id
+    )
+  end
+
   def index
     @sks = SemesterKlass.where(
       campuse_id: Thread.current[:campuse].id,

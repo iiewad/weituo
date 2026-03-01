@@ -1,7 +1,7 @@
 <div class="card card-border border-base-300 card-sm w-full">
   <div class="card-body gap-4 flex flex-row">
     <!-- 使用Ransack最佳实践优化的搜索表单 -->
-    <%= search_form_with model: @q, url: copy_admin_semester_klasses_path, method: :get, class: "flex-1 flex gap-2" do |f| %>
+    <%= search_form_with model: @q, url: form_url, method: :get, class: "flex-1 flex gap-2" do |f| %>
       <!-- 学期筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
       <div class="relative">
         <%= f.collection_select :semester_id_eq, @semesters, :id, :name, 
@@ -49,7 +49,7 @@
       
       <!-- 清除筛选按钮 -->
       <% if params[:q].present? %>
-        <%= link_to "清除", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-error ml-1" %>
+        <%= link_to "清除", form_url, class: "btn btn-sm btn-outline btn-error ml-1" %>
       <% end %>
     <% end %>
   </div>
