@@ -4,34 +4,27 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-semester_1:
+
+semester_previous:
   id: 1
-  school: 1
-  name: '春'
-  start_date: "2026-03-02"
-  end_date: "2026-07-01"
+  school_id: 1
+  name: 'current previous'
+  start_date: <%= Date.today.beginning_of_month - 1.month %>
+  end_date: <%= Date.today.beginning_of_month - 1.day %>
   seq: 1
 
-semester_2:
+semester_current:
   id: 2
-  school: 1
-  name: '暑假'
-  start_date: "2026-07-02"
-  end_date: "2026-09-01"
+  school_id: 1
+  name: 'current'
+  start_date: <%= Date.today.beginning_of_month %>
+  end_date: <%= Date.today.end_of_month %>
   seq: 2
 
-semester_3:
+semester_next:
   id: 3
-  school: 1
-  name: '秋'
-  start_date: "2026-09-02"
-  end_date: "2026-12-01"
+  school_id: 1
+  name: 'current next'
+  start_date: <%= Date.today.beginning_of_month + 1.month %>
+  end_date: <%= Date.today.beginning_of_month + 1.month - 1.day %>
   seq: 3
-
-semester_4:
-  id: 4
-  school: 1
-  name: '寒假'
-  start_date: "2026-12-02"
-  end_date: "2027-03-01"
-  seq: 4

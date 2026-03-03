@@ -128,15 +128,14 @@ class SemesterKlass < ApplicationRecord
     current_students = current_active_students
     return [] if current_students.empty?
     
-    # 上学期
-    last_semester = semester.related_previous_semester
-    return [] if last_semester.blank?
+    # 下学期
+    next_semester = semester.related_next_semester
+    return [] if next_semester.blank?
+    # 下学期同科目班级
+    next_klasses = next_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
+    next_students = next_klasses.map(&:current_active_students).flatten.uniq
     
-    # 上学期同科目班级
-    last_klasses = last_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
-    last_students = last_klasses.map(&:current_active_students).flatten.uniq
-    
-    current_students & last_students
+    current_students & next_students
   end
   
   # 新增率

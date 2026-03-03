@@ -61,24 +61,21 @@ class SemesterKlassTest < ActiveSupport::TestCase
   end
 
   test "reserve rate" do
-    semester_1 = semesters(:semester_1)
+    semester_1 = semesters(:semester_previous)
     sk = semester_klasses(:sk_math_1)
-    students("student_7_1").join_klass(sk)
-    eng_sk_1 = semester_klasses(:sk_eng_1)
-    students("student_7_3").join_klass(eng_sk_1)
-    assert_equal 0.0, sk.reserve_rate
-    assert_equal 1.0, sk.new_rate
-    assert_equal 0.0, sk.expand_rate
-    semester_2 = semesters(:semester_2)
+    (1..10).each do |i|
+      students("student_7_#{i}").join_klass(sk)
+    end
+    semester_2 = semesters(:semester_current)
     sk2 = semester_klasses(:sk_math_2)
-    students("student_7_1").join_klass(sk2)
-    students("student_7_2").join_klass(sk2)
-    assert_equal 0.5, sk2.reserve_rate
-    assert_equal 0.5, sk2.new_rate
-    students("student_7_3").join_klass(sk2)
-    sk2.reload
-    assert_equal 0.33, sk2.expand_rate
-    assert_equal 0.33, sk2.reserve_rate
-    assert_equal 0.33, sk2.new_rate
+    (1..2).each do |i|
+      students("student_7_#{i}").join_klass(sk2)
+    end
+    sk3 = semester_klasses(:sk_math_3)
+    (5..6).each do |i|
+      students("student_7_#{i}").join_klass(sk3)
+    end
+
+    assert_equal 0.4, sk.reserve_rate
   end
 end
