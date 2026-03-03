@@ -23,8 +23,22 @@
           class: "select select-sm w-full" %>
       </div>
 
+      <!-- 年级筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
       <div class="relative">
-        <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name) %>
+        <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name, 
+          { 
+            include_blank: params[:q].try(:[], :subject_id_eq).blank? ? "选择科目" : "全部",
+            selected: params[:q].try(:[], :subject_id_eq) 
+          }, 
+          class: "select select-sm w-full" %>
+      </div>
+
+      <div class="relative">
+        <% options = if params[:q].try(:[], :subject_id_eq).blank?
+          option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name)
+        else
+          option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)), :teachers, :name, :id, :name)
+        end %>
         <%= f.select :teacher_id_eq, options,
           {
             include_blank: "选择教师",
