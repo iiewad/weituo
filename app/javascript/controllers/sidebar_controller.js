@@ -21,7 +21,7 @@ export default class extends Controller {
 
     this.element.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
       button.setAttribute("aria-expanded", String(!collapsed))
-      button.setAttribute("aria-label", collapsed ? "显示侧边栏" : "隐藏侧边栏")
+      button.setAttribute("aria-label", collapsed ? "展开侧边栏" : "收起侧边栏")
     })
   }
 }

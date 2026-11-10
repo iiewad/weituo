@@ -93,14 +93,47 @@
   }
 }
 
-/* 侧边栏折叠（仅桌面）。放在 @layer 外，确保覆盖 daisyUI 的 lg:drawer-open。 */
+/* 侧边栏紧凑模式（仅桌面）：收窄为图标条，保留切换入口。放在 @layer 外以覆盖 daisyUI 的 lg:drawer-open。 */
 @media (min-width: 64rem) {
   html.wt-sidebar-collapsed .wt-drawer {
-    grid-auto-columns: 0 auto;
+    grid-auto-columns: 4.5rem auto;
   }
 
   html.wt-sidebar-collapsed .wt-drawer > .drawer-side {
+    width: 4.5rem;
+    overflow: hidden;
+  }
+
+  html.wt-sidebar-collapsed .wt-sidebar {
+    width: 4.5rem;
+  }
+
+  html.wt-sidebar-collapsed .wt-sidebar-text,
+  html.wt-sidebar-collapsed .wt-sidebar-footer {
     display: none;
+  }
+
+  html.wt-sidebar-collapsed .wt-sidebar-heading {
+    height: 1px;
+    margin: 0.5rem 0.75rem 0.25rem;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--color-base-300);
+    font-size: 0;
+  }
+
+  html.wt-sidebar-collapsed .wt-sidebar-toolbar {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  html.wt-sidebar-collapsed .wt-side-link {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  html.wt-sidebar-collapsed .wt-sidebar nav {
+    padding-inline: 0.5rem;
   }
 }
 
