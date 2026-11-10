@@ -1,16 +1,24 @@
 require "test_helper"
 
 class KlassStudentTest < ActiveSupport::TestCase
-  # test "reserved? should return true if the student is in the previous semester klass" do
-  #   ks = klass_students(:ks_2)
-  #   assert ks.reserved?
-  # end
+  test "starts in and transitions between out and transfer" do
+    ks = klass_students(:ks_1)
+    assert_equal "in", ks.status
 
-  # test "expand? should return true if the student is not in the previous semester klass" do
-  #   student = students(:student_7_10)
-  #   sk = semester_klasses(:sk_eng_1)
-  #   student.join_klass(sk)
-  #   ks = sk.klass_students.find_by(student_id: student.id)
-  #   assert ks.expand?
-  # end
+    ks.mark_out!
+    assert_equal "out", ks.status
+
+    ks.mark_transfer!
+    assert_equal "transfer", ks.status
+
+    ks.mark_out!
+    assert_equal "out", ks.status
+  end
+
+  test "another semester klasses is scoped to the same campuse and semester" do
+    klasses = klass_students(:ks_1).another_semester_klasses(semesters(:semester_previous).id)
+
+    assert_includes klasses, semester_klasses(:sk_math_1)
+    assert_equal 1, klasses.count
+  end
 end
