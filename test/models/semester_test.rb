@@ -22,7 +22,7 @@ class SemesterTest < ActiveSupport::TestCase
         end_date: semesters(:semester_current).end_date - 1.year,
     )
     school = schools(:school_1)
-    assert_equal [semesters(:semester_previous), history_semester], Semester.history(school.id)
+    assert_equal [ semesters(:semester_previous), history_semester ], Semester.history(school.id)
   end
 
   test "related_previous_semester" do
@@ -32,7 +32,7 @@ class SemesterTest < ActiveSupport::TestCase
 
   test "related_history_semesters" do
     school = schools(:school_1)
-    assert_equal [semesters(:semester_previous)], semesters(:semester_current).related_history_semesters
+    assert_equal [ semesters(:semester_previous) ], semesters(:semester_current).related_history_semesters
   end
 
   test "related_next_semester" do

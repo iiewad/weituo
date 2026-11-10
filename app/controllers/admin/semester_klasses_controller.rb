@@ -19,7 +19,7 @@ class Admin::SemesterKlassesController < AdminController
     )
     @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
   end
-  
+
   def create
     @sk = SemesterKlass.new(semester_klass_params.except(:students_text))
     @sk.subject = @sk.teacher.subject
@@ -66,7 +66,7 @@ class Admin::SemesterKlassesController < AdminController
     @sk.semester_id = Thread.current[:semester].id
     @sk.subject = @sk.teacher.subject
     @sk.campuse_id = Thread.current[:campuse].id
-    
+
     if @sk.save
       @sk.add_students_by_text(semester_klass_params[:students_text])
       redirect_to copy_admin_semester_klasses_path(

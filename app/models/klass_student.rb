@@ -13,11 +13,11 @@ class KlassStudent < ApplicationRecord
     state :transfer
 
     event :mark_out do
-      transitions from: [:in, :transfer], to: :out
+      transitions from: [ :in, :transfer ], to: :out
     end
 
     event :mark_transfer do
-      transitions from: [:in, :out], to: :transfer
+      transitions from: [ :in, :out ], to: :transfer
     end
   end
 
@@ -56,7 +56,7 @@ class KlassStudent < ApplicationRecord
   # # 前一个学期有就读单非相同科目的班级则为expand
   # def expand?
   #   return false if semester_klass.semester.previous.blank?
-    
+
   #   is_present = another_semester_klasses(semester_klass.semester.previous.id)
   #     .where.not(
   #       subject_id: semester_klass.subject_id,

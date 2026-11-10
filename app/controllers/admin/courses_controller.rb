@@ -18,5 +18,4 @@ class Admin::CoursesController < AdminController
     @sk.add_students_by_text(text.join("\n"))
     redirect_to admin_semester_klass_path(@sk), notice: "学员添加成功"
   end
-
 end

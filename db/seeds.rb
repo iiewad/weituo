@@ -15,7 +15,7 @@ user_admin = User.create!(name: "admin", password: "password")
 UserCampuse.find_or_create_by!(user_id: user_admin.id, campuse_id: campuse.id, role: "admin", school_id: school.id)
 UserCampuse.find_or_create_by!(user_id: user_admin.id, campuse_id: campuse2.id, role: "admin", school_id: school.id)
 campuse_manager = User.create!(name: "user1", password: "password")
-UserCampuse.find_or_create_by!(user_id: campuse_manager.id, campuse_id: campuse.id, role: "manager", school_id: school.id)  
+UserCampuse.find_or_create_by!(user_id: campuse_manager.id, campuse_id: campuse.id, role: "manager", school_id: school.id)
 campuse2_manager = User.create!(name: "user2", password: "password")
 UserCampuse.find_or_create_by!(user_id: campuse2_manager.id, campuse_id: campuse2.id, role: "manager", school_id: school.id)
 
