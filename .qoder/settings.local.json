@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls .github/workflows; cat .github/workflows/* 2>/dev/null | head -60)",
+      "Bash(ls app/models app/controllers app/controllers/admin config; head -30 db/schema.rb 2>/dev/null; ls db)",
+      "Bash(head -50 config/routes.rb; echo ---; ls test; echo ---; ls test/controllers test/models 2>/dev/null | head -20; echo ---; head -40 config/deploy.yml)"
+    ]
+  }
+}
