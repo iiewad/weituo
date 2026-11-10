@@ -6,6 +6,13 @@ class SemesterTest < ActiveSupport::TestCase
     assert_equal semesters(:semester_current), Semester.current(school.id)
   end
 
+  test "current and history when no semester covers today" do
+    Semester.update_all(start_date: 1.year.ago.to_date, end_date: 11.months.ago.to_date)
+
+    assert_nil Semester.current(schools(:school_1).id)
+    assert_empty Semester.history(schools(:school_1).id).to_a
+  end
+
   test "history" do
     history_semester = Semester.create(
         name: "临时",

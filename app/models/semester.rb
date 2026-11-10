@@ -1,11 +1,17 @@
 class Semester < ApplicationRecord
   belongs_to :school
-  scope :current, -> (school_id) {
+  def self.current(school_id)
     where(
       "school_id = ? AND start_date <= ? AND end_date >= ?", school_id, Date.today, Date.today
     ).order(:start_date).last
-  }
-  scope :history, -> (school_id) { where(school_id: school_id).where(seq: ...Semester.current(school_id).seq).order(seq: :desc) }
+  end
+
+  def self.history(school_id)
+    current_semester = current(school_id)
+    return none if current_semester.nil?
+
+    where(school_id: school_id).where(seq: ...current_semester.seq).order(seq: :desc)
+  end
   has_many :semester_klasses, dependent: :destroy
   has_many :klasses, through: :semester_klasses
 

@@ -5,7 +5,7 @@
         <%= link_to "维拓校务管理平台", root_path, class: "text-xl font-bold transition-colors hover:text-primary-content/90" %>
         <div class="text-xs text-primary-content/70 mt-1">
           <% if authenticated? %>
-            当前校区：<%= Thread.current[:campuse].name %> | 当前学期：<%= Thread.current[:semester].name %>
+            当前校区：<%= Thread.current[:campuse]&.name %> | 当前学期：<%= Thread.current[:semester]&.name %>
           <% end %>
         </div>
       </div>
