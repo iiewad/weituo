@@ -1,0 +1,30 @@
+<%
+  default_titles = {
+    "admin/students" => "学员管理",
+    "admin/semester_klasses" => "班级管理",
+    "admin/teachers" => "教师管理",
+    "admin/users" => "用户管理",
+    "admin/schools" => "学校管理"
+  }
+  default_title = default_titles.fetch(params[:controller], "工作台")
+%>
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <% if content_for?(:breadcrumb) %>
+      <div class="mb-1 flex items-center gap-1 text-xs text-base-content/50">
+        <span><%= default_title %></span>
+        <span>/</span>
+        <%= yield :breadcrumb %>
+      </div>
+    <% end %>
+    <h1 class="text-2xl font-semibold tracking-tight text-base-content">
+      <%= content_for?(:page_title) ? yield(:page_title) : default_title %>
+    </h1>
+    <% if content_for?(:page_subtitle) %>
+      <p class="mt-1 text-sm text-base-content/60"><%= yield :page_subtitle %></p>
+    <% end %>
+  </div>
+  <% if content_for?(:page_actions) %>
+    <div class="flex flex-wrap items-center gap-2"><%= yield :page_actions %></div>
+  <% end %>
+</div>

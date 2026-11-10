@@ -1,69 +1,60 @@
-<div class="min-h-dvh px-4">
-  <%= render "admin/students/filter_form" %>
-  <div class="overflow-x-auto">
-    <table class="table table-xs table-pin-rows table-pin-cols">
-      <!-- head -->
-      <thead>
-        <tr>
-          <th>
-            <div class="join">
-              <%= link_to_previous_page @students, '«', class: "join-item btn btn-xs btn-primary" %>
-              <button class="join-item btn btn-xs btn-square"><%= @students.current_page %></button>
-              <%= link_to_next_page @students, '»', class: "join-item btn btn-xs btn-primary" %>
-            </div>
-          </th>
-          <th>学员名</th>
-          <th>日校</th>
-          <th>层级</th>
-          <th>监护人</th>
-          <th>年级</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- row 1 -->
-        <% @students.each.with_index(1) do |student, index| %>
-          <tr>
-            <td><%= index %></td>
-            <td>
-              <%= student.name %>
-            </td>
-            <td>
-              <%= student.day_school&.name || "无" %>
-            </td>
-            <td>
-              <%= student.layer %>
-            </td>
-            <td>
-              <%= student.guardians.pluck(:relationship, :phone).map { |name, phone| "#{name} #{phone}" }.join(', ') %>
-            </td>
-            <td>
-              <%= student.grade.name %>
-            </td>
-            <td>
-              <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "操作", drawer_width: "180", drawer_content: "admin/students/form" %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-      <tfoot>
+<% content_for :page_title, "学员管理" %>
+<% content_for :page_subtitle, "共 #{@students.total_count} 名学员 · #{Thread.current[:campuse]&.name}" %>
+<% content_for :page_actions do %>
+  <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-new", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/students/form" %>
+<% end %>
+
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <div class="tabs tabs-border" role="tablist">
+    <%= link_to "全部", admin_students_path, class: "tab #{ "tab-active" if params[:filter].blank? }" %>
+    <%= link_to "在班学员", admin_students_path(filter: "in_class"), class: "tab #{ "tab-active" if params[:filter] == "in_class" }" %>
+    <%= link_to "未入班", admin_students_path(filter: "not_in_class"), class: "tab #{ "tab-active" if params[:filter] == "not_in_class" }" %>
+    <%= link_to "有退课", admin_students_path(filter: "out_class"), class: "tab #{ "tab-active" if params[:filter] == "out_class" }" %>
+  </div>
+  <div><%= render "admin/students/filter_form" %></div>
+</div>
+
+<div class="wt-surface overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
       <tr>
-        <th>
-          <div class="join">
-            <%= link_to_previous_page @students, '«', class: "join-item btn btn-xs btn-primary" %>
-            <button class="join-item btn btn-xs btn-square"><%= @students.current_page %></button>
-            <%= link_to_next_page @students, '»', class: "join-item btn btn-xs btn-primary" %>
-          </div>
-        </th>
-        <th>学员名</th>
+        <th class="w-12">#</th>
+        <th>学员</th>
         <th>日校</th>
         <th>层级</th>
         <th>监护人</th>
         <th>年级</th>
-        <th>操作</th>
+        <th class="text-right">操作</th>
       </tr>
-    </tfoot>
-    </table>
-  </div>
+    </thead>
+    <tbody>
+      <% @students.each.with_index(1) do |student, index| %>
+        <tr class="hover:bg-base-200/40">
+          <td class="text-base-content/40"><%= index %></td>
+          <td>
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"><%= student.name.to_s.first %></span>
+              <span class="font-medium"><%= student.name %></span>
+            </div>
+          </td>
+          <td class="text-base-content/70"><%= student.day_school&.name || "—" %></td>
+          <td><span class="badge badge-ghost badge-sm"><%= student.layer.presence || "—" %></span></td>
+          <td class="text-base-content/70"><%= student.guardians.pluck(:relationship, :phone).map { |name, phone| "#{name} #{phone}" }.join("、").presence || "—" %></td>
+          <td><span class="badge badge-outline badge-primary badge-sm"><%= student.grade&.name || "—" %></span></td>
+          <td class="text-right">
+            <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "180", drawer_content: "admin/students/form" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @students.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">暂无符合条件的学员</div>
+  <% end %>
 </div>
-            <%#= render "admin/shared/drawer", item: User.new, drawer_id: "drawer-user-new", button_name: "创建用户", drawer_width: "180", drawer_content: "admin/users/form" %>
+
+<div class="mt-4 flex items-center justify-center gap-1">
+  <%= link_to_previous_page @students, "«", class: "btn btn-sm btn-ghost" %>
+  <span class="btn btn-sm btn-ghost no-animation"><%= @students.current_page %> / <%= @students.total_pages %></span>
+  <%= link_to_next_page @students, "»", class: "btn btn-sm btn-ghost" %>
+</div>

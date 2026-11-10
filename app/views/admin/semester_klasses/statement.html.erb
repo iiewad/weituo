@@ -1,62 +1,93 @@
-<div class="min-h-dvh px-4">
-  <div class="flex flex-col w-full">
-    <%= render "admin/semester_klasses/filter_form", form_url: statement_admin_semester_klasses_path %>
-    <div class="rounded-box border border-base-content/5 bg-base-100 overflow-x-auto p-4 mt-4">
-      <table class="table table-xs">
-        <thead>
-          <tr>
-            <th></th>
-            <th>学期</th>
-            <th>年级</th>
-            <th>科目</th>
-            <th>教师</th>
-            <th>班型</th>
-            <th>班级名</th>
-            <th>班级人数</th>
-            <th>预留率</th>
-            <th>拓科率</th>
-            <!-- <th>预留2</th> -->
-            <th>新增率</th>
-            <th>详情</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @sks.each.with_index(1) do |sk, i| %>
-          <tr>
-            <th><%= i %></th>
-            <td><%= sk.semester.name %></td>
-            <td><%= sk.grade.name %></td>
-            <td><%= sk.subject.name %></td>
-            <td><%= sk.teacher.name %></td>
-            <td><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></td>
-            <td><%= sk.name %></td>
-            <td><%= sk.current_active_students.count %></td>
-            <td><%= (sk.reserve_rate * 100).round(2) %>%</td>
-            <td><%= (sk.expand_rate * 100).round(2) %>%</td>
-            <!-- <td></td> -->
-            <td><%= (sk.new_rate * 100).round(2) %>%</td>
-            <td><%= render "admin/shared/drawer", item: sk, drawer_id: "statement-drawer-#{sk.id}", button_name: "详情", drawer_width: "180", drawer_content: "statement_detail" %></td>
-          </tr>
-          <% end %>
-        </tbody>
-        <tfoot>
-          <tr>
-            <th></th>
-            <th>学期</th>
-            <th>年级</th>
-            <th>科目</th>
-            <th>教师</th>
-            <th>班型</th>
-            <th>班级名</th>
-            <th>班级人数</th>
-            <th>预留率</th>
-            <th>拓科率</th>
-            <!-- <th>预留2</th> -->
-            <th>新增率</th>
-            <th>详情</th>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+<% content_for :page_title, "班级报表" %>
+<% content_for :page_subtitle, "#{Thread.current[:semester]&.name} · 新增率 / 拓科率 / 预留率汇总" %>
+<% content_for :breadcrumb do %><span>班级报表</span><% end %>
+<% content_for :page_actions do %>
+  <%= link_to "复制历史班级", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-primary" %>
+<% end %>
+
+<%
+  metrics = [
+    [ "预留率", :reserve_rate, "bg-primary" ],
+    [ "拓科率", :expand_rate, "bg-secondary" ],
+    [ "新增率", :new_rate, "bg-accent" ]
+  ]
+  sk_count = @sks.count
+  student_count = @sks.sum { |sk| sk.current_active_students.count }
+  avg_new = sk_count.zero? ? 0 : (@sks.sum(&:new_rate) / sk_count * 100).round(1)
+  avg_reserve = sk_count.zero? ? 0 : (@sks.sum(&:reserve_rate) / sk_count * 100).round(1)
+%>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">统计班级</p>
+    <p class="mt-1 text-2xl font-semibold"><%= sk_count %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-1/3 rounded-full bg-primary"></span></p>
   </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">在班学员</p>
+    <p class="mt-1 text-2xl font-semibold"><%= student_count %><span class="ml-1 text-sm font-normal text-base-content/50">人次</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-secondary/20"><span class="block h-1 w-2/3 rounded-full bg-secondary"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">平均新增率</p>
+    <p class="mt-1 text-2xl font-semibold"><%= avg_new %><span class="ml-0.5 text-sm font-normal text-base-content/50">%</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-accent/20"><span class="block h-1 rounded-full bg-accent" style="width: <%= avg_new.clamp(0, 100) %>%"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">平均预留率</p>
+    <p class="mt-1 text-2xl font-semibold"><%= avg_reserve %><span class="ml-0.5 text-sm font-normal text-base-content/50">%</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 rounded-full bg-primary" style="width: <%= avg_reserve.clamp(0, 100) %>%"></span></p>
+  </div>
+</div>
+
+<%= render "admin/semester_klasses/filter_form", form_url: statement_admin_semester_klasses_path %>
+
+<div class="wt-surface mt-4 overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+      <tr>
+        <th class="w-12">#</th>
+        <th>学期</th>
+        <th>年级</th>
+        <th>科目</th>
+        <th>教师</th>
+        <th>班型</th>
+        <th>班级</th>
+        <th>人数</th>
+        <% metrics.each do |label, _, _| %><th><%= label %></th><% end %>
+        <th class="text-right">详情</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sks.each.with_index(1) do |sk, i| %>
+        <tr class="hover:bg-base-200/40">
+          <td class="text-base-content/40"><%= i %></td>
+          <td class="whitespace-nowrap text-base-content/70"><%= sk.semester.name %></td>
+          <td><span class="badge badge-ghost badge-sm"><%= sk.grade.name %></span></td>
+          <td class="font-medium"><%= sk.subject.name %></td>
+          <td class="text-base-content/70"><%= sk.teacher.name %></td>
+          <td class="text-base-content/70"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></td>
+          <td><span class="badge badge-outline badge-primary badge-sm font-semibold"><%= sk.name %></span></td>
+          <td class="font-semibold"><%= sk.current_active_students.count %></td>
+          <% metrics.each do |_, method, color| %>
+            <% pct = (sk.public_send(method) * 100).round(1) %>
+            <td>
+              <div class="flex items-center gap-2">
+                <span class="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-base-200">
+                  <span class="block h-full rounded-full <%= color %>" style="width: <%= pct.clamp(0, 100) %>%"></span>
+                </span>
+                <span class="whitespace-nowrap text-xs font-medium"><%= pct %>%</span>
+              </div>
+            </td>
+          <% end %>
+          <td class="text-right">
+            <%= render "admin/shared/drawer", item: sk, drawer_id: "statement-drawer-#{sk.id}", button_name: "详情", drawer_width: "180", drawer_content: "statement_detail" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @sks.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">当前筛选条件下没有班级数据</div>
+  <% end %>
 </div>

@@ -1,72 +1,84 @@
-<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4 flex flex-row">
-  <div>
-    <% if @sk %>
-    <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
-    <% end %>
-  </div>
-  <div>
-    <%= render partial: "admin/shared/drawer", locals: { item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "180", drawer_content: "admin/semester_klasses/form" } %>
-  </div>
-  <div>
-    <%= link_to "复制历史班级", copy_admin_semester_klasses_path(), class: "btn btn-xs btn-info" %>
-  </div>
-</fieldset>
-<div class="flex flex-row min-h-1/2 overflow-auto">
-  <div class="basis-1/8 min-h-dvh bg-base-200">
-    <%= render "admin/semester_klasses/menu", grades: @grades %>
-  </div>
-  <div class="basis-7/8 w-full flex flex-row">
-    <div class="overflow-x-auto w-full rounded-box border border-base-content/5 bg-base-100">
-      <table class="table table-sm">
-        <!-- head -->
-        <thead>
-          <tr>
-            <th>学员</th>
-            <% @sk.courses.each do |course| %>
-            <th>第<%= course.seq %>课</th>
-            <% end %>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @sk.klass_students.each do |ks| %>
-          <tr>
-            <th><%= ks.student.name %></th>
-            <% @sk.courses.each do |course| %>
-            <td>
-              <% if course.started? %>
-              <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: course.attendances.find_by(klass_student: ks) %>
-              <% else %>
-              未开课
-              <% end %>
-            </td>
-            <% end %>
-            <td>
-              <%= button_to "删除", admin_semester_klass_klass_student_path(@sk, ks), method: :delete, data: { confirm: 'sure?'}, class: "btn btn-xs btn-secondary" %>
-            </td>
-          </tr>
-          <% end %>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td></td>
-            <% if @sk.students.exists?%>
-              <% @sk.courses.each do |course| %>
-                <td>
-                  <% if course.started? %>
-                  <%= button_to "已开课", start_admin_semester_klass_course_path(@sk, course), method: :put, class: "btn btn-xs btn-primary btn-disabled" %>
-                  <% else %>
-                  <%= button_to "开课", start_admin_semester_klass_course_path(@sk, course), method: :put, class: "btn btn-xs btn-primary" %>
-                  <% end %>
-                  <br />
-                  <%= render partial: "admin/shared/drawer", locals: { item: course, drawer_id: "drawer-insert-student-#{@sk.id}-#{course.id}", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/semester_klasses/insert_students_form" } %>
-                </td>
-              <% end %>
-            <% end %>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
+<% content_for :page_title, @sk.name %>
+<% content_for :page_subtitle, "#{@sk.semester.name} · #{@sk.grade.name} #{@sk.subject.name} · #{@sk.teacher.name} 老师" %>
+<% content_for :breadcrumb do %>
+  <%= link_to "班级管理", admin_semester_klasses_path, class: "hover:text-primary" %>
+  <span>/</span>
+  <span><%= @sk.name %></span>
+<% end %>
+<% content_for :page_actions do %>
+  <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
+  <%= render "admin/shared/drawer", item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
+  <%= link_to "复制历史班级", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-primary" %>
+<% end %>
+
+<div class="mb-4 flex flex-wrap gap-2">
+  <span class="badge badge-primary badge-sm gap-1">
+    <span class="h-1.5 w-1.5 rounded-full bg-primary-content"></span>
+    在班 <%= @sk.current_active_students.count %> 人
+  </span>
+  <span class="badge badge-ghost badge-sm">共 <%= @sk.courses.count %> 课次</span>
+  <span class="badge badge-ghost badge-sm">已开 <%= @sk.courses.where.not(start_date: nil).count %> 课</span>
+  <span class="badge badge-outline badge-secondary badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
+<div class="flex flex-col gap-4 lg:flex-row">
+  <div class="wt-surface shrink-0 p-2 lg:w-56">
+    <%= render "admin/semester_klasses/menu", grades: @grades %>
+  </div>
+
+  <div class="wt-surface min-w-0 flex-1 overflow-x-auto">
+    <table class="table table-xs">
+      <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+        <tr>
+          <th class="sticky left-0 z-10 bg-base-200/60">学员</th>
+          <% @sk.courses.each do |course| %>
+            <th class="text-center whitespace-nowrap">第 <%= course.seq %> 课</th>
+          <% end %>
+          <th class="text-right">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @sk.klass_students.each do |ks| %>
+          <tr class="hover:bg-base-200/40">
+            <th class="sticky left-0 z-10 whitespace-nowrap bg-base-100 font-medium"><%= ks.student.name %></th>
+            <% @sk.courses.each do |course| %>
+              <td class="text-center">
+                <% if course.started? %>
+                  <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: course.attendances.find_by(klass_student: ks) %>
+                <% else %>
+                  <span class="text-xs text-base-content/30">未开课</span>
+                <% end %>
+              </td>
+            <% end %>
+            <td class="text-right">
+              <%= button_to "删除", admin_semester_klass_klass_student_path(@sk, ks), method: :delete, data: { confirm: "确定删除？" }, class: "btn btn-xs btn-ghost text-error" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="sticky left-0 z-10 bg-base-100 text-xs text-base-content/50">课次操作</td>
+          <% if @sk.students.exists? %>
+            <% @sk.courses.each do |course| %>
+              <td class="text-center">
+                <% if course.started? %>
+                  <span class="badge badge-success badge-xs">已开课</span>
+                <% else %>
+                  <%= button_to "开课", start_admin_semester_klass_course_path(@sk, course), method: :put, class: "btn btn-xs btn-primary" %>
+                <% end %>
+                <div class="mt-1.5">
+                  <%= render "admin/shared/drawer", item: course, drawer_id: "drawer-insert-student-#{@sk.id}-#{course.id}", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/semester_klasses/insert_students_form" %>
+                </div>
+              </td>
+            <% end %>
+          <% end %>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <% if @sk.klass_students.empty? %>
+      <div class="p-10 text-center text-sm text-base-content/50">该班级暂无学员，可通过课次下方的「添加学员」导入</div>
+    <% end %>
+  </div>
+</div>
