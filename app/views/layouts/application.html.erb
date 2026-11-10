@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="weituo">
   <head>
+    <script>
+      if (localStorage.getItem("wt-sidebar-collapsed") === "true") {
+        document.documentElement.classList.add("wt-sidebar-collapsed")
+      }
+    </script>
     <title><%= content_for(:title) || "维拓校务管理平台" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,8 +26,8 @@
 
   <body class="min-h-dvh bg-base-200 text-base-content antialiased">
     <% if authenticated? %>
-      <div class="drawer lg:drawer-open">
-        <input id="wt-drawer" type="checkbox" class="drawer-toggle" />
+      <div class="drawer wt-drawer lg:drawer-open" data-controller="sidebar">
+        <input id="wt-drawer" type="checkbox" class="drawer-toggle" data-sidebar-target="drawerToggle" />
         <div class="drawer-content flex min-h-dvh flex-col">
           <%= render "admin/shared/navbar" %>
           <main class="flex-1 px-4 py-5 lg:px-8 lg:py-6">

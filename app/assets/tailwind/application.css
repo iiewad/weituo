@@ -92,3 +92,19 @@
     border-radius: 999px;
   }
 }
+
+/* 侧边栏折叠（仅桌面）。放在 @layer 外，确保覆盖 daisyUI 的 lg:drawer-open。 */
+@media (min-width: 64rem) {
+  html.wt-sidebar-collapsed .wt-drawer {
+    grid-auto-columns: 0 auto;
+  }
+
+  html.wt-sidebar-collapsed .wt-drawer > .drawer-side {
+    display: none;
+  }
+}
+
+html.wt-sidebar-collapsed .wt-icon-collapse,
+html:not(.wt-sidebar-collapsed) .wt-icon-expand {
+  display: none;
+}
