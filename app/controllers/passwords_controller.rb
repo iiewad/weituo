@@ -1,35 +1,21 @@
 class PasswordsController < ApplicationController
   allow_unauthenticated_access
-  before_action :set_user_by_token, only: %i[ edit update ]
-  rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_password_path, alert: "Try again later." }
+  rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_password_path, alert: "操作过于频繁，请稍后再试。" }
 
+  # 本项目以账号名登录，users 表没有邮箱列，也不提供邮件重置能力。
+  # 统一给出不泄露账号是否存在的提示；实际重置由管理员在「用户管理」中完成。
   def new
   end
 
   def create
-    if user = User.find_by(email_address: params[:email_address])
-      PasswordsMailer.reset(user).deliver_later
-    end
-
-    redirect_to new_session_path, notice: "Password reset instructions sent (if user with that email address exists)."
+    redirect_to new_session_path, notice: "如需重置密码，请联系管理员。"
   end
 
   def edit
+    redirect_to new_password_path, alert: "重置链接无效或已过期，请联系管理员。"
   end
 
   def update
-    if @user.update(params.permit(:password, :password_confirmation))
-      @user.sessions.destroy_all
-      redirect_to new_session_path, notice: "Password has been reset."
-    else
-      redirect_to edit_password_path(params[:token]), alert: "Passwords did not match."
-    end
+    redirect_to new_password_path, alert: "重置链接无效或已过期，请联系管理员。"
   end
-
-  private
-    def set_user_by_token
-      @user = User.find_by_password_reset_token!(params[:token])
-    rescue ActiveSupport::MessageVerifier::InvalidSignature
-      redirect_to new_password_path, alert: "Password reset link is invalid or has expired."
-    end
 end

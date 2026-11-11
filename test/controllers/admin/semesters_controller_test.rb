@@ -6,5 +6,6 @@ class Admin::SemestersControllerTest < ActionDispatch::IntegrationTest
   test "switch thread semester" do
     get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next)), headers: { "HTTP_REFERER" => root_path }
     assert_redirected_to root_path
+    assert_equal semesters(:semester_next), Thread.current[:semester]
   end
 end

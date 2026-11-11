@@ -1,4 +1,4 @@
-class Admin::TeachersController < ApplicationController
+class Admin::TeachersController < AdminController
   def index
     @teachers = Teacher.includes(:subject, :campuse).where(
       campuse_id: Thread.current[:campuse].id

@@ -12,7 +12,7 @@ class Admin::UsersController < AdminController
     if @user.save
       redirect_to admin_users_path, notice: "用户创建成功"
     else
-      render :new
+      redirect_to admin_users_path, alert: "用户创建失败，#{@user.errors.full_messages.join("；")}"
     end
   end
 
@@ -21,7 +21,7 @@ class Admin::UsersController < AdminController
     if @user.update(user_params)
       redirect_to admin_users_path, notice: "用户更新成功"
     else
-      render :show
+      redirect_to admin_users_path, alert: "用户更新失败，#{@user.errors.full_messages.join("；")}"
     end
   end
   private

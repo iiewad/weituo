@@ -22,5 +22,9 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
       post insert_students_admin_semester_klass_course_path(sk, course), params: { course: { students_text: "7_学生2" } }
     end
     assert_redirected_to admin_semester_klass_path(sk)
+
+    student = students(:student_7_2)
+    ks = sk.klass_students.find_by!(student_id: student.id)
+    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
   end
 end

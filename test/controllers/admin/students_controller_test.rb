@@ -8,9 +8,11 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "index with in class filter" do
-    get admin_students_path(filter: "in_class")
-    assert_response :success
+  %w[in_class not_in_class out_class].each do |filter|
+    test "index with #{filter} filter" do
+      get admin_students_path(filter: filter)
+      assert_response :success
+    end
   end
 
   test "create" do
@@ -18,6 +20,15 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
       post admin_students_path, params: { student: { name: "新学员", campuse_id: campuses(:campuse_1).id, grade_id: grades(:grade_7).id } }
     end
     assert_redirected_to admin_students_path
+  end
+
+  test "create without a campus redirects with an alert" do
+    assert_no_difference -> { Student.count } do
+      post admin_students_path, params: { student: { name: "无校区学员", grade_id: grades(:grade_7).id } }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "失败", flash[:alert]
   end
 
   test "update" do

@@ -26,7 +26,7 @@ class Admin::StudentsController < AdminController
     if @student.save
       redirect_to admin_students_path, notice: "学员创建成功"
     else
-      render "admin/students/form"
+      redirect_to admin_students_path, alert: "学员创建失败，#{@student.errors.full_messages.join("；")}"
     end
   end
 

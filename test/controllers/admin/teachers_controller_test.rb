@@ -1,15 +1,13 @@
 require "test_helper"
 
 class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
-  setup do
-    sign_in_as users(:one)
-    # This controller does not inherit AdminController, so it never sets the thread context.
-    Thread.current[:campuse] = campuses(:campuse_1)
-  end
+  setup { sign_in_as users(:one) }
 
-  test "index" do
+  test "index sets thread context through AdminController" do
     get admin_teachers_path
+
     assert_response :success
+    assert_equal campuses(:campuse_1).id, Thread.current[:campuse].id
   end
 
   test "create" do

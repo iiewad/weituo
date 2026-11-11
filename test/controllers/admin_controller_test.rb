@@ -35,4 +35,12 @@ class AdminControllerTest < ActionDispatch::IntegrationTest
     assert_equal schools(:school_1).id, Thread.current[:school].id
     assert_equal semesters(:semester_current), Thread.current[:semester]
   end
+
+  test "write actions require authentication" do
+    post admin_students_path, params: { student: { name: "未登录" } }
+    assert_redirected_to new_session_path
+
+    put admin_student_path(students(:student_7_1)), params: { student: { name: "未登录" } }
+    assert_redirected_to new_session_path
+  end
 end
