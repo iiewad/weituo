@@ -3,13 +3,20 @@ concurrency:
   group: production
   cancel-in-progress: true
 
+# CI 跑完且通过后才部署，避免检查未过就上线。
 on:
-  push:
+  workflow_run:
+    workflows: [ "CI" ]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
@@ -23,6 +30,9 @@ jobs:
       BLAZER_DATABASE_URL: ${{ secrets.BLAZER_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # workflow_run 默认签出分支最新 commit，这里固定为 CI 实际验证过的提交。
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: .ruby-version

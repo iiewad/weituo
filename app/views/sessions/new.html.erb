@@ -1,7 +1,10 @@
 <% content_for :title, "登录 - 维拓校务管理平台" %>
 
-<div class="grid min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
+<div class="grid h-[calc(100dvh-4rem)] overflow-hidden lg:grid-cols-2">
   <div class="wt-hero-gradient relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex">
+    <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full border border-white/10"></div>
+    <div class="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full border border-white/10"></div>
+
     <div class="relative flex items-center gap-3">
       <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-lg font-bold backdrop-blur">维</div>
       <span class="text-lg font-semibold">维拓校务管理平台</span>
@@ -30,7 +33,7 @@
     <p class="relative text-xs text-white/50">© <%= Date.current.year %> 新梦想教育</p>
   </div>
 
-  <div class="flex items-center justify-center bg-base-100 px-6 py-12">
+  <div class="flex items-center justify-center overflow-y-auto bg-base-100 px-6 py-8">
     <div class="w-full max-w-sm">
       <div class="mb-8">
         <div class="wt-brand-gradient mb-5 flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-lg lg:hidden">维</div>
@@ -52,7 +55,10 @@
         <%= form.submit "登录", class: "wt-brand-gradient btn w-full border-0 text-white shadow-md" %>
       <% end %>
 
-      <p class="mt-8 text-center text-xs text-base-content/40">仅限内部人员使用 · 如遇问题请联系管理员</p>
+      <p class="mt-8 flex items-center justify-center gap-1.5 text-center text-xs text-base-content/40">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4" /></svg>
+        仅限内部人员使用 · 如遇问题请联系管理员
+      </p>
     </div>
   </div>
 </div>

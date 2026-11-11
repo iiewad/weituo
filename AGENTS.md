@@ -17,8 +17,8 @@ This file provides guidance to the AI agent when working with code in this repos
 - Lint: `bin/rubocop` — style is rubocop-rails-omakase defaults, no overrides (`.rubocop.yml` only inherits the gem config).
 - Security checks: `bin/bundler-audit`, `bin/importmap audit`, `bin/brakeman`.
 - One-off CSS build: `bin/rails tailwindcss:build` (writes `app/assets/builds/tailwind.css`); the Dockerfile runs `assets:precompile` for production.
-- CI: `.github/workflows/ci.yml` runs `bin/ci` on pull requests and pushes to `main` (MySQL 8 service, `RAILS_ENV=test`).
-- Deploy: Kamal. `.github/workflows/cd.yml` runs `kamal redeploy` on every push to `main`, independently of CI — it does not wait for the checks to pass; do not push to `main` casually. Aliases: `bin/kamal console|shell|logs|dbc` (`config/deploy.yml`).
+- CI: `.github/workflows/ci.yml` runs `bin/ci` on pull requests and pushes to `main` (MySQL 8 service, `RAILS_ENV=test`); a successful run on `main` triggers CD.
+- Deploy: Kamal. `.github/workflows/cd.yml` is triggered by a successful CI `workflow_run` on `main` and checks out the exact commit CI verified — it no longer deploys on push in parallel with the checks; do not push to `main` casually. Aliases: `bin/kamal console|shell|logs|dbc` (`config/deploy.yml`).
 
 ## Architecture
 
