@@ -42,9 +42,11 @@
         <%= render "admin/shared/sidebar" %>
       </div>
     <% else %>
-      <%= render "admin/shared/navbar" %>
+      <%= render "admin/shared/navbar" unless params[:controller] == "sessions" && params[:action] == "new" %>
       <main>
-        <%= render "admin/shared/alert" %>
+        <div class="fixed right-4 top-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
+          <%= render "admin/shared/alert" %>
+        </div>
         <%= yield %>
       </main>
     <% end %>
