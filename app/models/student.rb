@@ -1,5 +1,7 @@
 class Student < ApplicationRecord
   paginates_per 30
+  validates :name, presence: true
+
   belongs_to :day_school, optional: true
   belongs_to :campuse
   belongs_to :grade, optional: true

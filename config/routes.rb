@@ -25,7 +25,7 @@ Rails.application.routes.draw do
       end
     end
     resources :teachers, only: [ :index, :create, :update ]
-    resources :students
+    resources :students, only: [ :index, :create, :update ]
     resources :users
     resources :schools, only: [ :index, :update ] do
       resources :semesters do

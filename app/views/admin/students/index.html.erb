@@ -1,17 +1,32 @@
 <% content_for :page_title, "学员管理" %>
 <% content_for :page_subtitle, "共 #{@students.total_count} 名学员 · #{Thread.current[:campuse]&.name}" %>
 <% content_for :page_actions do %>
-  <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-new", button_name: "添加学员", drawer_width: "180", drawer_content: "admin/students/form" %>
+  <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-new", button_name: "添加学员", drawer_width: "240", drawer_content: "admin/students/form" %>
 <% end %>
 
-<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-  <div class="tabs tabs-border" role="tablist">
-    <%= link_to "全部", admin_students_path, class: "tab #{ "tab-active" if params[:filter].blank? }" %>
-    <%= link_to "在班学员", admin_students_path(filter: "in_class"), class: "tab #{ "tab-active" if params[:filter] == "in_class" }" %>
-    <%= link_to "未入班", admin_students_path(filter: "not_in_class"), class: "tab #{ "tab-active" if params[:filter] == "not_in_class" }" %>
-    <%= link_to "有退课", admin_students_path(filter: "out_class"), class: "tab #{ "tab-active" if params[:filter] == "out_class" }" %>
-  </div>
-  <div><%= render "admin/students/filter_form" %></div>
+<%
+  filters = [
+    [ "全部", nil, @filter_counts[:all], "bg-primary/20", "bg-primary" ],
+    [ "在班学员", "in_class", @filter_counts[:in_class], "bg-success/20", "bg-success" ],
+    [ "有退课", "out_class", @filter_counts[:out_class], "bg-warning/20", "bg-warning" ],
+    [ "未入班", "not_in_class", @filter_counts[:not_in_class], "bg-base-300", "bg-base-content/40" ]
+  ]
+%>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <% filters.each do |label, filter, count, track, bar| %>
+    <% active = params[:filter].to_s == filter.to_s %>
+    <%= link_to admin_students_path(filter: filter, q: params[:q]&.to_unsafe_h),
+          class: "wt-surface block p-4 transition hover:border-primary/40 #{ "ring-2 ring-primary/40" if active }" do %>
+      <p class="text-xs text-base-content/50"><%= label %></p>
+      <p class="mt-1 text-2xl font-semibold"><%= count %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
+      <p class="mt-2 h-1 w-full rounded-full <%= track %>"><span class="block h-1 w-full rounded-full <%= bar %>"></span></p>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="mb-4">
+  <%= render "admin/students/filter_form" %>
 </div>
 
 <div class="wt-surface overflow-x-auto">
@@ -20,10 +35,13 @@
       <tr>
         <th class="w-12">#</th>
         <th>学员</th>
+        <th>性别</th>
+        <th>年级</th>
         <th>日校</th>
         <th>层级</th>
+        <th>生日</th>
+        <th>电话</th>
         <th>监护人</th>
-        <th>年级</th>
         <th class="text-right">操作</th>
       </tr>
     </thead>
@@ -37,12 +55,22 @@
               <span class="font-medium"><%= student.name %></span>
             </div>
           </td>
+          <td>
+            <% gender = { "male" => "男", "female" => "女" }[student.gender] || student.gender %>
+            <% if gender.present? %>
+              <span class="badge badge-ghost badge-sm"><%= gender %></span>
+            <% else %>
+              <span class="text-base-content/40">—</span>
+            <% end %>
+          </td>
+          <td><span class="badge badge-outline badge-primary badge-sm"><%= student.grade&.name || "—" %></span></td>
           <td class="text-base-content/70"><%= student.day_school&.name || "—" %></td>
           <td><span class="badge badge-ghost badge-sm"><%= student.layer.presence || "—" %></span></td>
-          <td class="text-base-content/70"><%= student.guardians.pluck(:relationship, :phone).map { |name, phone| "#{name} #{phone}" }.join("、").presence || "—" %></td>
-          <td><span class="badge badge-outline badge-primary badge-sm"><%= student.grade&.name || "—" %></span></td>
+          <td class="whitespace-nowrap text-base-content/70"><%= student.birthday&.strftime("%Y-%m-%d") || "—" %></td>
+          <td class="whitespace-nowrap text-base-content/70"><%= student.phone.presence || "—" %></td>
+          <td class="text-base-content/70"><%= student.guardians.map { |g| [ g.relationship, g.phone ].compact.join(" ") }.join("、").presence || "—" %></td>
           <td class="text-right">
-            <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "180", drawer_content: "admin/students/form" %>
+            <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/students/form" %>
           </td>
         </tr>
       <% end %>

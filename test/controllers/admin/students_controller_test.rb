@@ -22,13 +22,14 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_students_path
   end
 
-  test "create without a campus redirects with an alert" do
-    assert_no_difference -> { Student.count } do
-      post admin_students_path, params: { student: { name: "无校区学员", grade_id: grades(:grade_7).id } }
+  test "create always uses the current campus" do
+    other = Campuse.create!(name: "第二校区", school: schools(:school_1))
+
+    assert_difference -> { Student.count }, 1 do
+      post admin_students_path, params: { student: { name: "新学员", grade_id: grades(:grade_7).id, campuse_id: other.id } }
     end
 
-    assert_redirected_to admin_students_path
-    assert_match "失败", flash[:alert]
+    assert_equal campuses(:campuse_1).id, Student.find_by!(name: "新学员").campuse_id
   end
 
   test "update" do
