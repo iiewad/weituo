@@ -1,6 +1,10 @@
 <%
   label = button_name || "操作"
   icon = local_assigns[:button_icon]
+  # drawer_width 为 Tailwind spacing 单位（w-180 => 45rem）。用 inline style 计算，
+  # 避免动态拼接 class 无法被 Tailwind 扫描生成；max-width 保证窄屏不溢出。
+  width = (local_assigns[:drawer_width] || 180).to_i
+  panel_style = "width: min(calc(var(--spacing) * #{width}), 92vw)"
 %>
 <div class="drawer drawer-end">
   <input id="<%= drawer_id %>" type="checkbox" class="drawer-toggle" />
@@ -11,9 +15,10 @@
       <label for="<%= drawer_id %>" class="drawer-button btn btn-xs btn-primary"><%= label %></label>
     <% end %>
   </div>
-  <div class="drawer-side">
+  <%# drawer-side 默认 z-index:10，会被 sticky 顶栏(z-30)与常驻侧栏(z-40)盖住；提到 z-50 让抽屉与遮罩浮于其上 %>
+  <div class="drawer-side z-50">
     <label for="<%= drawer_id %>" aria-label="close sidebar" class="drawer-overlay"></label>
-    <div class="bg-base-200 min-h-full w-180 p-18">
+    <div class="bg-base-200 min-h-full p-4 sm:p-6" style="<%= panel_style %>">
       <%= render drawer_content, item: item %>
     </div>
   </div>

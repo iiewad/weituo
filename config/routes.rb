@@ -27,7 +27,7 @@ Rails.application.routes.draw do
     resources :teachers
     resources :students
     resources :users
-    resources :schools do
+    resources :schools, only: [ :index, :update ] do
       resources :semesters do
         member do
           get :switch_thread_semester
@@ -38,7 +38,6 @@ Rails.application.routes.draw do
           get :switch_thread_campuse
         end
       end
-      resources :semesters
     end
   end
   resource :session

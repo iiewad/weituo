@@ -1,28 +1,96 @@
-<div class="min-h-dvh px-4">
-  <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-    <table class="table">
-      <!-- head -->
-      <thead>
-        <tr>
-          <th></th>
-          <th>名称</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- row 1 -->
-        <% @schools.each.with_index(1) do |school, index| %>
-          <tr>
-            <td><%= index %></td>
-            <td>
-              <%= school.name %>
-            </td>
-            <td>
-              <%= render "admin/shared/drawer", item: school, drawer_id: "drawer-school-#{school.id}", button_name: "操作", drawer_width: "190", drawer_content: "admin/schools/form" %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+<% content_for :page_title, "学校管理" %>
+<% content_for :page_subtitle, "维护学校、校区、学期、年级科目与用户授权" %>
+
+<%
+  campus_count = @schools.sum { |s| s.campuses.size }
+  semester_count = @schools.sum { |s| s.semesters.size }
+  grade_subject_count = @schools.sum { |s| s.grade_subjects.size }
+  current_semester_schools = @schools.count do |s|
+    s.semesters.any? { |sem| sem.start_date && sem.end_date && sem.start_date <= Date.current && sem.end_date >= Date.current }
+  end
+%>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">学校</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @schools.size %><span class="ml-1 text-sm font-normal text-base-content/50">所</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-full rounded-full bg-primary"></span></p>
   </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">校区</p>
+    <p class="mt-1 text-2xl font-semibold"><%= campus_count %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-secondary/20"><span class="block h-1 w-3/4 rounded-full bg-secondary"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">学期</p>
+    <p class="mt-1 text-2xl font-semibold"><%= semester_count %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-accent/20"><span class="block h-1 w-1/2 rounded-full bg-accent"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">进行中的学期</p>
+    <p class="mt-1 text-2xl font-semibold"><%= current_semester_schools %><span class="ml-1 text-sm font-normal text-base-content/50">所校</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-success/20"><span class="block h-1 w-2/3 rounded-full bg-success"></span></p>
+  </div>
+</div>
+
+<div class="wt-surface overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+      <tr>
+        <th class="w-12">#</th>
+        <th>学校</th>
+        <th>校区</th>
+        <th>学期</th>
+        <th>当前学期</th>
+        <th>年级科目</th>
+        <th>授权</th>
+        <th class="text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @schools.each.with_index(1) do |school, index| %>
+        <%
+          current_semester = school.semesters.detect do |sem|
+            sem.start_date && sem.end_date && sem.start_date <= Date.current && sem.end_date >= Date.current
+          end
+        %>
+        <tr class="hover:bg-base-200/40">
+          <td class="text-base-content/40"><%= index %></td>
+          <td>
+            <div class="flex items-center gap-2.5">
+              <span class="wt-brand-gradient flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white">校</span>
+              <span class="font-medium"><%= school.name %></span>
+            </div>
+          </td>
+          <td>
+            <% if school.campuses.any? %>
+              <div class="flex flex-wrap gap-1">
+                <% school.campuses.each do |campuse| %>
+                  <span class="badge badge-ghost badge-sm"><%= campuse.name %></span>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="text-base-content/40">—</span>
+            <% end %>
+          </td>
+          <td><span class="badge badge-ghost badge-sm"><%= school.semesters.size %> 个</span></td>
+          <td>
+            <% if current_semester %>
+              <span class="badge badge-soft badge-success badge-sm"><%= current_semester.name %></span>
+            <% else %>
+              <span class="text-base-content/40">未设置</span>
+            <% end %>
+          </td>
+          <td><span class="badge badge-ghost badge-sm"><%= school.grade_subjects.size %> 组</span></td>
+          <td><span class="badge badge-ghost badge-sm"><%= school.user_campuses.size %> 条</span></td>
+          <td class="text-right">
+            <%= render "admin/shared/drawer", item: school, drawer_id: "drawer-school-#{school.id}", button_name: "配置", drawer_width: "280", drawer_content: "admin/schools/form" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @schools.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">暂无学校数据</div>
+  <% end %>
 </div>
