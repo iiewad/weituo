@@ -1,25 +1,35 @@
 class Admin::TeachersController < AdminController
   def index
-    @teachers = Teacher.includes(:subject, :campuse).where(
-      campuse_id: Thread.current[:campuse].id
-    ).page(params[:page])
-  end
-
-  def update
-    @teacher = Teacher.find(params[:id])
-    @teacher.update(teacher_params)
-    redirect_to admin_teachers_path, notice: "教师信息更新成功"
+    @q = Teacher.ransack(params[:q])
+    @teachers = @q.result
+      .includes(:subject, :campuse)
+      .where(campuse_id: Thread.current[:campuse].id)
+      .page(params[:page])
   end
 
   def create
     @teacher = Teacher.new(teacher_params)
-    @teacher.save!
-    redirect_to admin_teachers_path, notice: "教师信息创建成功"
+    @teacher.campuse_id = Thread.current[:campuse].id
+
+    if @teacher.save
+      redirect_to admin_teachers_path, notice: "教师创建成功"
+    else
+      redirect_to admin_teachers_path, alert: "教师创建失败，#{@teacher.errors.full_messages.join("；")}"
+    end
+  end
+
+  def update
+    @teacher = Teacher.where(campuse_id: Thread.current[:campuse].id).find(params[:id])
+
+    if @teacher.update(teacher_params)
+      redirect_to admin_teachers_path, notice: "教师更新成功"
+    else
+      redirect_to admin_teachers_path, alert: "教师更新失败，#{@teacher.errors.full_messages.join("；")}"
+    end
   end
 
   private
-
-  def teacher_params
-    params.require(:teacher).permit(:name, :phone, :campuse_id, :subject_id)
-  end
+    def teacher_params
+      params.require(:teacher).permit(:name, :phone, :subject_id)
+    end
 end

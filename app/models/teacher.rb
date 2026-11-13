@@ -2,6 +2,16 @@ class Teacher < ApplicationRecord
   belongs_to :subject
   belongs_to :campuse
 
+  validates :name, presence: true
+
+  def self.ransackable_attributes(auth_object = nil)
+    [ "name", "phone", "subject_id", "campuse_id" ]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    [ "subject", "campuse" ]
+  end
+
   def self.add_by_text(campuse_id, str)
     campuse = Campuse.find(campuse_id)
     str.split("\n").each do |line|
