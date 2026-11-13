@@ -1,14 +1,9 @@
-<%
-  status_names = {
-    "absent" => "缺课", "normal" => "正常", "filled" => "补课",
-    "personal_leave" => "事假", "sick_leave" => "病假",
-    "quit" => "退课", "transfer" => "转出"
-  }
-%>
 <div class="dropdown dropdown-hover inline-block">
-  <div tabindex="0" role="button" class="badge badge-<%= attendance&.badge_class || "ghost" %> badge-sm cursor-pointer gap-1 font-medium">
-    <span><%= attendance&.status_icon || "?" %></span>
-    <span class="text-[10px]"><%= attendance ? status_names[attendance.status] : "未录入" %></span>
+  <div tabindex="0" role="button"
+       class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-sm min-w-6 cursor-pointer justify-center font-semibold"
+       title="<%= attendance&.status_name || "未录入" %>"
+       aria-label="考勤状态：<%= attendance&.status_name || "未录入" %>">
+    <%= attendance&.status_label || "—" %>
   </div>
   <div tabindex="0" class="card dropdown-content z-40 w-56 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
     <p class="mb-2 text-xs font-semibold"><%= student.name %> · 第 <%= course.seq %> 课考勤</p>
@@ -18,14 +13,14 @@
           <%= button_to "缺课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "absent"), method: :put, class: "btn btn-xs btn-error" %>
           <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
           <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-warning" %>
-          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-outline btn-error" %>
-          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-outline btn-error" %>
+          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-ghost" %>
+          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-ghost" %>
         <% elsif attendance.status == "absent" %>
           <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
           <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-warning" %>
           <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "filled"), method: :put, class: "btn btn-xs btn-success" %>
-          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-outline btn-error" %>
-          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-outline btn-error" %>
+          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-ghost" %>
+          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-ghost" %>
         <% elsif attendance.status.in?(%w[personal_leave sick_leave]) %>
           <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "filled"), method: :put, class: "btn btn-xs btn-success" %>
         <% elsif attendance.status.in?(%w[quit transfer]) %>

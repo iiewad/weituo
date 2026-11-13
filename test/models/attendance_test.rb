@@ -93,14 +93,38 @@ class AttendanceTest < ActiveSupport::TestCase
     end
   end
 
-  test "badge class and status icon" do
-    attendance = Attendance.new(status: :absent)
-    assert_equal "primary", attendance.badge_class
-    assert_equal "缺", attendance.status_icon
+  test "status meta maps every status to a label, name and semantic color" do
+    expected = {
+      "normal" => [ "√", "正常", "success" ],
+      "filled" => [ "补", "补课", "success" ],
+      "absent" => [ "缺", "缺课", "error" ],
+      "personal_leave" => [ "事", "事假", "warning" ],
+      "sick_leave" => [ "病", "病假", "warning" ],
+      "quit" => [ "退", "退课", "neutral" ],
+      "transfer" => [ "转", "转出", "neutral" ]
+    }
 
-    attendance.status = :filled
-    assert_equal "success", attendance.badge_class
-    assert_equal "✓(补)", attendance.status_icon
+    expected.each do |status, (label, name, color)|
+      attendance = Attendance.new(status: status)
+      assert_equal label, attendance.status_label
+      assert_equal name, attendance.status_name
+      assert_equal color, attendance.badge_class
+    end
+  end
+
+  test "status meta colors use only valid daisyUI v5 badge colors" do
+    valid = %w[success error warning neutral ghost]
+    Attendance::STATUS_META.each_value do |meta|
+      assert_includes valid, meta[:color]
+    end
+  end
+
+  test "unknown status falls back to safe display values" do
+    attendance = Attendance.new
+    attendance.status = nil
+    assert_equal "—", attendance.status_label
+    assert_equal "未录入", attendance.status_name
+    assert_equal "ghost", attendance.badge_class
   end
 
   private

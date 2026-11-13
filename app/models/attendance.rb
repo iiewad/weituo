@@ -107,39 +107,31 @@ class Attendance < ApplicationRecord
     end
   end
 
-  def badge_class
-    case status
-    when "absent"
-      "primary"
-    when "normal", "filled"
-      "success"
-    when "personal_leave"
-      "warning"
-    when "sick_leave"
-      "danger"
-    when "quit"
-      "secondary"
-    when "transfer"
-      "info"
-    end
+  # 考勤状态展示：单字用于密集矩阵、全称用于悬停与图例、color 配合 badge-soft 柔和底。
+  # 按语义分组：到课(success) / 请假(warning) / 缺课(error) / 退转(neutral)。
+  STATUS_META = {
+    "normal"         => { label: "√", name: "正常", color: "success" },
+    "filled"         => { label: "补", name: "补课", color: "success" },
+    "absent"         => { label: "缺", name: "缺课", color: "error" },
+    "personal_leave" => { label: "事", name: "事假", color: "warning" },
+    "sick_leave"     => { label: "病", name: "病假", color: "warning" },
+    "quit"           => { label: "退", name: "退课", color: "neutral" },
+    "transfer"       => { label: "转", name: "转出", color: "neutral" }
+  }.freeze
+
+  def status_meta
+    STATUS_META[status] || {}
   end
 
-  def status_icon
-    case status
-    when "absent"
-      "缺"
-    when "normal"
-      "✓"
-    when "filled"
-      "✓(补)"
-    when "personal_leave"
-      "事"
-    when "sick_leave"
-      "病"
-    when "quit"
-      "退"
-    when "transfer"
-      "转"
-    end
+  def badge_class
+    status_meta[:color] || "ghost"
+  end
+
+  def status_label
+    status_meta[:label] || "—"
+  end
+
+  def status_name
+    status_meta[:name] || "未录入"
   end
 end
