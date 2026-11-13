@@ -13,6 +13,7 @@ class Admin::StudentsController < AdminController
     @students = @students.page(params[:page])
 
     @filter_counts = filter_counts(base)
+    @klass_students_by_student = klass_students_by_student(@students.map(&:id))
   end
 
   def create
@@ -63,6 +64,15 @@ class Admin::StudentsController < AdminController
       else
         scope
       end
+    end
+
+    # 当前学期内、当前页学员的报名记录，按学员分组供抽屉内的「班级信息」模块使用
+    def klass_students_by_student(student_ids)
+      KlassStudent
+        .joins(:semester_klass)
+        .where(semester_klasses: { semester_id: Thread.current[:semester].id }, student_id: student_ids)
+        .includes(semester_klass: [ :subject, :teacher ])
+        .group_by(&:student_id)
     end
 
     def filter_counts(base)
