@@ -23,7 +23,9 @@ class StatementReportModelTest < ActiveSupport::TestCase
 
   test "computes every row with a fixed number of queries" do
     queries = 0
-    callback = ->(*_args) { queries += 1 }
+    callback = ->(_name, _start, _finish, _id, payload) {
+      queries += 1 unless payload[:name].in?([ "SCHEMA", "TRANSACTION" ])
+    }
 
     rows = ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
       StatementReport.new(SemesterKlass.where(campuse_id: @campuse.id), campuse: @campuse).rows
