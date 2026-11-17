@@ -46,18 +46,6 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_schools_path
   end
 
-  test "update adds a nested user campus with grade ids" do
-    assert_difference -> { UserCampuse.count }, 1 do
-      put admin_school_path(schools(:school_1)), params: {
-        school: { user_campuses_attributes: { "0" => {
-          user_id: users(:two).id, campuse_id: campuses(:campuse_1).id,
-          role: "manager", grade_ids: [ "7", "8" ]
-        } } }
-      }
-    end
-    assert_redirected_to admin_schools_path
-  end
-
   test "update with a blank name fails without raising" do
     assert_no_difference -> { School.count } do
       put admin_school_path(schools(:school_1)), params: { school: { name: "" } }

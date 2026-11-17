@@ -21,7 +21,6 @@ class Admin::SchoolsController < AdminController
           campuses_attributes: [ :id, :name, :_destroy ],
           grade_subjects_attributes: [ :id, :grade_id, :subject_id, :_destroy ],
           semesters_attributes: [ :id, :name, :start_date, :end_date, :seq, :_destroy ],
-          user_campuses_attributes: [ :id, :user_id, :campuse_id, :role, :_destroy, grade_ids: [] ],
         )
     end
 end

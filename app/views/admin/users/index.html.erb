@@ -1,31 +1,85 @@
-<div class="min-h-dvh px-4">
+<% content_for :page_title, "用户管理" %>
+<% content_for :page_subtitle, "共 #{@users.size} 个账号 · 校区授权决定用户可登录的校区、可见年级与角色" %>
+<% content_for :page_actions do %>
+  <%= render "admin/shared/drawer", item: User.new, drawer_id: "drawer-user-new", button_name: "创建用户", drawer_width: "240", drawer_content: "admin/users/form" %>
+<% end %>
 
-  <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-    <table class="table">
-      <!-- head -->
-      <thead>
-        <tr>
-          <th>
-            <%= render "admin/shared/drawer", item: User.new, drawer_id: "drawer-user-new", button_name: "创建用户", drawer_width: "180", drawer_content: "admin/users/form" %>
-          </th>
-          <th>用户名</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- row 1 -->
-        <% @users.each.with_index(1) do |user, index| %>
-          <tr>
-            <td><%= index %></td>
-            <td>
-              <%= user.name %>
-            </td>
-            <td>
-              <%= render "admin/shared/drawer", item: user, drawer_id: "drawer-user-#{user.id}", button_name: "操作", drawer_width: "180", drawer_content: "admin/users/form" %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+<%
+  authorized = @users.count { |user| user.user_campuses.any? }
+  grant_count = @users.sum { |user| user.user_campuses.size }
+%>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">账号</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @users.size %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-full rounded-full bg-primary"></span></p>
   </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">已授权</p>
+    <p class="mt-1 text-2xl font-semibold"><%= authorized %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-success/20"><span class="block h-1 w-3/4 rounded-full bg-success"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">待授权</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @users.size - authorized %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-warning/20"><span class="block h-1 w-1/3 rounded-full bg-warning"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">授权条目</p>
+    <p class="mt-1 text-2xl font-semibold"><%= grant_count %><span class="ml-1 text-sm font-normal text-base-content/50">条</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-secondary/20"><span class="block h-1 w-2/3 rounded-full bg-secondary"></span></p>
+  </div>
+</div>
+
+<div class="wt-surface overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+      <tr>
+        <th class="w-12">#</th>
+        <th>用户</th>
+        <th>校区授权</th>
+        <th class="text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each.with_index(1) do |user, index| %>
+        <tr class="hover:bg-base-200/40">
+          <td class="text-base-content/40"><%= index %></td>
+          <td>
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"><%= user.name.to_s.first %></span>
+              <span class="font-medium"><%= user.name %></span>
+            </div>
+          </td>
+          <td>
+            <% if user.user_campuses.any? %>
+              <div class="flex flex-col gap-1.5">
+                <% user.user_campuses.sort_by { |uc| uc.campuse&.name.to_s }.each do |user_campuse| %>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="badge badge-soft badge-primary badge-sm"><%= user_campuse.campuse&.name || "已删除校区" %></span>
+                    <span class="badge badge-ghost badge-sm"><%= user_campuse.role_label %></span>
+                    <%
+                      grade_names = Array(user_campuse.grade_ids).map { |id| @grades_by_id[id.to_i]&.name }.compact
+                    %>
+                    <span class="text-xs <%= grade_names.any? ? "text-base-content/60" : "text-base-content/40" %>">
+                      <%= grade_names.any? ? grade_names.join("、") : "不限年级" %>
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="badge badge-soft badge-warning badge-sm">未授权</span>
+            <% end %>
+          </td>
+          <td class="text-right">
+            <%= render "admin/shared/drawer", item: user, drawer_id: "drawer-user-#{user.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/users/form" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @users.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">暂无用户，点击右上角「创建用户」添加</div>
+  <% end %>
 </div>

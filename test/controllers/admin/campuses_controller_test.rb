@@ -3,13 +3,22 @@ require "test_helper"
 class Admin::CampusesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
-  test "switch thread campuse selects the requested campus" do
+  test "switch thread campuse selects an authorized campus" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
+    UserCampuse.create!(user: users(:one), campuse: other, role: "admin")
 
     get switch_thread_campuse_admin_school_campuse_path(schools(:school_1), other), headers: { "HTTP_REFERER" => root_path }
 
     assert_redirected_to root_path
     assert_equal other, Thread.current[:campuse]
+  end
+
+  test "cannot switch to a campus the user is not authorized for" do
+    other = Campuse.create!(name: "第二校区", school: schools(:school_1))
+
+    get switch_thread_campuse_admin_school_campuse_path(schools(:school_1), other), headers: { "HTTP_REFERER" => root_path }
+
+    assert_response :not_found
   end
 
   test "update" do

@@ -1,70 +1,47 @@
-<div class="card card-border border-base-300 card-sm w-full mt-4">
-  <div class="card-body gap-4 flex flex-row">
-    <!-- 使用Ransack最佳实践优化的搜索表单 -->
-    <%= search_form_with model: @q, url: form_url, method: :get, class: "flex-1 flex gap-2" do |f| %>
-      <!-- 学期筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
-      <div class="relative">
-        <%= f.collection_select :semester_id_eq, @semesters, :id, :name, 
-          { 
-            include_blank: "选择学期",
-            selected: params[:q].try(:[], :semester_id_eq) 
-          }, 
-          class: "select select-sm w-full" 
-        %>
-      </div>
+<div class="wt-surface mb-4 p-3">
+  <%= search_form_with model: @q, url: form_url, method: :get, class: "flex flex-wrap items-end gap-2" do |f| %>
+    <div class="w-full sm:w-36">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">学期</label>
+      <%= f.collection_select :semester_id_eq, @semesters, :id, :name, { include_blank: "全部学期" },
+            class: "select select-sm w-full" %>
+    </div>
 
-      <!-- 年级筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
-      <div class="relative">
-        <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name, 
-          { 
-            include_blank: params[:q].try(:[], :grade_id_eq).blank? ? "选择年级" : "全部",
-            selected: params[:q].try(:[], :grade_id_eq) 
-          }, 
-          class: "select select-sm w-full" %>
-      </div>
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">年级</label>
+      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name, { include_blank: "全部年级" },
+            class: "select select-sm w-full" %>
+    </div>
 
-      <!-- 年级筛选 - 使用Ransack自动参数绑定，添加空白选项 -->
-      <div class="relative">
-        <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name, 
-          { 
-            include_blank: params[:q].try(:[], :subject_id_eq).blank? ? "选择科目" : "全部",
-            selected: params[:q].try(:[], :subject_id_eq) 
-          }, 
-          class: "select select-sm w-full" %>
-      </div>
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">科目</label>
+      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name, { include_blank: "全部科目" },
+            class: "select select-sm w-full" %>
+    </div>
 
-      <div class="relative">
-        <% options = if params[:q].try(:[], :subject_id_eq).blank?
-          option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name)
-        else
-          option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)), :teachers, :name, :id, :name)
-        end %>
-        <%= f.select :teacher_id_eq, options,
-          {
-            include_blank: "选择教师",
-            selected: params[:q].try(:[], :teacher_id_eq)
-          },
-          class: "select select-sm w-full" %>
-      </div>
-      
-      <!-- 班型筛选 - 使用SemesterKlass::GENRE_MAP的正确格式，添加空白选项 -->
-      <div class="relative">
-        <%= f.select :genre_eq, 
-          SemesterKlass::GENRE_MAP.map { |name, code| [name, code] }, 
-          { 
-            include_blank: "选择班型",
-            selected: params[:q].try(:[], :genre_eq) 
-          }, 
-          class: "select select-sm w-full" %>
-      </div>
-      
-      <!-- 搜索按钮 -->
-      <%= f.submit "筛选", class: "btn btn-sm btn-neutral ml-2" %>
-      
-      <!-- 清除筛选按钮 -->
+    <div class="w-full sm:w-40">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">教师</label>
+      <% options = if params[:q].try(:[], :subject_id_eq).blank?
+        option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name)
+      else
+        option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)), :teachers, :name, :id, :name)
+      end %>
+      <%= f.select :teacher_id_eq, options,
+            { include_blank: "全部教师", selected: params[:q].try(:[], :teacher_id_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">班型</label>
+      <%= f.select :genre_eq, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+            { include_blank: "全部班型", selected: params[:q].try(:[], :genre_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="flex w-full items-center gap-1 sm:ml-auto sm:w-auto">
+      <%= f.submit "筛选", class: "btn btn-sm btn-primary" %>
       <% if params[:q].present? %>
-        <%= link_to "清除", form_url, class: "btn btn-sm btn-outline btn-error ml-1" %>
+        <%= link_to "重置", form_url, class: "btn btn-sm btn-ghost" %>
       <% end %>
-    <% end %>
-  </div>
+    </div>
+  <% end %>
 </div>

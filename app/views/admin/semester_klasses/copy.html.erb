@@ -1,47 +1,60 @@
-<div class="min-h-dvh px-4 flex flex-row">
-  <div class="flex flex-col w-full">
-  <%= render "admin/semester_klasses/filter_form", form_url: copy_admin_semester_klasses_path %>
-  <div class="overflow-x-auto w-full">
-    <table class="table table-xs">
-      <!-- head -->
-      <thead>
-        <tr>
-          <th></th>
-          <th>学期</th>
-          <th>名称</th>
-          <th>年级</th>
-          <th>科目</th>
-          <th>教师</th>
-          <th>操作</th>
+<% content_for :page_title, "复制历史班级" %>
+<% content_for :page_subtitle, "把历史学期的班级、课次与学员名单复制到 #{Thread.current[:semester]&.name} · 共 #{@sks.size} 个班级" %>
+<% content_for :breadcrumb do %>
+  <%= link_to "班级管理", admin_semester_klasses_path, class: "hover:text-primary" %>
+  <span>/</span>
+  <span>复制历史班级</span>
+<% end %>
+
+<div class="mb-4 flex flex-wrap items-center gap-2 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+  <span class="badge badge-soft badge-primary badge-sm">目标学期</span>
+  <span class="font-medium"><%= Thread.current[:semester]&.name %></span>
+  <span class="text-base-content/60">复制后班级归属当前校区，课次与学员名单会一并生成，可在复制前调整班级信息。</span>
+</div>
+
+<%= render "admin/semester_klasses/filter_form", form_url: copy_admin_semester_klasses_path %>
+
+<div class="wt-surface overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+      <tr>
+        <th class="w-12">#</th>
+        <th>学期</th>
+        <th>班级</th>
+        <th>年级</th>
+        <th>科目</th>
+        <th>教师</th>
+        <th>课次</th>
+        <th>在读</th>
+        <th class="text-right">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sks.each.with_index(1) do |sk, index| %>
+        <tr class="hover:bg-base-200/40">
+          <td class="text-base-content/40"><%= index %></td>
+          <td><span class="badge badge-ghost badge-sm whitespace-nowrap"><%= sk.semester.name %></span></td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="font-medium"><%= sk.name %></span>
+              <span class="text-xs text-base-content/50"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></span>
+            </div>
+          </td>
+          <td><span class="badge badge-outline badge-primary badge-sm"><%= sk.grade.name %></span></td>
+          <td class="text-base-content/70"><%= sk.subject.name %></td>
+          <td class="text-base-content/70"><%= sk.teacher.name %></td>
+          <td class="whitespace-nowrap text-base-content/70"><%= sk.times %> 课次</td>
+          <td class="whitespace-nowrap text-base-content/70"><%= @active_counts.fetch(sk.id, 0) %> 人</td>
+          <td class="text-right">
+            <%= render "admin/shared/drawer", item: sk, drawer_id: "drawer-cp-klass-#{sk.id}", button_name: "复制", drawer_width: "240", drawer_content: "admin/semester_klasses/copy_form" %>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        <!-- row 1 -->
-        <% @sks.each.with_index(1) do |sk, index| %>
-          <tr>
-            <td><%= index %></td>
-            <td>
-              <%= sk.semester.name %>
-            </td>
-            <td>
-              <%= sk.name %>
-            </td>
-            <td>
-              <%= sk.grade.name %>
-            </td>
-            <td>
-              <%= sk.subject.name %>
-            </td>
-            <td>
-              <%= sk.teacher.name %>
-            </td>
-            <td>
-              <%= render "admin/shared/drawer", item: sk, drawer_id: "drawer-cp-klass-#{sk.id}", button_name: "复制", drawer_width: "180", drawer_content: "admin/semester_klasses/copy_form" %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-  </div>
-  </div>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @sks.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">
+      没有符合条件的历史班级<%= "，试试调整筛选条件或重置" if params[:q].present? %>
+    </div>
+  <% end %>
 </div>

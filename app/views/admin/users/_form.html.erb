@@ -1,12 +1,50 @@
-<div class="min-h-dvh px-4">
-  <%= form_with model: item, url: item.new_record? ? admin_users_path : admin_user_path(item), class: "contents" do |form| %>
-  <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
-    <legend class="fieldset-legend"><%= item.new_record? ? "创建用户" : "查看/更新用户" %></legend>
-    <label class="label">用户名</label>
-    <%= form.text_field :name, class: "input w-full" %>
-    <label class="label">密码</label>
-    <%= form.password_field :password, class: "input w-full" %>
-  </fieldset>
-  <%= form.submit item.new_record? ? "创建用户" : "更新用户", class: "btn btn-primary mt-4" %>
-  <% end %>
-</div>
+<%= form_with model: item,
+      url: item.new_record? ? admin_users_path : admin_user_path(item),
+      namespace: "user_#{item.id || 'new'}",
+      class: "space-y-4",
+      data: { controller: "user-campuses" } do |form| %>
+  <div class="wt-surface p-4">
+    <h3 class="mb-3 text-sm font-semibold"><%= item.new_record? ? "创建用户" : "账号信息 · #{item.name}" %></h3>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <div>
+        <%= form.label :name, "用户名", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.text_field :name, class: "input input-sm w-full", placeholder: "请输入用户名", required: true, autocomplete: "off" %>
+      </div>
+      <div>
+        <%= form.label :password, "密码", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.password_field :password, class: "input input-sm w-full", required: item.new_record?, autocomplete: "new-password",
+              placeholder: item.new_record? ? "请输入密码" : "留空则不修改" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="wt-surface p-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h3 class="text-sm font-semibold">
+        校区授权
+        <span class="badge badge-ghost badge-sm" data-user-campuses-target="count"><%= item.user_campuses.size %></span>
+      </h3>
+      <button type="button" data-action="user-campuses#add" class="btn btn-xs btn-outline btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+        添加校区
+      </button>
+    </div>
+    <p class="mt-1 text-xs text-base-content/50">用户只能登录被授权的校区；授权年级决定其可见的班级与学员范围。</p>
+
+    <div class="mt-3 space-y-2" data-user-campuses-target="container">
+      <%= form.fields_for :user_campuses, item.user_campuses do |user_campuse_form| %>
+        <%= render "admin/users/user_campuse_fields", form: user_campuse_form %>
+      <% end %>
+    </div>
+
+    <p class="mt-2 text-xs text-base-content/40" data-user-campuses-target="empty">暂无授权，点击「添加校区」开始分配。</p>
+
+    <template data-user-campuses-target="template">
+      <%= form.fields_for :user_campuses, UserCampuse.new(role: "manager"), child_index: "NEW_RECORD" do |user_campuse_form| %>
+        <%= render "admin/users/user_campuse_fields", form: user_campuse_form %>
+      <% end %>
+    </template>
+  </div>
+
+  <%= form.submit item.new_record? ? "创建用户" : "保存修改", class: "btn btn-primary w-full" %>
+<% end %>

@@ -18,9 +18,20 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "copy" do
+  test "copy lists historical classes with their source details" do
     get copy_admin_semester_klasses_path
+
     assert_response :success
+    assert_select "h1", text: "复制历史班级"
+    assert_select "tbody tr", count: 2
+    assert_select "td", text: /#{semester_klasses(:sk_math_1).name}/
+    assert_select "th", text: "在读"
+    assert_select "td", text: "1 人", minimum: 1
+    assert_select "label.btn", text: "复制", count: 2
+    # 复制表单应带上历史班级的班型与年级，而不是留空
+    assert_select "select[name='semester_klass[genre]'] option[selected][value='TG']", count: 2
+    assert_select "select[name='semester_klass[grade_id]'] option[selected][value='7']", count: 2
+    assert_select "textarea[name='semester_klass[students_text]']", count: 2
   end
 
   test "create" do
@@ -77,7 +88,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     end
 
     sk = SemesterKlass.last
-    assert_response :redirect
+    assert_redirected_to admin_semester_klass_path(sk)
     assert_equal Thread.current[:semester].id, sk.semester_id
     assert_equal Thread.current[:campuse].id, sk.campuse_id
     assert_equal subjects(:math).id, sk.subject_id

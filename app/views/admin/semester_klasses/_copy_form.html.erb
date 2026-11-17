@@ -1,54 +1,81 @@
-<%= form_with model: SemesterKlass.new, url: copy_create_admin_semester_klasses_path, local: true do |f| %>
-<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
-  <legend class="fieldset-legend">复制 <%= item.name %>到本学期</legend>
-  <div class="flex flex-row gap-2">
-    <div class="basic w-1/2">
-      <legend class="fieldset-legend">班级信息</legend>
-      <%= f.hidden_field :semester_id, value: Thread.current[:semester].id %>
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">班型</span>
-          <%= f.collection_select :genre, SemesterKlass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
-        </label>
-      </fieldset>
+<%= form_with model: SemesterKlass.new,
+      url: copy_create_admin_semester_klasses_path,
+      namespace: "copy_#{item.id}",
+      local: true,
+      class: "space-y-4" do |f| %>
+<% active_count = @active_counts ? @active_counts.fetch(item.id, 0) : item.current_active_students.count %>
 
-      <fieldset class="fieldset">
-        <label class="input input-sm">
-          <span class="label">序号</span>
-          <%= f.number_field :seq, class: "grow", value: item.seq %>
-        </label>
-      </fieldset>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold">复制历史班级</h3>
+    <p class="mt-1 text-xs text-base-content/50">从历史班级复制课次与学员名单到当前学期，提交前可调整班级信息。</p>
 
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">年级</span>
-          <%= f.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] },
-          { include_blank: false, selected: item.grade_id }, class: "select select-sm" %>
-        </label>
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">教师</span>
-          <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id) %>
-          <%= f.select :teacher_id, options, class: "select select-sm" %>
-        </label>
-      </fieldset>
-
-      <fieldset class="fieldset">
-        <label class="input input-sm">
-          <span class="label">课次</span>
-          <%= f.number_field :times, class: "grow", value: item.times %>
-        </label>
-      </fieldset>
-    </div>
-    <div class="basis-1/2">
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">班级学员</legend>
-        <%= f.text_area :students_text, class: "textarea h-128", value: item.students_text %>
-      </fieldset>
+    <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="badge badge-ghost badge-sm"><%= item.semester.name %></span>
+        <span class="font-medium"><%= item.name %></span>
+        <span class="text-xs text-base-content/50"><%= SemesterKlass::GENRE_MAP_REVERSE[item.genre] %></span>
+      </div>
+      <p class="mt-1.5 text-xs text-base-content/60">
+        <%= item.grade.name %> · <%= item.subject.name %> · <%= item.teacher.name %> 老师
+      </p>
+      <p class="mt-1 text-xs text-base-content/50">
+        共 <%= item.times %> 课次 · 在班 <%= active_count %> 人 · 名单 <%= item.students.size %> 人
+      </p>
     </div>
   </div>
-  <%= f.submit "复制到当前学期", class: "btn btn-sm btn-primary" %>
-</fieldset>
+
+  <div class="wt-surface p-4">
+    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
+      <span class="text-base-content/50">目标学期</span>
+      <span class="badge badge-soft badge-primary badge-sm"><%= Thread.current[:semester]&.name %></span>
+      <span class="text-base-content/50">·</span>
+      <span class="text-base-content/50"><%= Thread.current[:campuse]&.name %></span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div>
+        <%= f.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] }, { selected: item.genre },
+              { class: "select select-sm w-full", required: true } %>
+      </div>
+
+      <div>
+        <%= f.label :seq, "班级序号", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.number_field :seq, value: item.seq, min: 1, class: "input input-sm w-full",
+              oninput: "this.value = this.value.replace(/4/g, '')" %>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">序号不可含 4，避免同科目班型冲突。</p>
+      </div>
+
+      <div>
+        <%= f.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.select :grade_id,
+              Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
+              { selected: item.grade_id }, { class: "select select-sm w-full", required: true } %>
+      </div>
+
+      <div>
+        <%= f.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.select :teacher_id, option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id),
+              {}, { class: "select select-sm w-full", required: true } %>
+      </div>
+
+      <div class="sm:col-span-2">
+        <%= f.label :times, "课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.number_field :times, value: item.times, min: 1, class: "input input-sm w-full" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="wt-surface p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-sm font-semibold">学员名单</h3>
+      <span class="text-xs text-base-content/50">按姓名匹配目标年级</span>
+    </div>
+    <p class="mt-1 text-xs text-base-content/50">每行一个姓名；插班写「姓名 课次+」，例如：张三 4+。匹配不到的姓名会被忽略。</p>
+    <%= f.text_area :students_text, value: item.students_text,
+          class: "textarea textarea-sm mt-2 h-56 w-full font-mono text-xs leading-5",
+          placeholder: "张三\n李四 4+" %>
+  </div>
+
+  <%= f.submit "复制到 #{Thread.current[:semester]&.name}", class: "btn btn-primary w-full" %>
 <% end %>

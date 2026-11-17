@@ -1,0 +1,45 @@
+<% persisted = form.object.persisted? %>
+<div class="nested-fields rounded-box border border-base-300 bg-base-100 p-3" data-new-record="<%= persisted %>">
+  <%= form.hidden_field :id if persisted %>
+  <%= form.hidden_field :_destroy, value: "false" %>
+
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <div class="mb-1 flex items-center justify-between">
+        <%= form.label :campuse_id, "校区", class: "text-xs font-medium text-base-content/60" %>
+        <button type="button" data-action="user-campuses#remove" class="btn btn-xs btn-ghost gap-1 text-error" title="移除授权" aria-label="移除授权">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          移除
+        </button>
+      </div>
+      <%= form.select :campuse_id,
+            @campuses.map { |campuse| [ "#{campuse.school.name} · #{campuse.name}", campuse.id, { data: { school_id: campuse.school_id } } ] },
+            { prompt: "选择校区" },
+            { class: "select select-sm w-full", required: true,
+              data: { action: "change->user-campuses#filterGrades", user_campuses_target: "campuse" } } %>
+    </div>
+
+    <fieldset>
+      <legend class="mb-1 text-xs font-medium text-base-content/60">
+        授权年级 <span class="font-normal text-base-content/40">（不选表示不限年级）</span>
+      </legend>
+      <%= form.hidden_field :grade_ids, value: "", multiple: true, id: nil %>
+      <div class="flex flex-wrap gap-1.5" data-user-campuses-target="grades">
+        <% @grades.each do |grade| %>
+          <% school_ids = Array(@grade_school_ids[grade.id]).join(",") %>
+          <label class="grades-chip flex cursor-pointer items-center gap-1 rounded-full border border-base-300 px-2 py-1 text-xs text-base-content/70 transition hover:border-primary/50 has-checked:border-primary has-checked:bg-primary/10 has-checked:text-primary" data-grade-option>
+            <%= form.check_box :grade_ids, { multiple: true, class: "checkbox checkbox-xs", data: { school_ids: school_ids } }, grade.id, nil %>
+            <%= grade.name %>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+
+    <div>
+      <%= form.label :role, "角色", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+      <%= form.select :role, UserCampuse::ROLES.map { |key, label| [ label, key ] }, { prompt: "选择角色" },
+            { class: "select select-sm w-full", required: true } %>
+      <p class="mt-1 text-[11px] leading-tight text-base-content/40">超级管理员可进入系统设置；管理员仅能管理被授权年级的数据。</p>
+    </div>
+  </div>
+</div>

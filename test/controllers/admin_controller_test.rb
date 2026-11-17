@@ -36,6 +36,16 @@ class AdminControllerTest < ActionDispatch::IntegrationTest
     assert_equal semesters(:semester_current), Thread.current[:semester]
   end
 
+  test "user without any campus authorization is signed out with a hint" do
+    user = User.create!(name: "no_campus", password: "password")
+    sign_in_as user
+
+    get root_path
+
+    assert_redirected_to new_session_path
+    assert_match "尚未分配校区", flash[:alert]
+  end
+
   test "write actions require authentication" do
     post admin_students_path, params: { student: { name: "未登录" } }
     assert_redirected_to new_session_path
