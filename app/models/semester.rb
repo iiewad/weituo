@@ -26,7 +26,7 @@ class Semester < ApplicationRecord
   def related_previous_semester
     Semester.where(school_id: school_id).where(seq: ...seq).where(
       "end_date <= ?", start_date
-    ).order(seq: :desc).last
+    ).order(seq: :desc).first
   end
 
   def related_history_semesters

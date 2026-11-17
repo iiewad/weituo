@@ -21,9 +21,9 @@
     <div class="w-full sm:w-40">
       <label class="mb-1 block text-xs font-medium text-base-content/50">教师</label>
       <% options = if params[:q].try(:[], :subject_id_eq).blank?
-        option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name)
+        option_groups_from_collection_for_select(Subject.includes(:teachers), :teachers, :name, :id, :name)
       else
-        option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)), :teachers, :name, :id, :name)
+        option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)).includes(:teachers), :teachers, :name, :id, :name)
       end %>
       <%= f.select :teacher_id_eq, options,
             { include_blank: "全部教师", selected: params[:q].try(:[], :teacher_id_eq) },

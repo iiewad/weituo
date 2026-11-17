@@ -19,7 +19,9 @@ bin/ci                    # 全套本地检查：rubocop / bundler-audit / impor
 
 单独检查：`bin/rubocop`、`bin/bundler-audit`、`bin/importmap audit`、`bin/brakeman`、`bin/rails tailwindcss:build`。
 
-本地 MySQL 通过 `/tmp/mysql.sock` 以 root 免密连接，库为 `weituo_development` / `weituo_test`；`db/seeds.rb` 会生成演示数据（含 1000 名学员）。测试用 `fixtures :all`，认证用 `sign_in_as(users(:one))`。
+本地 MySQL 通过 `/tmp/mysql.sock` 以 root 免密连接，库为 `weituo_development` / `weituo_test`；`db/seeds.rb` 会先清空业务数据，再生成覆盖学校/校区/学期、班级、课次、考勤与授权账号的演示数据（2 个校区、4 个学期、180 名学员）。测试用 `fixtures :all`，认证用 `sign_in_as(users(:one))`。
+
+演示账号密码均为 `password`：`admin`（超级管理员，两个校区）、`user1`（城东校区管理员，七/八年级）、`user2`（城西校区管理员，全部年级）、`user3`（城东校区管理员，仅九年级）、`pending`（未分配校区）。
 
 ## 角色与权限
 

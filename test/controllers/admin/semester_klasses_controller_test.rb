@@ -13,9 +13,16 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
-  test "statement" do
+  test "statement renders summary cards and per-class rates" do
     get statement_admin_semester_klasses_path
+
     assert_response :success
+    assert_select "h1", text: "班级报表"
+    assert_select "th", text: "新增率"
+    assert_select "th", text: "拓科率"
+    assert_select "th", text: "预留率"
+    assert_select "tbody tr", count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
+    assert_select "h3", text: /学员构成/, count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
   end
 
   test "show renders the class menu with the current class active" do

@@ -5,6 +5,7 @@
   # 避免动态拼接 class 无法被 Tailwind 扫描生成；max-width 保证窄屏不溢出。
   width = (local_assigns[:drawer_width] || 180).to_i
   panel_style = "width: min(calc(var(--spacing) * #{width}), 92vw)"
+  content_locals = { item: item }.merge(local_assigns[:drawer_locals] || {})
 %>
 <div class="drawer drawer-end">
   <input id="<%= drawer_id %>" type="checkbox" class="drawer-toggle" />
@@ -19,7 +20,7 @@
   <div class="drawer-side z-50">
     <label for="<%= drawer_id %>" aria-label="close sidebar" class="drawer-overlay"></label>
     <div class="bg-base-200 min-h-full p-4 sm:p-6" style="<%= panel_style %>">
-      <%= render drawer_content, item: item %>
+      <%= render drawer_content, content_locals %>
     </div>
   </div>
 </div>
