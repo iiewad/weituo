@@ -22,8 +22,9 @@
 </div>
 
 <div class="flex flex-col gap-4 lg:flex-row">
-  <div class="wt-surface shrink-0 p-2 lg:w-56">
-    <%= render "admin/semester_klasses/menu", grades: @grades %>
+  <div class="wt-surface shrink-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-56 lg:self-start lg:overflow-y-auto">
+    <p class="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-base-content/40">班级切换</p>
+    <%= render "admin/semester_klasses/menu", sks: @sks, current_sk: @sk %>
   </div>
 
   <div class="wt-surface min-w-0 flex-1 overflow-x-auto">

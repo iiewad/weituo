@@ -1,20 +1,39 @@
-<ul class="menu bg-base-200 rounded-box w-56">
-  <% grades.each do |grade| %>
-    <li class="<%= "menu-disabled" if grade.semester_klasses.where(semester_id: Thread.current[:semester].id).empty? %>">
-      <details <%= "open" if grade.semester_klasses.present? && @sk.in?(grade.semester_klasses) %>>
-        <summary><%= grade.name %></summary>
+<%
+  current_sk = local_assigns[:current_sk]
+  grouped = sks.group_by(&:grade).sort_by { |grade, _| grade.level }
+%>
+<ul class="menu menu-sm w-full">
+  <% grouped.each do |grade, grade_sks| %>
+    <% subjects = grade_sks.group_by(&:subject).sort_by { |subject, _| subject.name } %>
+    <li>
+      <details <%= "open" if grade_sks.include?(current_sk) %>>
+        <summary class="flex items-center justify-between gap-2">
+          <span><%= grade.name %></span>
+          <span class="badge badge-ghost badge-xs"><%= grade_sks.size %></span>
+        </summary>
         <ul>
-          <% grade.subjects.each do |subject| %>
-          <li class="<%= "menu-disabled" if @sks.where(subject_id: subject.id, grade_id: grade.id ).empty? %>">
-            <details <%= "open" if @sks.where(subject_id: subject.id, grade_id: grade.id ).any? && @sk.in?(@sks.where(subject_id: subject.id, grade_id: grade.id )) %>>
-              <summary><%= subject.name %></summary>
-              <ul>
-                <% @sks.where(subject_id: subject.id, grade_id: grade.id ).order(:seq).each do |sk| %>
-                  <li class="<%= "menu-active" if sk == @sk %>"><%= link_to "#{sk.name}(#{sk.teacher.name})", admin_semester_klass_path(sk.id) %></li>
-                <% end %>
-              </ul>
-            </details>
-          </li>
+          <% subjects.each do |subject, subject_sks| %>
+            <li>
+              <details <%= "open" if subject_sks.include?(current_sk) %>>
+                <summary class="flex items-center justify-between gap-2">
+                  <span><%= subject.name %></span>
+                  <span class="text-xs opacity-50"><%= subject_sks.size %></span>
+                </summary>
+                <ul>
+                  <% subject_sks.sort_by(&:seq).each do |sk| %>
+                    <% active = sk == current_sk %>
+                    <li>
+                      <%= link_to admin_semester_klass_path(sk),
+                            class: ("menu-active" if active),
+                            aria: { current: ("page" if active) } do %>
+                        <span class="min-w-0 truncate"><%= sk.name %></span>
+                        <span class="ml-auto shrink-0 text-xs opacity-60"><%= sk.teacher.name %></span>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              </details>
+            </li>
           <% end %>
         </ul>
       </details>

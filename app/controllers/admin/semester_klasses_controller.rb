@@ -85,8 +85,7 @@ class Admin::SemesterKlassesController < AdminController
     @sks = SemesterKlass.where(
       campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
-    )
-    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
+    ).includes(:grade, :subject, :teacher)
   end
 
   private

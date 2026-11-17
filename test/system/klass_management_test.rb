@@ -1,6 +1,16 @@
 require "application_system_test_case"
 
 class KlassManagementTest < ApplicationSystemTestCase
+  test "从班级菜单切换到同科目的其他班级" do
+    sign_in
+    visit admin_semester_klass_path(semester_klasses(:sk_math_2))
+
+    within(".menu") { click_link semester_klasses(:sk_math_3).name }
+
+    assert_current_path admin_semester_klass_path(semester_klasses(:sk_math_3))
+    assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
+  end
+
   test "在班级管理页开班并生成课次" do
     sign_in
     visit admin_semester_klasses_path

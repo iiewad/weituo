@@ -18,9 +18,16 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "show" do
-    get admin_semester_klass_path(semester_klasses(:sk_math_2))
+  test "show renders the class menu with the current class active" do
+    sk = semester_klasses(:sk_math_2)
+    get admin_semester_klass_path(sk)
+
     assert_response :success
+    assert_select "a.menu-active[aria-current='page']", text: /#{sk.name}/
+    assert_select "summary", text: /七年级/
+    assert_select "summary", text: /数学/
+    # 同年级同科目下的其他班级也出现在菜单里，便于切换
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_3))}']"
   end
 
   test "copy lists historical classes with their source details" do
