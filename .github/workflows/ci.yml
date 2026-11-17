@@ -45,5 +45,24 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Run checks
-        run: bin/ci
+      # 与 config/ci.rb 的步骤保持一致；拆成独立步骤，失败时能直接看出是哪一项。
+      - name: Setup
+        run: bin/setup --skip-server
+
+      - name: "Style: Ruby"
+        run: bin/rubocop
+
+      - name: "Security: Gem audit"
+        run: bin/bundler-audit
+
+      - name: "Security: Importmap audit"
+        run: bin/importmap audit
+
+      - name: "Security: Brakeman"
+        run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
+
+      - name: "Tests: Rails"
+        run: bin/rails test
+
+      - name: "Tests: Seeds"
+        run: bin/rails db:seed:replant
