@@ -12,7 +12,9 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest 已切到 26.04，ruby/setup-ruby 尚无对应 Ruby 3.3.9 的预编译包；
+    # 固定到 24.04，等 setup-ruby 支持后再改回 latest。
+    runs-on: ubuntu-24.04
 
     services:
       mysql:
