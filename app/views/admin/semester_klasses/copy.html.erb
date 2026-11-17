@@ -45,8 +45,16 @@
           <td class="text-base-content/70"><%= sk.teacher.name %></td>
           <td class="whitespace-nowrap text-base-content/70"><%= sk.times %> 课次</td>
           <td class="whitespace-nowrap text-base-content/70"><%= @active_counts.fetch(sk.id, 0) %> 人</td>
-          <td class="text-right">
-            <%= render "admin/shared/drawer", item: sk, drawer_id: "drawer-cp-klass-#{sk.id}", button_name: "复制", drawer_width: "240", drawer_content: "admin/semester_klasses/copy_form" %>
+          <td class="text-right whitespace-nowrap">
+            <div class="flex justify-end gap-1">
+              <%= render "admin/shared/drawer", item: sk,
+                    drawer_id: "drawer-cp-detail-#{sk.id}",
+                    button_name: "详情",
+                    button_class: "btn btn-xs btn-ghost",
+                    drawer_width: "240",
+                    drawer_content: "admin/semester_klasses/copy_detail" %>
+              <%= render "admin/shared/drawer", item: sk, drawer_id: "drawer-cp-klass-#{sk.id}", button_name: "复制", drawer_width: "240", drawer_content: "admin/semester_klasses/copy_form" %>
+            </div>
           </td>
         </tr>
       <% end %>

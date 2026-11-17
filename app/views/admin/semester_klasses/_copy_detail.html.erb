@@ -1,0 +1,81 @@
+<% active_count = @active_counts ? @active_counts.fetch(item.id, 0) : item.current_active_students.count %>
+<% started = item.courses.count(&:started?) %>
+<% planned = item.times.to_i %>
+<% students = item.students.sort_by(&:name) %>
+
+<div class="space-y-4">
+  <div class="wt-surface p-4">
+    <div class="flex items-start justify-between gap-2">
+      <div>
+        <h3 class="text-sm font-semibold">历史班级详情</h3>
+        <p class="mt-1 text-xs text-base-content/50">确认来源班级的信息后再复制到当前学期。</p>
+      </div>
+      <span class="badge badge-outline badge-secondary badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[item.genre] %></span>
+    </div>
+
+    <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="badge badge-ghost badge-sm"><%= item.semester.name %></span>
+        <span class="font-medium"><%= item.name %></span>
+      </div>
+      <p class="mt-1.5 text-xs text-base-content/60">
+        <%= item.grade.name %> · <%= item.subject.name %> · <%= item.teacher.name %> 老师
+      </p>
+      <p class="mt-1 text-xs text-base-content/50">
+        共 <%= planned %> 课次 · 在班 <%= active_count %> 人 · 名单 <%= students.size %> 人
+      </p>
+    </div>
+
+    <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+      <div>
+        <dt class="text-base-content/50">学期</dt>
+        <dd class="mt-0.5 font-medium"><%= item.semester.name %></dd>
+      </div>
+      <div>
+        <dt class="text-base-content/50">班级序号</dt>
+        <dd class="mt-0.5 font-medium">第 <%= item.seq %> 班</dd>
+      </div>
+      <div>
+        <dt class="text-base-content/50">年级</dt>
+        <dd class="mt-0.5 font-medium"><%= item.grade.name %></dd>
+      </div>
+      <div>
+        <dt class="text-base-content/50">科目</dt>
+        <dd class="mt-0.5 font-medium"><%= item.subject.name %></dd>
+      </div>
+      <div>
+        <dt class="text-base-content/50">教师</dt>
+        <dd class="mt-0.5 font-medium"><%= item.teacher.name %></dd>
+      </div>
+      <div>
+        <dt class="text-base-content/50">课次</dt>
+        <dd class="mt-0.5 font-medium"><%= planned %> 次</dd>
+      </div>
+      <div class="col-span-2">
+        <dt class="text-base-content/50">开课进度</dt>
+        <dd class="mt-1.5 flex items-center gap-2">
+          <span class="h-1 flex-1 rounded-full bg-base-200">
+            <span class="block h-1 rounded-full bg-success" style="width: <%= planned.zero? ? 0 : (started * 100 / planned) %>%"></span>
+          </span>
+          <span class="whitespace-nowrap text-base-content/60">已开 <%= started %>/<%= planned %></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="wt-surface p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-sm font-semibold">学员名单</h3>
+      <span class="text-xs text-base-content/50">共 <%= students.size %> 人</span>
+    </div>
+    <% if students.any? %>
+      <div class="mt-3 flex max-h-64 flex-wrap gap-1.5 overflow-y-auto">
+        <% students.each do |student| %>
+          <span class="badge badge-ghost badge-sm"><%= student.name %></span>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="mt-3 text-xs text-base-content/40">该班级没有学员名单</p>
+    <% end %>
+  </div>
+</div>

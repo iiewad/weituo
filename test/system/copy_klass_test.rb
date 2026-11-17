@@ -1,6 +1,23 @@
 require "application_system_test_case"
 
 class CopyKlassTest < ApplicationSystemTestCase
+  test "查看历史班级详情" do
+    sign_in
+    visit copy_admin_semester_klasses_path
+
+    source = semester_klasses(:sk_math_1)
+    row = find("tr", text: source.name)
+    within(row) { find("label.btn", text: "详情").click }
+
+    drawer = find("#drawer-cp-detail-#{source.id}", visible: :all).ancestor(".drawer-end")
+    within(drawer) do
+      assert_text "历史班级详情"
+      assert_text "#{source.grade.name} · #{source.subject.name} · #{source.teacher.name} 老师"
+      assert_text "共 16 课次"
+      assert_text "7_学生1"
+    end
+  end
+
   test "从历史班级复制到当前学期并跳到新班级" do
     sign_in
     visit admin_semester_klasses_path

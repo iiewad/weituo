@@ -51,7 +51,7 @@ class Admin::SemesterKlassesController < AdminController
 
   def copy
     @q = SemesterKlass.ransack(params[:q])
-    @sks = @q.result.joins(:semester, :grade, :subject).includes(:semester, :grade, :subject, :teacher, :students).where(
+    @sks = @q.result.joins(:semester, :grade, :subject).includes(:semester, :grade, :subject, :teacher, :students, :courses).where(
       campuse_id: Thread.current[:campuse].id,
     ).where(
       "semesters.seq < ?", Thread.current[:semester].seq

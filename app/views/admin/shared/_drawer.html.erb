@@ -12,7 +12,7 @@
     <% if icon %>
       <label for="<%= drawer_id %>" class="drawer-button btn btn-xs btn-square btn-primary" title="<%= label %>" aria-label="<%= label %>"><%= icon %></label>
     <% else %>
-      <label for="<%= drawer_id %>" class="drawer-button btn btn-xs btn-primary"><%= label %></label>
+      <label for="<%= drawer_id %>" class="drawer-button <%= local_assigns[:button_class] || "btn btn-xs btn-primary" %>"><%= label %></label>
     <% end %>
   </div>
   <%# drawer-side 默认 z-index:10，会被 sticky 顶栏(z-30)与常驻侧栏(z-40)盖住；提到 z-50 让抽屉与遮罩浮于其上 %>

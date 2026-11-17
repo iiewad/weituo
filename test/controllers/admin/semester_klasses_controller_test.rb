@@ -39,6 +39,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "td", text: /#{semester_klasses(:sk_math_1).name}/
     assert_select "th", text: "在读"
     assert_select "td", text: "1 人", minimum: 1
+    assert_select "label.btn", text: "详情", count: 2
+    assert_select "h3", text: "历史班级详情", count: 2
     assert_select "label.btn", text: "复制", count: 2
     # 复制表单应带上历史班级的班型与年级，而不是留空
     assert_select "select[name='semester_klass[genre]'] option[selected][value='TG']", count: 2
