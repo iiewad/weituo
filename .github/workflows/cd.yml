@@ -17,7 +17,8 @@ jobs:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
-    runs-on: ubuntu-latest
+    # 与 CI 保持一致，避免 ubuntu-latest 切换后 Ruby 版本不可用。
+    runs-on: ubuntu-24.04
     env:
       DOCKER_BUILDKIT: 1
       RAILS_ENV: production
