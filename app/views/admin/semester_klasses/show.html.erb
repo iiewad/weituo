@@ -8,7 +8,7 @@
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
   <%= render "admin/shared/drawer", item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
-  <%= link_to "复制历史班级", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-primary" %>
+  <%= link_to "复制历史班级", copy_admin_semester_klasses_path, class: "btn btn-xs btn-outline btn-primary" %>
 <% end %>
 
 <div class="mb-4 flex flex-wrap gap-2">

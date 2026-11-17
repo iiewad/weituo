@@ -24,7 +24,6 @@ class NavigationTest < ApplicationSystemTestCase
 
   test "顶栏切换学期后班级列表随之更新" do
     visit admin_semester_klasses_path
-    open_class_menu
     assert_text semester_klasses(:sk_math_2).name
     assert_no_text semester_klasses(:sk_math_1).name
 
@@ -34,15 +33,17 @@ class NavigationTest < ApplicationSystemTestCase
     assert_text "学期切换成功"
 
     visit admin_semester_klasses_path
-    open_class_menu
     assert_text semester_klasses(:sk_math_1).name
     assert_no_text semester_klasses(:sk_math_2).name
   end
 
-  private
-    # 班级链接藏在折叠的年级 / 科目菜单里，需要像用户一样展开。
-    def open_class_menu
-      find("summary", text: "七年级").click
-      find("summary", text: "数学").click
-    end
+  test "点击班级卡片进入考勤详情" do
+    visit admin_semester_klasses_path
+
+    click_link semester_klasses(:sk_math_2).name
+
+    assert_current_path admin_semester_klass_path(semester_klasses(:sk_math_2))
+    assert_text "在班"
+    assert_text "课次"
+  end
 end

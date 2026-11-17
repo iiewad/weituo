@@ -1,58 +1,61 @@
-<%= form_with model: item, url: item.new_record? ? admin_semester_klasses_path : admin_semester_klass_path(item), method: item.new_record? ? :post : :put, class: "w-full" do |form| %>
-<fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-2">
-<legend class="fieldset-legend"><%= item.new_record? ? "创建班级" : "编辑班级" %></legend>
-  <div class="flex flex-row">
-    <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
-    <div class="basis-1/2">
-      <legend class="fieldset-legend">班级信息</legend>
-      <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+<%= form_with model: item,
+      url: item.new_record? ? admin_semester_klasses_path : admin_semester_klass_path(item),
+      method: item.new_record? ? :post : :put,
+      namespace: "klass_#{item.id || 'new'}",
+      local: true,
+      class: "space-y-4" do |form| %>
+  <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
+  <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
 
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">班型</span>
-          <%= form.collection_select :genre, SemesterKlass::GENRE_MAP.to_a, :last, :first, class: "select select-sm", value: item&.genre %>
-        </label>
-      </fieldset>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold"><%= item.new_record? ? "开班" : "班级详情 · #{item.name}" %></h3>
+    <p class="mt-1 text-xs text-base-content/50"><%= item.new_record? ? "创建后自动按课次排课，并可从名单导入学员。" : "修改班级信息会同步更新班级名称与课次。" %></p>
 
-      <fieldset class="fieldset">
-        <label class="input input-sm">
-          <span class="label">序号</span>
-          <%= form.number_field :seq, class: "grow", placeholder: "序号", oninput: "this.value = this.value.replace(/4/g, '')", value: item&.seq %>
-        </label>
-        <p class="label text-xs">班级序号禁止输入4, 避免与相同科目与班型的班级序号冲突。</p>
-      </fieldset>
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div>
+        <%= form.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+              { selected: item.genre.presence || "TG" }, { class: "select select-sm w-full", required: true } %>
+      </div>
 
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">年级</span>
-          <%= form.select :grade_id, Current.user.grades_by_campuse(Thread.current[:campuse].id).map { |grade| [grade.name, grade.id] }, class: "select select-sm", value: item&.grade_id %>
-        </label>
-      </fieldset>
+      <div>
+        <%= form.label :seq, "班级序号", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.number_field :seq, value: item.seq, min: 1, class: "input input-sm w-full", required: true,
+              oninput: "this.value = this.value.replace(/4/g, '')" %>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">序号不可含 4，避免同科目班型冲突。</p>
+      </div>
 
-      <fieldset class="fieldset">
-        <label class="select select-sm">
-          <span class="label">教师</span>
-          <% options = option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id) %>
-          <%= form.select :teacher_id, options, class: "select select-sm" %>
-        </label>
-      </fieldset>
+      <div>
+        <%= form.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :grade_id,
+              Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
+              { include_blank: "选择年级", selected: item.grade_id }, { class: "select select-sm w-full", required: true } %>
+      </div>
 
-      <fieldset class="fieldset">
-        <label class="input input-sm">
-          <span class="label">课次</span>
-          <%= form.number_field :times, class: "grow", placeholder: "课次", value: item&.times %>
-        </label>
-      </fieldset>
+      <div>
+        <%= form.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :teacher_id, option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id),
+              { include_blank: "选择教师" }, { class: "select select-sm w-full", required: true } %>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">科目由所选教师自动带出。</p>
+      </div>
 
-    </div>
-    <div class="basis-1/2">
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">班级学员</legend>
-        <%= form.text_area :students_text, class: "textarea h-128", placeholder: "请输入学员姓名, 每个姓名占一行\n插班写（姓名 课次+）\n示例：姓名 4+", value: item.new_record? ? "" : @sk&.students_text %>
-      </fieldset>
+      <div class="sm:col-span-2">
+        <%= form.label :times, "课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.number_field :times, value: item.times, min: 1, class: "input input-sm w-full", placeholder: "例如：16", required: true %>
+      </div>
     </div>
   </div>
-  
-  <%= form.submit "保存", class: "btn btn-xs btn-primary" %>
-</fieldset>
+
+  <div class="wt-surface p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-sm font-semibold">学员名单</h3>
+      <span class="text-xs text-base-content/50">每行一个姓名</span>
+    </div>
+    <p class="mt-1 text-xs text-base-content/50">按姓名匹配当前年级学员；插班写「姓名 课次+」，例如：张三 4+。</p>
+    <%= form.text_area :students_text, value: item.new_record? ? "" : item.students_text,
+          class: "textarea textarea-sm mt-2 h-56 w-full font-mono text-xs leading-5",
+          placeholder: "张三\n李四 4+" %>
+  </div>
+
+  <%= form.submit item.new_record? ? "开班" : "保存修改", class: "btn btn-primary w-full" %>
 <% end %>

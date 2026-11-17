@@ -3,9 +3,14 @@ require "test_helper"
 class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
-  test "index" do
+  test "index lists current semester classes grouped by grade" do
     get admin_semester_klasses_path
+
     assert_response :success
+    assert_select "h1", text: "班级管理"
+    assert_select "h2", text: "七年级"
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_2))}']", count: 1
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
   test "statement" do

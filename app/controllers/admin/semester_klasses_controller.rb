@@ -16,8 +16,12 @@ class Admin::SemesterKlassesController < AdminController
     @sks = SemesterKlass.where(
       campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
-    )
-    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects)
+    ).includes(:grade, :subject, :teacher, :courses).to_a
+      .sort_by { |sk| [ sk.grade.level, sk.subject.name, sk.genre, sk.seq ] }
+    @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
+    @total_courses = @sks.sum { |sk| sk.times.to_i }
+    @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
+    @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }
   end
 
   def create

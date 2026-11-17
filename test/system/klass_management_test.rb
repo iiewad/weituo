@@ -1,0 +1,24 @@
+require "application_system_test_case"
+
+class KlassManagementTest < ApplicationSystemTestCase
+  test "在班级管理页开班并生成课次" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "精英班", from: "班型"
+      fill_in "班级序号", with: "9"
+      select "七年级", from: "年级"
+      select "张", from: "教师"
+      fill_in "课次", with: "3"
+      click_button "开班"
+    end
+
+    assert_text "班级创建成功"
+    assert_text "7数精9"
+    assert_equal 3, SemesterKlass.order(:id).last.courses.count
+  end
+end
