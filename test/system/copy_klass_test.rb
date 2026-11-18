@@ -28,13 +28,15 @@ class CopyKlassTest < ApplicationSystemTestCase
 
     drawer = find("#drawer-cp-klass-#{source.id}", visible: :all).ancestor(".drawer-end")
     within(drawer) do
-      find("summary", text: "额外加入学员").click
-      find("input[type='search']").set("7_学生2")
+      find("[data-student-multiselect-target='input']").set("7_学生2")
 
-      assert_selector "#copy_extra_#{source.id}_student_#{students(:student_7_2).id}", visible: true
-      assert_no_selector "#copy_extra_#{source.id}_student_#{students(:student_7_3).id}", visible: true
+      assert_selector "#copy_#{source.id}_student_#{students(:student_7_2).id}", visible: true
+      assert_no_selector "#copy_#{source.id}_student_#{students(:student_7_3).id}", visible: true
 
-      find("input[type='search']").set("不存在的学员")
+      find("#copy_#{source.id}_student_#{students(:student_7_2).id}").check
+      assert_selector "[data-student-multiselect-target='selected']", text: students(:student_7_2).name
+
+      find("[data-student-multiselect-target='input']").set("不存在的学员")
       assert_text "没有匹配的学员"
     end
   end

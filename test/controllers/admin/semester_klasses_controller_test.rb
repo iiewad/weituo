@@ -42,7 +42,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "正常"
     assert_includes card.text, "缺课"
     assert_includes card.text, "转出"
-    assert_select "[data-controller='list-filter'] input[data-list-filter-target='input']", minimum: 1
+    assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
     assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
   end
 
@@ -195,9 +195,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name='semester_klass[grade_id]'] option[selected][value='7']", count: 2
     assert_select "input[type='checkbox'][name='student_ids[]']", minimum: 1
     assert_select "input[name='student_ids[]'][checked][value='#{students(:student_7_1).id}']"
-    assert_select "summary", text: /额外加入学员/
-    assert_select "input#copy_extra_#{semester_klasses(:sk_math_1).id}_student_#{students(:student_7_2).id}"
-    assert_select "[data-controller='list-filter'] input[data-list-filter-target='input']", minimum: 1
+    assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
+    assert_select "input#copy_#{semester_klasses(:sk_math_1).id}_student_#{students(:student_7_2).id}"
   end
 
   test "copy can target a future semester and includes current classes" do
@@ -257,9 +256,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klasses_path
 
     assert_response :success
-    assert_select "form[data-controller='list-filter']"
-    assert_select "select[name='semester_klass[grade_id]'][data-list-filter-target='grade']"
-    assert_select "input[type='search'][data-list-filter-target='input']"
+    assert_select "[data-controller='student-multiselect'][data-student-multiselect-grade-selector-value='#klass_new_grade_id']"
+    assert_select "input[type='search'][data-student-multiselect-target='input']"
     assert_select "input[name='join_course_seq'][value='1']"
     assert_select "input#klass_new_student_#{students(:student_7_4).id}"
     assert_select "textarea[name='semester_klass[students_text]']", count: 0

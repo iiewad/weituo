@@ -1,5 +1,6 @@
 <% sk = item.semester_klass %>
 <% candidates = @insert_student_candidates || [] %>
+<% student_options = candidates.map { |student| { student: student, checked: false, badge: nil } } %>
 
 <%= form_with model: item,
       url: insert_students_admin_semester_klass_course_path(sk, item),
@@ -33,35 +34,18 @@
     </div>
   </div>
 
-  <div class="wt-surface p-4" data-controller="list-filter">
+  <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">选择学员</h3>
       <span class="text-xs text-base-content/50">共 <%= candidates.size %> 人可选</span>
     </div>
     <p class="mt-1 text-xs text-base-content/50">只列出本班同年级、尚未加入本班的学员。</p>
 
-    <% if candidates.any? %>
-      <label class="input input-sm mt-2 flex w-full items-center gap-2 rounded-field">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
-        <input type="search" class="grow" placeholder="搜索学员姓名" autocomplete="off"
-               data-list-filter-target="input" data-action="input->list-filter#filter">
-      </label>
-
-      <div class="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
-        <% candidates.each do |student| %>
-          <label class="flex items-center gap-2 rounded-box bg-base-200/50 px-2.5 py-1.5 text-xs"
-                 data-list-filter-target="item" data-search-text="<%= student.name %>">
-            <%= check_box_tag "student_ids[]", student.id, false,
-                  id: "insert_#{item.id}_student_#{student.id}",
-                  class: "checkbox checkbox-xs" %>
-            <span class="font-medium"><%= student.name %></span>
-          </label>
-        <% end %>
-      </div>
-      <p class="mt-2 hidden text-xs text-base-content/40" data-list-filter-target="empty">没有匹配的学员</p>
-    <% else %>
-      <p class="mt-2 text-xs text-base-content/40">没有可添加的学员，请先在学员管理中建档或检查年级。</p>
-    <% end %>
+    <%= render "admin/shared/student_multiselect",
+          options: student_options,
+          id_prefix: "insert_#{item.id}",
+          hint: "所选学员从第 #{item.seq} 课开始加入，之前课次补记为缺课。",
+          empty_message: "没有可添加的学员，请先在学员管理中建档或检查年级。" %>
   </div>
 
   <%= form.submit "添加学员", class: "btn btn-primary w-full", disabled: candidates.empty? %>

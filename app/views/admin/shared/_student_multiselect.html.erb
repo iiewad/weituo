@@ -1,0 +1,49 @@
+<% if options.any? %>
+  <div data-controller="student-multiselect"
+       <% if local_assigns[:grade_selector].present? %>data-student-multiselect-grade-selector-value="<%= grade_selector %>"<% end %>
+       data-action="change->student-multiselect#sync">
+    <div class="mt-2 flex items-center justify-between gap-2">
+      <span class="text-xs text-base-content/50">
+        已选 <span class="font-semibold text-base-content" data-student-multiselect-target="count">0</span> 人
+      </span>
+      <button type="button" class="text-xs text-base-content/40 transition hover:text-primary" data-action="student-multiselect#clear">清空</button>
+    </div>
+
+    <div class="mt-1.5 flex max-h-20 flex-wrap gap-1 overflow-y-auto" data-student-multiselect-target="selected"></div>
+
+    <label class="input input-sm mt-2 flex w-full items-center gap-2 rounded-field">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+      <input type="search" class="grow" placeholder="搜索学员姓名" autocomplete="off"
+             data-student-multiselect-target="input"
+             data-action="focus->student-multiselect#open input->student-multiselect#filter keydown.esc->student-multiselect#close">
+    </label>
+
+    <div class="mt-2 hidden rounded-box border border-base-300 bg-base-100 p-1" data-student-multiselect-target="panel">
+      <div class="max-h-56 overflow-y-auto">
+        <% options.each do |option| %>
+          <% student = option[:student] %>
+          <label class="flex items-center gap-2 rounded-box px-2.5 py-1.5 text-xs hover:bg-base-200/60"
+                 data-student-multiselect-target="option"
+                 data-search-text="<%= student.name %>"
+                 data-grade-id="<%= student.grade_id %>">
+            <%= check_box_tag "student_ids[]", student.id, option[:checked],
+                  id: "#{id_prefix}_student_#{student.id}",
+                  class: "checkbox checkbox-xs" %>
+            <span class="font-medium"><%= student.name %></span>
+            <% if option[:badge].present? %>
+              <span class="badge badge-soft badge-neutral badge-xs"><%= option[:badge] %></span>
+            <% end %>
+            <span class="ml-auto text-[10px] text-base-content/40"><%= student.grade&.name %></span>
+          </label>
+        <% end %>
+      </div>
+      <p class="hidden px-3 py-2 text-xs text-base-content/40" data-student-multiselect-target="empty">没有匹配的学员</p>
+    </div>
+
+    <% if hint.present? %>
+      <p class="mt-1.5 text-[11px] leading-snug text-base-content/40"><%= hint %></p>
+    <% end %>
+  </div>
+<% else %>
+  <p class="mt-2 text-xs text-base-content/40"><%= empty_message %></p>
+<% end %>
