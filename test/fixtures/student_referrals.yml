@@ -1,3 +1,15 @@
 referral_1:
   referrer_id: 21
   referred_id: 1
+
+referral_2:
+  referrer_id: 21
+  referred_id: 2
+
+referral_3:
+  referrer_id: 21
+  referred_id: 3
+
+referral_4:
+  referrer_id: 22
+  referred_id: 4

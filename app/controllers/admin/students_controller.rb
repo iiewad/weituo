@@ -36,14 +36,14 @@ class Admin::StudentsController < AdminController
     end
   end
 
-  # 推荐人选择器的远程候选：限定当前校区、当前账号可见年级，最多返回 20 条。
+  # 推荐人选择器的远程候选：只按姓名搜索当前校区学员（允许跨年级），不返回无查询条件的全量列表。
   def options
-    grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
-    scope = Student.where(campuse_id: Thread.current[:campuse].id, grade_id: grade_ids).includes(:grade)
+    query = params[:q].to_s.strip
+    return render json: [] if query.blank?
+
+    scope = Student.where(campuse_id: Thread.current[:campuse].id).includes(:grade)
     scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
-    if params[:q].present?
-      scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(params[:q].to_s.strip)}%")
-    end
+    scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(query)}%")
 
     render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, grade: student.grade&.name } }
   end

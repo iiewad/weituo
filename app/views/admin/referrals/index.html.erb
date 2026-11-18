@@ -1,0 +1,155 @@
+<% content_for :page_title, "推荐统计" %>
+<% content_for :page_subtitle, [ Thread.current[:campuse]&.name, "共 #{@referral_count} 条推荐关系" ].compact.join(" · ") %>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">推荐总数</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @referral_count %><span class="ml-1 text-sm font-normal text-base-content/50">条</span></p>
+    <p class="mt-1 text-xs text-base-content/40">累计推荐的学员人次</p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-full rounded-full bg-primary"></span></p>
+  </div>
+
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">推荐人</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @referrer_count %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
+    <p class="mt-1 text-xs text-base-content/40">参与过推荐的学员</p>
+    <p class="mt-2 h-1 w-full rounded-full bg-secondary/20"><span class="block h-1 w-2/3 rounded-full bg-secondary"></span></p>
+  </div>
+
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">本月新增</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @this_month_count %><span class="ml-1 text-sm font-normal text-base-content/50">条</span></p>
+    <p class="mt-1 text-xs text-base-content/40">本月录入的推荐关系</p>
+    <p class="mt-2 h-1 w-full rounded-full bg-accent/20"><span class="block h-1 w-1/2 rounded-full bg-accent"></span></p>
+  </div>
+
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">人均推荐</p>
+    <p class="mt-1 text-2xl font-semibold"><%= number_with_precision(@average_per_referrer, precision: 1) %><span class="ml-1 text-sm font-normal text-base-content/50">条/人</span></p>
+    <p class="mt-1 text-xs text-base-content/40">每位推荐人的平均推荐数</p>
+    <p class="mt-2 h-1 w-full rounded-full bg-success/20"><span class="block h-1 w-1/2 rounded-full bg-success"></span></p>
+  </div>
+</div>
+
+<%= form_with url: admin_referrals_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do %>
+  <div>
+    <%= label_tag :grade_id, "推荐人年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+    <%= select_tag :grade_id,
+          options_from_collection_for_select(@grades, :id, :name, @selected_grade&.id),
+          include_blank: "全部年级",
+          class: "select select-sm w-40",
+          onchange: "this.form.requestSubmit()" %>
+  </div>
+  <% if @selected_grade %>
+    <%= link_to "清除筛选", admin_referrals_path, class: "btn btn-xs btn-ghost" %>
+  <% end %>
+<% end %>
+
+<div class="grid gap-4 lg:grid-cols-3">
+  <div class="wt-surface p-4 lg:col-span-2">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold">推荐排行</h2>
+      <span class="text-xs text-base-content/40">按推荐人数排序 · 前 10 名</span>
+    </div>
+
+    <% if @top_referrers.any? %>
+      <ul class="mt-3 space-y-3">
+        <% @top_referrers.each.with_index(1) do |student, index| %>
+          <% count = @counts_by_referrer[student.id].to_i %>
+          <li class="flex items-center gap-3">
+            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold <%= index <= 3 ? "bg-primary/15 text-primary" : "bg-base-200 text-base-content/50" %>"><%= index %></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2 text-sm">
+                <span class="truncate font-medium"><%= student.name %></span>
+                <span class="shrink-0 text-xs text-base-content/50"><%= count %> 人</span>
+              </div>
+              <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-base-200">
+                <span class="block h-1.5 rounded-full bg-primary" style="width: <%= (count * 100.0 / @max_referral_count).round %>%"></span>
+              </div>
+            </div>
+            <span class="badge badge-ghost badge-sm shrink-0"><%= student.grade&.name || "—" %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="py-10 text-center text-xs text-base-content/40">暂无推荐记录</p>
+    <% end %>
+  </div>
+
+  <div class="wt-surface p-4">
+    <h2 class="text-sm font-semibold">被推荐学员年级分布</h2>
+
+    <% if @grade_distribution.any? %>
+      <ul class="mt-3 space-y-3">
+        <% @grade_distribution.each do |grade, count| %>
+          <li>
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-medium"><%= grade.name %></span>
+              <span class="text-xs text-base-content/50"><%= count %> 人</span>
+            </div>
+            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-base-200">
+              <span class="block h-1.5 rounded-full bg-secondary" style="width: <%= (count * 100.0 / @max_grade_count).round %>%"></span>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="py-10 text-center text-xs text-base-content/40">暂无推荐记录</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="wt-surface mt-4 overflow-hidden">
+  <div class="flex items-center justify-between gap-2 border-b border-base-200 px-4 py-3">
+    <h2 class="text-sm font-semibold">推荐明细</h2>
+    <span class="text-xs text-base-content/40">共 <%= @referral_count %> 条</span>
+  </div>
+
+  <% if @referral_records.any? %>
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+          <tr>
+            <th>被推荐学员</th>
+            <th>年级</th>
+            <th>推荐人</th>
+            <th>推荐人年级</th>
+            <th>推荐时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @referral_records.each do |referral| %>
+            <tr class="hover:bg-base-200/40">
+              <td class="font-medium"><%= referral.referred.name %></td>
+              <td><span class="badge badge-ghost badge-sm"><%= referral.referred.grade&.name || "—" %></span></td>
+              <td><%= referral.referrer.name %></td>
+              <td class="text-base-content/60"><%= referral.referrer.grade&.name || "—" %></td>
+              <td class="whitespace-nowrap text-base-content/60"><%= referral.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="py-10 text-center text-xs text-base-content/40">暂无推荐记录</p>
+  <% end %>
+</div>
+
+<% if @total_pages > 1 %>
+  <% page_params = { grade_id: params[:grade_id].presence }.compact %>
+  <div class="mt-4 flex items-center justify-between">
+    <span class="text-xs text-base-content/50">第 <%= @current_page %> / <%= @total_pages %> 页</span>
+    <div class="flex gap-1">
+      <% if @current_page > 1 %>
+        <%= link_to "‹ 上一页", admin_referrals_path(page_params.merge(page: @current_page - 1)), class: "btn btn-xs btn-ghost" %>
+      <% else %>
+        <span class="btn btn-xs btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">‹ 上一页</span>
+      <% end %>
+      <% if @current_page < @total_pages %>
+        <%= link_to "下一页 ›", admin_referrals_path(page_params.merge(page: @current_page + 1)), class: "btn btn-xs btn-ghost" %>
+      <% else %>
+        <span class="btn btn-xs btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">下一页 ›</span>
+      <% end %>
+    </div>
+  </div>
+<% end %>

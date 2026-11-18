@@ -22,13 +22,22 @@ export default class extends Controller {
 
   search() {
     clearTimeout(this.timeout)
-    this.timeout = setTimeout(() => this.fetchOptions(), 180)
+
+    const query = this.inputTarget.value.trim()
+    if (!query) {
+      this.requestId += 1
+      this.close()
+      this.resultsTarget.innerHTML = ""
+      return
+    }
+
+    this.timeout = setTimeout(() => this.fetchOptions(query), 180)
   }
 
-  async fetchOptions() {
+  async fetchOptions(query) {
     const requestId = ++this.requestId
     const url = new URL(this.optionsUrlValue, window.location.origin)
-    url.searchParams.set("q", this.inputTarget.value.trim())
+    url.searchParams.set("q", query)
     if (this.excludeIdValue) url.searchParams.set("exclude_id", this.excludeIdValue)
 
     try {

@@ -36,7 +36,7 @@ class StudentTest < ActiveSupport::TestCase
   end
 
   test "assigning referrer id creates and clears the referral" do
-    student = students(:student_7_2)
+    student = students(:student_7_5)
     referrer = students(:student_9_2)
 
     student.update!(referrer_id: referrer.id)
@@ -47,7 +47,7 @@ class StudentTest < ActiveSupport::TestCase
   end
 
   test "referrer must belong to the same campus and cannot be the student" do
-    student = students(:student_7_2)
+    student = students(:student_7_5)
 
     student.update!(referrer_id: student.id)
     assert_nil student.reload.referrer

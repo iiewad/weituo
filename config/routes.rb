@@ -39,6 +39,7 @@ Rails.application.routes.draw do
         get :options
       end
     end
+    resources :referrals, only: [ :index ]
     resources :users, only: [ :index, :create, :update ]
     resources :schools, only: [ :index, :update ] do
       resources :semesters do

@@ -96,6 +96,22 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert payload.all? { |student| student["name"].include?("8_学生1") }
   end
 
+  test "options requires a search query" do
+    get options_admin_students_path
+
+    assert_response :success
+    assert_equal [], JSON.parse(response.body)
+  end
+
+  test "options searches across grades for managers with limited grade access" do
+    sign_in_as users(:two)
+
+    get options_admin_students_path(q: "7_学生1")
+
+    assert_response :success
+    assert_includes JSON.parse(response.body).map { |student| student["name"] }, "7_学生1"
+  end
+
   test "create always uses the current campus" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
 
