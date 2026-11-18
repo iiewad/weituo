@@ -17,7 +17,7 @@ class SemesterTest < ActiveSupport::TestCase
     history_semester = Semester.create(
         name: "临时",
         school_id: schools(:school_1).id,
-        seq: semesters(:semester_current).seq - 1,
+        seq: semesters(:semester_previous).seq - 1,
         start_date: semesters(:semester_current).start_date - 1.year,
         end_date: semesters(:semester_current).end_date - 1.year,
     )

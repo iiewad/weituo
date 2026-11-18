@@ -167,7 +167,7 @@ class Admin::SemesterKlassesController < AdminController
     @attendance_by_cell = Attendance.where(
       course_id: @courses.map(&:id),
       klass_student_id: @klass_students.map(&:id)
-    ).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
+    ).includes(:marked_by).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
     @insert_student_candidates = Student.where(

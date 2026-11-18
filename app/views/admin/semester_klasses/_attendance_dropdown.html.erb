@@ -15,6 +15,9 @@
       <div class="min-w-0">
         <p class="truncate text-xs font-semibold"><%= student.name %><% if student.identity_suffix.present? %> <span class="font-normal text-base-content/40"><%= student.identity_suffix %></span><% end %></p>
         <p class="mt-0.5 text-[11px] text-base-content/50">第 <%= course.seq %> 课考勤</p>
+        <% if attendance&.marked_by %>
+          <p class="mt-0.5 text-[11px] text-base-content/40">操作人：<%= attendance.marked_by.name %></p>
+        <% end %>
       </div>
       <span class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-xs shrink-0">
         <%= attendance&.status_name || "未录入" %>

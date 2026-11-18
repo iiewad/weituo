@@ -13,6 +13,10 @@ class SemesterKlass < ApplicationRecord
     scope: [ :campuse_id, :grade_id, :subject_id, :genre, :seq ],
     message: "班级信息已存在，不可重复"
   }
+  validates :seq, presence: true, numericality: { only_integer: true }
+  validates :times, presence: true, numericality: { only_integer: true, greater_than: 0 }
+  validates :genre, inclusion: { in: %w[TG JY XZ XQ CC] }
+  validate :campuse_and_semester_share_school
 
   GENRE_MAP = {
     "提高班" => "TG",
@@ -161,4 +165,11 @@ class SemesterKlass < ApplicationRecord
 
     (reserve_students.size.to_f / current_students.size).round(2)
   end
+
+  private
+    def campuse_and_semester_share_school
+      return if campuse.blank? || semester.blank? || campuse.school_id == semester.school_id
+
+      errors.add(:campuse_id, "与学期不属于同一学校")
+    end
 end

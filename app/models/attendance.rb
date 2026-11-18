@@ -2,6 +2,7 @@ class Attendance < ApplicationRecord
   include AASM
   belongs_to :course
   belongs_to :klass_student
+  belongs_to :marked_by, class_name: "User", optional: true
   enum :status, [ :absent, :normal, :filled, :personal_leave, :sick_leave, :quit, :transfer ]
   # 校验一个学员一个课程只能有一个考勤记录
   validates :klass_student_id, uniqueness: { scope: :course_id }

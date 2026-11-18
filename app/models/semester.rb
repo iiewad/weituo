@@ -1,5 +1,9 @@
 class Semester < ApplicationRecord
   belongs_to :school
+
+  validates :name, :start_date, :end_date, :seq, presence: true
+  validates :seq, uniqueness: { scope: :school_id }
+  validate :end_date_after_start_date
   def self.current(school_id)
     where(
       "school_id = ? AND start_date <= ? AND end_date >= ?", school_id, Date.today, Date.today
@@ -35,4 +39,11 @@ class Semester < ApplicationRecord
       "start_date < ?", start_date
     ).order(seq: :desc)
   end
+
+  private
+    def end_date_after_start_date
+      return if start_date.blank? || end_date.blank? || end_date >= start_date
+
+      errors.add(:end_date, "不能早于开始日期")
+    end
 end

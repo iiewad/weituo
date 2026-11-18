@@ -14,6 +14,16 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "mark records the operator and timestamp" do
+    attendance = prepared_attendance
+
+    mark(attendance, "absent")
+
+    assert_equal users(:one), attendance.reload.marked_by
+    assert attendance.created_at.present?
+    assert attendance.updated_at.present?
+  end
+
   test "mark filled after an absence" do
     attendance = prepared_attendance
     attendance.mark_absent!

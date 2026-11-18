@@ -4,6 +4,7 @@ class Admin::AttendancesController < AdminController
     @course = @sk.courses.find(params[:course_id])
     @attendance = @course.attendances.find(params[:id])
     mark_status(@attendance, params[:status])
+    @attendance.update!(marked_by: Current.user)
     redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
   end
 
