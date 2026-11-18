@@ -1,0 +1,40 @@
+<%
+  selected = local_assigns[:selected] || []
+  grade_id = local_assigns[:grade_id]
+  grade_selector = local_assigns[:grade_selector]
+  hint = local_assigns[:hint] || "输入姓名搜索并添加学员；先选择年级可缩小范围。"
+%>
+<div data-controller="student-remote-multiselect"
+     data-student-remote-multiselect-options-url-value="<%= options_url %>"
+     <% if grade_selector.present? %>data-student-remote-multiselect-grade-selector-value="<%= grade_selector %>"<% end %>
+     <% if grade_id.present? %>data-student-remote-multiselect-grade-id-value="<%= grade_id %>"<% end %>
+     data-student-remote-multiselect-selected-value="<%= selected.to_json %>">
+  <div data-student-remote-multiselect-target="fields">
+    <% selected.each do |student| %>
+      <input type="hidden" name="student_ids[]" value="<%= student[:id] %>">
+    <% end %>
+  </div>
+
+  <div class="mt-2 flex items-center justify-between gap-2">
+    <span class="text-xs text-base-content/50">
+      已选 <span class="font-semibold text-base-content" data-student-remote-multiselect-target="count">0</span> 人
+    </span>
+    <button type="button" class="text-xs text-base-content/40 transition hover:text-primary" data-action="student-remote-multiselect#clear">清空</button>
+  </div>
+
+  <div class="mt-1.5 flex max-h-20 flex-wrap gap-1 overflow-y-auto" data-student-remote-multiselect-target="selected"></div>
+
+  <label class="input input-sm mt-2 flex w-full items-center gap-2 rounded-field">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+    <input type="search" class="grow" placeholder="输入姓名搜索学员" autocomplete="off"
+           data-student-remote-multiselect-target="input"
+           data-action="focus->student-remote-multiselect#search input->student-remote-multiselect#search keydown.esc->student-remote-multiselect#close">
+  </label>
+
+  <div class="relative">
+    <div class="absolute z-30 mt-1 hidden max-h-56 w-full overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1 shadow-lg"
+         data-student-remote-multiselect-target="results"></div>
+  </div>
+
+  <p class="mt-1.5 text-[11px] leading-snug text-base-content/40"><%= hint %></p>
+</div>

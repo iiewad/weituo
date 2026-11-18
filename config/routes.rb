@@ -15,9 +15,9 @@ Rails.application.routes.draw do
         get :export_statement
       end
       resources :klass_students do
-        # member do
-        #   put :out, to: "klass_students#out"
-        # end
+        member do
+          put :restore
+        end
       end
       resources :courses do
         member do
@@ -33,6 +33,10 @@ Rails.application.routes.draw do
     end
     resources :teachers, only: [ :index, :create, :update ]
     resources :students, only: [ :index, :create, :update ] do
+      member do
+        get :detail
+        get :edit
+      end
       collection do
         post :promote
         post :import

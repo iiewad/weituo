@@ -122,12 +122,12 @@
                     button_name: "详情",
                     button_class: "btn btn-xs btn-ghost",
                     drawer_width: "260",
-                    drawer_content: "admin/students/detail",
-                    drawer_locals: {
-                      history: @history_by_student[student.id] || [],
-                      attendance_stats: @attendance_stats
-                    } %>
-              <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/students/form" %>
+                    drawer_src: detail_admin_student_path(student) %>
+              <%= render "admin/shared/drawer", item: student,
+                    drawer_id: "drawer-student-#{student.id}",
+                    button_name: "编辑",
+                    drawer_width: "240",
+                    drawer_src: edit_admin_student_path(student) %>
             </div>
           </td>
         </tr>

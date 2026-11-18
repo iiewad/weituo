@@ -5,7 +5,9 @@ class SemesterKlass < ApplicationRecord
   belongs_to :semester
   has_many :courses, dependent: :destroy
   belongs_to :grade
-  has_many :klass_students, dependent: :destroy
+  has_many :klass_students
+  has_many :all_klass_students, -> { unscope(where: :archived_at) }, class_name: "KlassStudent", dependent: :destroy
+  has_many :archived_klass_students, -> { unscope(where: :archived_at).where.not(archived_at: nil) }, class_name: "KlassStudent"
   has_many :students, through: :klass_students
 
   # 确保一个学期内，科目+班型+序号的组合是唯一的

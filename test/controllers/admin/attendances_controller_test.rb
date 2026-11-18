@@ -42,14 +42,17 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "normal", attendance.reload.status
   end
 
-  test "mark quit cascades to later courses and the enrollment" do
+  test "mark quit cascades to later started courses and the enrollment" do
     attendance = prepared_attendance
+    later = semester_klasses(:sk_math_1).courses.find_by!(seq: 2)
+    later.start!
 
     mark(attendance, "quit")
 
     assert_equal "out", klass_students(:ks_1).reload.status
-    later = semester_klasses(:sk_math_1).courses.find_by!(seq: 2)
     assert_equal "quit", later.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
+    assert_nil semester_klasses(:sk_math_1).courses.find_by!(seq: 3)
+      .attendances.find_by(klass_student_id: klass_students(:ks_1).id)
   end
 
   test "cannot mark attendance from another campus" do

@@ -68,8 +68,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "正常"
     assert_includes card.text, "缺课"
     assert_includes card.text, "转出"
-    assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
-    assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
+    assert_select "[data-controller='student-remote-multiselect'] input[data-student-remote-multiselect-target='input']", minimum: 1
+    assert_select "input[type='hidden'][name='student_ids[]']", count: 0
   end
 
   test "statement keeps the filter selections after searching" do
@@ -145,7 +145,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a.menu-active[aria-current='page']", text: /#{sk.name}/
     assert_select "a[href='#{export_attendance_admin_semester_klass_path(sk)}']", text: /导出考勤/
-    assert_select "[data-turbo-confirm*='无法恢复']"
+    assert_select "[data-turbo-confirm*='历史考勤会保留']"
     assert_select "summary", text: /七年级/
     assert_select "summary", text: /数学/
     # 同年级同科目下的其他班级也出现在菜单里，便于切换
@@ -219,10 +219,9 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     # 复制表单应带上历史班级的班型与年级，而不是留空
     assert_select "select[name='semester_klass[genre]'] option[selected][value='TG']", count: 2
     assert_select "select[name='semester_klass[grade_id]'] option[selected][value='7']", count: 2
-    assert_select "input[type='checkbox'][name='student_ids[]']", minimum: 1
-    assert_select "input[name='student_ids[]'][checked][value='#{students(:student_7_1).id}']"
-    assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
-    assert_select "input#copy_#{semester_klasses(:sk_math_1).id}_student_#{students(:student_7_2).id}"
+    assert_select "input[type='hidden'][name='student_ids[]']", minimum: 1
+    assert_select "input[type='hidden'][name='student_ids[]'][value='#{students(:student_7_1).id}']", minimum: 1
+    assert_select "[data-controller='student-remote-multiselect'][data-student-remote-multiselect-grade-selector-value='#copy_#{semester_klasses(:sk_math_1).id}_semester_klass_grade_id']", count: 1
   end
 
   test "copy can target a future semester and includes current classes" do
@@ -298,10 +297,10 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klasses_path
 
     assert_response :success
-    assert_select "[data-controller='student-multiselect'][data-student-multiselect-grade-selector-value='#klass_new_grade_id']"
-    assert_select "input[type='search'][data-student-multiselect-target='input']"
+    assert_select "[data-controller='student-remote-multiselect'][data-student-remote-multiselect-grade-selector-value='#klass_new_semester_klass_grade_id']"
+    assert_select "input[type='search'][data-student-remote-multiselect-target='input']"
     assert_select "input[name='join_course_seq'][value='1']"
-    assert_select "input#klass_new_student_#{students(:student_7_4).id}"
+    assert_select "input#klass_new_student_#{students(:student_7_4).id}", count: 0
     assert_select "textarea[name='semester_klass[students_text]']", count: 0
   end
 

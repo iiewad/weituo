@@ -6,9 +6,10 @@
   width = (local_assigns[:drawer_width] || 180).to_i
   panel_style = "width: min(calc(var(--spacing) * #{width}), 92vw)"
   content_locals = { item: item }.merge(local_assigns[:drawer_locals] || {})
+  lazy_src = local_assigns[:drawer_src]
 %>
-<div class="drawer drawer-end">
-  <input id="<%= drawer_id %>" type="checkbox" class="drawer-toggle" />
+<div class="drawer drawer-end"<% if lazy_src %> data-controller="drawer-lazy" data-drawer-lazy-src-value="<%= lazy_src %>"<% end %>>
+  <input id="<%= drawer_id %>" type="checkbox" class="drawer-toggle"<% if lazy_src %> data-drawer-lazy-target="toggle" data-action="change->drawer-lazy#load"<% end %> />
   <div class="drawer-content">
     <% if icon %>
       <label for="<%= drawer_id %>" class="drawer-button btn btn-xs btn-square btn-primary" title="<%= label %>" aria-label="<%= label %>"><%= icon %></label>
@@ -20,7 +21,13 @@
   <div class="drawer-side z-50">
     <label for="<%= drawer_id %>" aria-label="close sidebar" class="drawer-overlay"></label>
     <div class="bg-base-200 min-h-full p-4 sm:p-6" style="<%= panel_style %>">
-      <%= render drawer_content, content_locals %>
+      <% if lazy_src %>
+        <%= turbo_frame_tag "#{drawer_id}-frame", data: { drawer_lazy_target: "frame" } do %>
+          <p class="py-10 text-center text-sm text-base-content/40">正在加载…</p>
+        <% end %>
+      <% else %>
+        <%= render drawer_content, content_locals %>
+      <% end %>
     </div>
   </div>
 </div>

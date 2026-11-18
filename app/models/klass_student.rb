@@ -1,6 +1,9 @@
 class KlassStudent < ApplicationRecord
   include AASM
 
+  default_scope { where(archived_at: nil) }
+  scope :archived, -> { unscope(where: :archived_at).where.not(archived_at: nil) }
+
   belongs_to :semester_klass
   belongs_to :student
   has_many :attendances, dependent: :destroy
@@ -19,6 +22,14 @@ class KlassStudent < ApplicationRecord
     event :mark_transfer do
       transitions from: [ :in, :out ], to: :transfer
     end
+  end
+
+  def archive!
+    update!(archived_at: Time.current)
+  end
+
+  def restore!
+    update!(archived_at: nil, status: :in)
   end
 
   def another_semester_klasses(semester_id)

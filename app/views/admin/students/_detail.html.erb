@@ -107,7 +107,11 @@
             <div class="mt-2 space-y-1.5">
               <% records.each do |klass_student| %>
                 <% sk = klass_student.semester_klass %>
-                <% label, badge_class = status_meta.fetch(klass_student.status, [ klass_student.status, "badge-ghost" ]) %>
+                <% label, badge_class = if klass_student.archived_at.present?
+                     [ "已移出", "badge-soft badge-neutral" ]
+                   else
+                     status_meta.fetch(klass_student.status, [ klass_student.status, "badge-ghost" ])
+                   end %>
                 <% counts = attendance_stats[klass_student.id] || {} %>
                 <% total = counts.values.sum %>
                 <% present = counts["normal"].to_i + counts["filled"].to_i %>
@@ -121,6 +125,9 @@
                   </div>
                   <p class="mt-0.5 text-xs text-base-content/50">
                     <%= sk.grade.name %> · <%= sk.subject.name %> · <%= sk.teacher.name %> 老师
+                    <% if klass_student.archived_at.present? %>
+                      · 移出于 <%= klass_student.archived_at.strftime("%Y-%m-%d") %>
+                    <% end %>
                   </p>
                   <% if total.positive? %>
                     <p class="mt-1 text-[11px] text-base-content/40">

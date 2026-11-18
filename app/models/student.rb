@@ -6,7 +6,8 @@ class Student < ApplicationRecord
   belongs_to :campuse
   belongs_to :grade, optional: true
   has_many :guardians, dependent: :destroy
-  has_many :klass_students, dependent: :destroy
+  has_many :klass_students
+  has_many :all_klass_students, -> { unscope(where: :archived_at) }, class_name: "KlassStudent", dependent: :destroy
   has_one :received_referral, class_name: "StudentReferral", foreign_key: :referred_id, dependent: :destroy, inverse_of: :referred
   has_one :referrer, through: :received_referral
   has_many :given_referrals, class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy, inverse_of: :referrer
@@ -41,7 +42,13 @@ class Student < ApplicationRecord
     course = sk.courses.find_by(seq: course_seq)
     return if course.blank?
 
-    ks = klass_students.find_or_create_by(semester_klass_id: sk.id)
+    ks = KlassStudent.unscoped.find_or_initialize_by(semester_klass_id: sk.id, student_id: id)
+    if ks.new_record?
+      ks.save!
+    elsif ks.archived_at.present?
+      ks.restore!
+    end
+
     sk.courses.where("seq < ?", course_seq).each do |course|
       attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
       attendance.update!(status: "absent")

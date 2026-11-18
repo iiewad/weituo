@@ -34,26 +34,28 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
     put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "filled")
     assert_equal "filled", attendance.reload.status
 
-    # 4. 退课：级联后续课次并转为退班
+    # 4. 退课：只级联已开课课次；未开课课次暂不生成考勤
     put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "quit")
     assert_equal "quit", attendance.reload.status
     assert_equal "out", ks.reload.status
     later_courses = sk.courses.where("seq > 1").to_a
     later_courses.each do |course|
-      assert_equal "quit", course.attendances.find_by!(klass_student_id: ks.id).status
+      assert_nil course.attendances.find_by(klass_student_id: ks.id)
     end
 
-    # 5. 重新加入：后续课次恢复
+    # 5. 重新加入：恢复在班，未开课课次等开课时再生成
     put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "rejoin")
     assert_equal "normal", attendance.reload.status
+    assert_equal "in", ks.reload.status
     later_courses.each do |course|
-      assert_equal "normal", course.attendances.find_by!(klass_student_id: ks.id).status
+      assert_nil course.attendances.find_by(klass_student_id: ks.id)
     end
 
-    # 6. 全部课次开课后结课
+    # 6. 全部课次开课后生成考勤并结课
     assert_not sk.ended?
     later_courses.each do |course|
       put start_admin_semester_klass_course_path(sk, course)
+      assert_equal "normal", course.attendances.find_by!(klass_student_id: ks.id).status
     end
     assert sk.reload.ended?
   end

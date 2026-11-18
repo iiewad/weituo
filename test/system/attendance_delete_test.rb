@@ -7,11 +7,11 @@ class AttendanceDeleteTest < ApplicationSystemTestCase
 
     klass_student = klass_students(:ks_2)
 
-    dismiss_confirm(/删除后该学员的考勤记录会一并移除/) do
-      find("button[title='删除']").click
+    dismiss_confirm(/历史考勤会保留/) do
+      find("button[title='移出班级']").click
     end
 
     assert_current_path admin_semester_klass_path(semester_klasses(:sk_math_2))
-    assert KlassStudent.exists?(klass_student.id), "取消确认后不应删除学员"
+    assert KlassStudent.exists?(klass_student.id), "取消确认后不应移出学员"
   end
 end

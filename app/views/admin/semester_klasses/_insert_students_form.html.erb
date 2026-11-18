@@ -1,6 +1,5 @@
 <% sk = @sk || item.semester_klass %>
-<% candidates = @insert_student_candidates || [] %>
-<% student_options = candidates.map { |student| { student: student, checked: false, badge: nil } } %>
+<% enrolled_ids = sk.klass_students.map(&:student_id) %>
 
 <%= form_with model: item,
       url: insert_students_admin_semester_klass_course_path(sk, item),
@@ -37,16 +36,14 @@
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">选择学员</h3>
-      <span class="text-xs text-base-content/50">共 <%= candidates.size %> 人可选</span>
+      <span class="text-xs text-base-content/50">输入姓名搜索添加</span>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">只列出本班同年级、尚未加入本班的学员。</p>
+    <p class="mt-1 text-xs text-base-content/50">只搜索本班同年级、尚未加入本班的学员。</p>
 
-    <%= render "admin/shared/student_multiselect",
-          options: student_options,
-          id_prefix: "insert_#{item.id}",
-          hint: "所选学员从第 #{item.seq} 课开始加入，之前课次补记为缺课。",
-          empty_message: "没有可添加的学员，请先在学员管理中建档或检查年级。" %>
+    <%= render "admin/shared/student_remote_multiselect",
+          options_url: options_admin_students_path(grade_id: sk.grade_id, exclude_ids: enrolled_ids.join(",")),
+          hint: "所选学员从第 #{item.seq} 课开始加入，之前课次补记为缺课。" %>
   </div>
 
-  <%= form.submit "添加学员", class: "btn btn-primary w-full", disabled: candidates.empty? %>
+  <%= form.submit "添加学员", class: "btn btn-primary w-full" %>
 <% end %>

@@ -1,7 +1,7 @@
 class Attendance < ApplicationRecord
   include AASM
   belongs_to :course
-  belongs_to :klass_student
+  belongs_to :klass_student, -> { unscope(where: :archived_at) }
   belongs_to :marked_by, class_name: "User", optional: true
   enum :status, [ :absent, :normal, :filled, :personal_leave, :sick_leave, :quit, :transfer ]
   # 校验一个学员一个课程只能有一个考勤记录
@@ -48,7 +48,8 @@ class Attendance < ApplicationRecord
           semester_klass_id: course.semester_klass_id,
           student_id: klass_student.student_id
         )
-        course.semester_klass.courses.where("seq >= ?", course.seq).each do |c|
+        ks.update!(status: "in") unless ks.status == "in"
+        course.semester_klass.courses.where("seq >= ? AND start_date IS NOT NULL", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
           attendance.update!(status: "normal")
         end
@@ -79,8 +80,8 @@ class Attendance < ApplicationRecord
           student_id: klass_student.student_id
         )
         ks.mark_out! if ks.status.in?([ "in", "transfer" ])
-        # 课程之后未开课的课程提前创建退课考勤记录
-        course.semester_klass.courses.where("seq > ?", course.seq).each do |c|
+        # 只同步已开课课次；未开课课次等开课时再按报名状态生成
+        course.semester_klass.courses.where("seq > ? AND start_date IS NOT NULL", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
           attendance.update!(status: "quit")
         end
@@ -98,8 +99,8 @@ class Attendance < ApplicationRecord
           student_id: klass_student.student_id
         )
         ks.mark_transfer! if ks.status.in?([ "in", "out" ])
-        # 此课程之后的考勤，状态改为转出
-        course.semester_klass.courses.where("seq > ?", course.seq).each do |c|
+        # 只同步已开课课次；未开课课次等开课时再按报名状态生成
+        course.semester_klass.courses.where("seq > ? AND start_date IS NOT NULL", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
           attendance.update!(status: "transfer")
         end

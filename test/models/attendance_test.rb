@@ -49,48 +49,51 @@ class AttendanceTest < ActiveSupport::TestCase
     assert attendance.mark_at["sick_leave_at"].present?
   end
 
-  test "mark quit cascades to later courses and marks the enrollment out" do
+  test "mark quit only cascades to later started courses" do
     course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
     course.start!
+    later.start!
     attendance = attendance_for(course)
 
     attendance.mark_quit!
 
     assert_equal "quit", attendance.status
     assert_equal "out", klass_students(:ks_1).reload.status
-    semester_klasses(:sk_math_1).courses.where("seq > ?", 1).each do |later|
-      assert_equal "quit", attendance_for(later).status
-    end
+    assert_equal "quit", attendance_for(later).status
+    assert_nil courses(:sk_1_course_3).attendances.find_by(klass_student: klass_students(:ks_1))
   end
 
-  test "mark transfer cascades to later courses and marks the enrollment transfer" do
+  test "mark transfer only cascades to later started courses" do
     course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
     course.start!
+    later.start!
     attendance = attendance_for(course)
 
     attendance.mark_transfer!
 
     assert_equal "transfer", attendance.status
     assert_equal "transfer", klass_students(:ks_1).reload.status
-    semester_klasses(:sk_math_1).courses.where("seq > ?", 1).each do |later|
-      assert_equal "transfer", attendance_for(later).status
-    end
+    assert_equal "transfer", attendance_for(later).status
+    assert_nil courses(:sk_1_course_3).attendances.find_by(klass_student: klass_students(:ks_1))
   end
 
-  test "mark rejoin restores later course attendances" do
+  test "mark rejoin restores the enrollment and started course attendances" do
     course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
     course.start!
+    later.start!
     attendance = attendance_for(course)
     attendance.mark_quit!
-    assert_equal "quit", attendance_for(semester_klasses(:sk_math_1).courses.find_by!(seq: 2)).status
+    assert_equal "quit", attendance_for(later).status
 
     attendance.mark_rejoin!
 
     assert_equal "normal", attendance.status
     assert attendance.mark_at["rejoin_at"].present?
-    semester_klasses(:sk_math_1).courses.where("seq > ?", 1).each do |later|
-      assert_equal "normal", attendance_for(later).status
-    end
+    assert_equal "in", klass_students(:ks_1).reload.status
+    assert_equal "normal", attendance_for(later).status
   end
 
   test "status meta maps every status to a label, name and semantic color" do
