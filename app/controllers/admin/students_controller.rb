@@ -1,4 +1,7 @@
 class Admin::StudentsController < AdminController
+  PER_PAGE_OPTIONS = [ 20, 30, 50, 100 ].freeze
+  DEFAULT_PER_PAGE = 30
+
   def index
     @q = Student.ransack(params[:q])
     @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).order(:level)
@@ -8,9 +11,12 @@ class Admin::StudentsController < AdminController
       grade_id: @grades.ids
     )
 
+    @per_page = PER_PAGE_OPTIONS.include?(params[:per_page].to_i) ? params[:per_page].to_i : DEFAULT_PER_PAGE
+    @per_page_options = PER_PAGE_OPTIONS
+
     @students = base.includes(:grade, :day_school, :guardians)
     @students = apply_filter(@students, params[:filter]) if params[:filter].present?
-    @students = @students.page(params[:page])
+    @students = @students.page(params[:page]).per(@per_page)
 
     @filter_counts = filter_counts(base)
     student_ids = @students.map(&:id)

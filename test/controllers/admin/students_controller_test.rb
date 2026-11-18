@@ -8,6 +8,22 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index supports changing page size and keeps filters" do
+    get admin_students_path(q: { name_cont: "7_学生1" }, filter: "in_class", per_page: 50)
+
+    assert_response :success
+    assert_select "select#students-per-page option[selected][value='50']"
+    assert_select "input[name='per_page'][value='50']"
+    assert_select "a[href*='per_page=50'][href*='filter=in_class']", minimum: 1
+  end
+
+  test "index falls back to the default page size" do
+    get admin_students_path(per_page: 999)
+
+    assert_response :success
+    assert_select "select#students-per-page option[selected][value='30']"
+  end
+
   test "index keeps the filter and quick filter state after searching" do
     get admin_students_path(q: { name_cont: "7_学生1", grade_id_eq: grades(:grade_7).id }, filter: "in_class")
 

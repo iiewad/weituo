@@ -16,7 +16,7 @@
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
   <% filters.each do |label, filter, count, track, bar| %>
     <% active = params[:filter].to_s == filter.to_s %>
-    <%= link_to admin_students_path(filter: filter, q: params[:q]&.to_unsafe_h),
+    <%= link_to admin_students_path(filter: filter, q: params[:q]&.to_unsafe_h, per_page: @per_page),
           class: "wt-surface block p-4 transition hover:border-primary/40 #{ "ring-2 ring-primary/40" if active }" do %>
       <p class="text-xs text-base-content/50"><%= label %></p>
       <p class="mt-1 text-2xl font-semibold"><%= count %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
@@ -128,8 +128,74 @@
   </div>
 </div>
 
-<div class="mt-4 flex items-center justify-center gap-1">
-  <%= link_to_previous_page @students, "«", class: "btn btn-sm btn-ghost" %>
-  <span class="btn btn-sm btn-ghost no-animation"><%= @students.current_page %> / <%= @students.total_pages %></span>
-  <%= link_to_next_page @students, "»", class: "btn btn-sm btn-ghost" %>
+<%
+  page_params = {
+    filter: params[:filter].presence,
+    q: params[:q]&.to_unsafe_h,
+    per_page: @per_page
+  }.compact
+  current_page = @students.current_page
+  total_pages = @students.total_pages
+  start_page = [ current_page - 2, 1 ].max
+  end_page = [ start_page + 4, total_pages ].min
+  start_page = [ end_page - 4, 1 ].max
+%>
+
+<div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap items-center gap-3 text-xs text-base-content/60">
+    <span>共 <span class="font-semibold text-base-content"><%= @students.total_count %></span> 名学员</span>
+
+    <%= form_with url: admin_students_path, method: :get, class: "flex items-center gap-1.5" do %>
+      <%= hidden_field_tag :filter, params[:filter] if params[:filter].present? %>
+      <% (params[:q] || {}).each do |key, value| %>
+        <%= hidden_field_tag "q[#{key}]", value %>
+      <% end %>
+      <label for="students-per-page" class="text-xs">每页</label>
+      <%= select_tag :per_page, options_for_select(@per_page_options, @per_page),
+            id: "students-per-page",
+            class: "select select-xs w-20",
+            onchange: "this.form.requestSubmit()" %>
+      <span>条</span>
+    <% end %>
+  </div>
+
+  <% if total_pages > 1 %>
+    <nav class="flex flex-wrap items-center justify-center gap-1" aria-label="学员分页">
+      <% if current_page > 1 %>
+        <%= link_to "‹", admin_students_path(page_params.merge(page: current_page - 1)),
+              class: "btn btn-xs btn-square btn-ghost", aria: { label: "上一页" } %>
+      <% else %>
+        <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">‹</span>
+      <% end %>
+
+      <% if start_page > 1 %>
+        <%= link_to 1, admin_students_path(page_params.merge(page: 1)), class: "btn btn-xs btn-ghost" %>
+        <% if start_page > 2 %>
+          <span class="px-1 text-xs text-base-content/40">…</span>
+        <% end %>
+      <% end %>
+
+      <% (start_page..end_page).each do |page| %>
+        <% if page == current_page %>
+          <span class="btn btn-xs btn-primary" aria-current="page"><%= page %></span>
+        <% else %>
+          <%= link_to page, admin_students_path(page_params.merge(page: page)), class: "btn btn-xs btn-ghost" %>
+        <% end %>
+      <% end %>
+
+      <% if end_page < total_pages %>
+        <% if end_page < total_pages - 1 %>
+          <span class="px-1 text-xs text-base-content/40">…</span>
+        <% end %>
+        <%= link_to total_pages, admin_students_path(page_params.merge(page: total_pages)), class: "btn btn-xs btn-ghost" %>
+      <% end %>
+
+      <% if current_page < total_pages %>
+        <%= link_to "›", admin_students_path(page_params.merge(page: current_page + 1)),
+              class: "btn btn-xs btn-square btn-ghost", aria: { label: "下一页" } %>
+      <% else %>
+        <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">›</span>
+      <% end %>
+    </nav>
+  <% end %>
 </div>
