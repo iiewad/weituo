@@ -48,15 +48,36 @@ class Admin::StudentsController < AdminController
     render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, detail: student.identity_detail } }
   end
 
-  def import
-    text = params[:students_text].to_s
-    if text.strip.blank?
-      redirect_to admin_students_path, alert: "请粘贴要导入的学员数据"
-      return
-    end
+  def template
+    send_data StudentImportTemplate.new.to_xlsx,
+      filename: "学员导入模板.xlsx",
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  end
 
+  def import
     grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
-    created, skipped = Student.add_by_text(Thread.current[:campuse].id, text, grade_ids: grade_ids)
+
+    if params[:students_file].present?
+      unless File.extname(params[:students_file].original_filename.to_s).casecmp?(".xlsx")
+        redirect_to admin_students_path, alert: "请上传 .xlsx 格式的 Excel 文件"
+        return
+      end
+
+      begin
+        created, skipped = Student.add_by_xlsx(Thread.current[:campuse].id, params[:students_file], grade_ids: grade_ids)
+      rescue Roo::Error, Zip::Error, Errno::ENOENT
+        redirect_to admin_students_path, alert: "Excel 文件读取失败，请确认文件内容与格式"
+        return
+      end
+    else
+      text = params[:students_text].to_s
+      if text.strip.blank?
+        redirect_to admin_students_path, alert: "请选择 Excel 文件或粘贴要导入的学员数据"
+        return
+      end
+
+      created, skipped = Student.add_by_text(Thread.current[:campuse].id, text, grade_ids: grade_ids)
+    end
 
     message = "新增 #{created} 名学员"
     message += "，跳过 #{skipped} 行（年级或日校不匹配、或已存在）" if skipped.positive?

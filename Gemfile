@@ -72,3 +72,5 @@ gem "kaminari"
 gem "aasm"
 gem "caxlsx"
 gem "redcarpet"
+
+gem "roo", "~> 4.0"

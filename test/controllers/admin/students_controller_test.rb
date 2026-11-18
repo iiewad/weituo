@@ -147,7 +147,61 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to admin_students_path
-    assert_match "请粘贴", flash[:alert]
+    assert_match "请选择 Excel 文件或粘贴", flash[:alert]
+  end
+
+  test "import creates students and guardians from an xlsx file" do
+    rows = [
+      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "监护人姓名", "监护人电话", "关系" ],
+      [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中", "家长甲", "13800000001", "父亲" ],
+      [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中" ]
+    ]
+
+    assert_difference -> { Student.count }, 2 do
+      assert_difference -> { Guardian.count }, 1 do
+        post import_admin_students_path, params: { students_file: xlsx_upload(rows) }
+      end
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "新增 2 名学员", flash[:notice]
+    student = Student.find_by!(name: "表格甲")
+    assert_equal "male", student.gender
+    assert_equal Date.new(2000, 1, 1), student.birthday
+    assert_equal "家长甲", student.guardians.sole.name
+  end
+
+  test "downloads the xlsx import template" do
+    get template_admin_students_path
+
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.media_type
+    assert_match(/attachment/, response.headers["Content-Disposition"])
+    assert response.body.start_with?("PK")
+
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, "姓名"
+    assert_includes strings, "监护人电话"
+    assert_includes strings, "学员批量导入填写说明"
+
+    sheets = workbook.read("xl/workbook.xml").force_encoding("UTF-8")
+    assert_includes sheets, "学员导入"
+    assert_includes sheets, "填写说明"
+  end
+
+  test "import rejects non-xlsx files" do
+    file = Tempfile.new([ "students", ".csv" ])
+    file.write("姓名,性别\n")
+    file.rewind
+    upload = Rack::Test::UploadedFile.new(file.path, "text/csv", true, original_filename: "students.csv")
+
+    assert_no_difference -> { Student.count } do
+      post import_admin_students_path, params: { students_file: upload }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "请上传 .xlsx", flash[:alert]
   end
 
   test "promote moves selected students to the next grade" do
@@ -186,4 +240,24 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "已更新备注", student.remark
     assert_equal referrer, student.referrer
   end
+
+  private
+    def xlsx_upload(rows)
+      package = Axlsx::Package.new
+      package.workbook.add_worksheet(name: "学员") do |sheet|
+        rows.each { |row| sheet.add_row(row) }
+      end
+
+      file = Tempfile.new([ "students", ".xlsx" ])
+      file.binmode
+      package.serialize(file.path)
+      file.rewind
+
+      Rack::Test::UploadedFile.new(
+        file.path,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        true,
+        original_filename: "students.xlsx"
+      )
+    end
 end

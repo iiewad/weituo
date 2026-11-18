@@ -64,18 +64,33 @@ class Student < ApplicationRecord
     received_referral&.referrer_id
   end
 
+  IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
+
   # 按 CSV 行导入学员：姓名,性别,生日,年级level,层级,入学日期,日校[,监护人姓名,监护人电话,监护关系]
   # 监护人字段可选；返回 [新增人数, 跳过行数]。
   def self.add_by_text(campuse_id, str, grade_ids: nil)
+    rows = str.to_s.split("\n").map { |line| normalize_import_row(line.split(",", -1)) }
+    import_rows(campuse_id, rows, grade_ids:)
+  end
+
+  # 读取 xlsx 首张工作表导入，列顺序与 CSV 一致，首行表头可有可无。
+  def self.add_by_xlsx(campuse_id, file, grade_ids: nil)
+    spreadsheet = Roo::Spreadsheet.open(file.path, extension: :xlsx)
+    rows = spreadsheet.sheet(0).to_a.map { |row| normalize_import_row(row) }
+    import_rows(campuse_id, rows, grade_ids:)
+  end
+
+  def self.import_rows(campuse_id, rows, grade_ids: nil)
     campuse = Campuse.find(campuse_id)
     created = 0
     skipped = 0
 
-    str.to_s.split("\n").each do |line|
-      next if line.strip.blank?
+    rows.each do |row|
+      next if row.all? { |value| value.to_s.strip.blank? }
+      next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
       name, gender, birthday, grade_level, layer, in_date, day_school_name,
-        guardian_name, guardian_phone, guardian_relationship = line.split(",").map(&:strip)
+        guardian_name, guardian_phone, guardian_relationship = row.map { |value| value.to_s.strip }
       grade = Grade.find_by(level: grade_level)
       day_school = campuse.day_schools.find_by(name: day_school_name)
 
@@ -110,6 +125,29 @@ class Student < ApplicationRecord
     end
 
     [ created, skipped ]
+  end
+
+  # xlsx 里生日/入学日期可能是 Date 或未格式化的 Excel 序列号。
+  def self.normalize_import_row(row)
+    row.each_with_index.map do |value, index|
+      index.in?([ 2, 5 ]) ? normalize_import_date(value) : normalize_import_value(value)
+    end
+  end
+
+  def self.normalize_import_date(value)
+    case value
+    when Date then value.strftime("%Y-%m-%d")
+    when Time then value.to_date.strftime("%Y-%m-%d")
+    when Numeric then (Date.new(1899, 12, 30) + value.to_i).strftime("%Y-%m-%d")
+    else value.to_s.strip
+    end
+  end
+
+  def self.normalize_import_value(value)
+    case value
+    when Float then value == value.to_i ? value.to_i.to_s : value.to_s
+    else value.to_s.strip
+    end
   end
 
   private

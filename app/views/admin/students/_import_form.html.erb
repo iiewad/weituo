@@ -1,7 +1,7 @@
-<%= form_with url: import_admin_students_path, method: :post, local: true, class: "space-y-4" do |form| %>
+<%= form_with url: import_admin_students_path, method: :post, local: true, multipart: true, class: "space-y-4" do |form| %>
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold">批量导入学员</h3>
-    <p class="mt-1 text-xs text-base-content/50">每行一个学员，字段用英文逗号分隔：姓名、性别、生日、年级 level、层级、入学日期、日校；最后三列监护人信息可选。</p>
+    <p class="mt-1 text-xs text-base-content/50">支持上传 .xlsx 文件或直接粘贴文本，列顺序一致：姓名、性别、生日、年级 level、层级、入学日期、日校；最后三列监护人信息可选。同时提供时以 Excel 文件为准。</p>
 
     <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3 font-mono text-[11px] leading-5 text-base-content/60">
       张三,男,2013-05-01,7,3,2026-09-01,一中,张建国,13800000000,父亲<br>
@@ -18,11 +18,27 @@
   </div>
 
   <div class="wt-surface p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-sm font-semibold">Excel 文件</h3>
+      <%= link_to "下载导入模板", template_admin_students_path,
+            class: "btn btn-xs btn-ghost text-primary", data: { turbo: false } %>
+    </div>
+    <p class="mt-1 text-xs text-base-content/50">支持 .xlsx；首行可以是表头，也可以直接是学员数据。生日、入学日期建议使用日期格式。</p>
+    <%= form.file_field :students_file, accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          class: "file-input file-input-sm mt-3 w-full" %>
+  </div>
+
+  <div class="flex items-center gap-3 text-xs text-base-content/40">
+    <span class="h-px flex-1 bg-base-300"></span>
+    <span>或粘贴文本</span>
+    <span class="h-px flex-1 bg-base-300"></span>
+  </div>
+
+  <div class="wt-surface p-4">
     <%= form.label :students_text, "学员数据", class: "mb-1 block text-xs font-medium text-base-content/60" %>
     <%= form.text_area :students_text, value: params[:students_text],
-          class: "textarea textarea-sm h-64 w-full font-mono text-xs leading-5",
-          placeholder: "张三,男,2013-05-01,7,3,2026-09-01,一中,张建国,13800000000,父亲\n李四,女,2012-11-20,8,2,2026-09-01,二中",
-          required: true %>
+          class: "textarea textarea-sm h-56 w-full font-mono text-xs leading-5",
+          placeholder: "张三,男,2013-05-01,7,3,2026-09-01,一中,张建国,13800000000,父亲\n李四,女,2012-11-20,8,2,2026-09-01,二中" %>
   </div>
 
   <%= form.submit "开始导入", class: "btn btn-primary w-full" %>
