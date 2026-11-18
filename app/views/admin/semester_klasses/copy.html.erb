@@ -1,18 +1,38 @@
-<% content_for :page_title, "复制历史班级" %>
-<% content_for :page_subtitle, "把历史学期的班级、课次与学员名单复制到 #{Thread.current[:semester]&.name} · 共 #{@sks.size} 个班级" %>
+<% content_for :page_title, "复制班级" %>
+<% content_for :page_subtitle, "复制到 #{@target_semester.name} · 共 #{@sks.size} 个候选班级" %>
 <% content_for :breadcrumb do %>
   <%= link_to "班级管理", admin_semester_klasses_path, class: "hover:text-primary" %>
   <span>/</span>
-  <span>复制历史班级</span>
+  <span>复制班级</span>
 <% end %>
+
+<% query = params[:q]&.to_unsafe_h %>
+
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <p class="mb-1.5 text-xs font-medium text-base-content/50">目标学期</p>
+    <div class="flex flex-wrap gap-1.5">
+      <% @target_semesters.each do |semester| %>
+        <% active = semester == @target_semester %>
+        <%= link_to copy_admin_semester_klasses_path(target_semester_id: semester.id, q: query),
+              class: "btn btn-xs #{active ? "btn-primary" : "btn-outline btn-primary"}" do %>
+          复制到 <%= semester.name %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+  <p class="text-xs text-base-content/50">来源：目标学期之前的学期<%= "（包含当前学期）" if @target_semester != Thread.current[:semester] %></p>
+</div>
 
 <div class="mb-4 flex flex-wrap items-center gap-2 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
   <span class="badge badge-soft badge-primary badge-sm">目标学期</span>
-  <span class="font-medium"><%= Thread.current[:semester]&.name %></span>
+  <span class="font-medium"><%= @target_semester.name %></span>
   <span class="text-base-content/60">复制后班级归属当前校区，课次与学员名单会一并生成，可在复制前调整班级信息。</span>
 </div>
 
-<%= render "admin/semester_klasses/filter_form", form_url: copy_admin_semester_klasses_path %>
+<%= render "admin/semester_klasses/filter_form",
+      form_url: copy_admin_semester_klasses_path,
+      hidden_params: { target_semester_id: @target_semester.id } %>
 
 <div class="wt-surface overflow-x-auto">
   <table class="table table-sm">
@@ -62,7 +82,7 @@
   </table>
   <% if @sks.empty? %>
     <div class="p-12 text-center text-sm text-base-content/50">
-      没有符合条件的历史班级<%= "，试试调整筛选条件或重置" if params[:q].present? %>
+      没有符合条件的班级<%= "，试试调整筛选条件或重置" if params[:q].present? %>
     </div>
   <% end %>
 </div>

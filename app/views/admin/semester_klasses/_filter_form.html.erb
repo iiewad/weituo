@@ -1,5 +1,9 @@
 <div class="wt-surface mb-4 p-3">
   <%= search_form_with model: @q, url: form_url, method: :get, class: "flex flex-wrap items-end gap-2" do |f| %>
+    <% (local_assigns[:hidden_params] || {}).each do |name, value| %>
+      <%= hidden_field_tag name, value %>
+    <% end %>
+
     <div class="w-full sm:w-36">
       <label class="mb-1 block text-xs font-medium text-base-content/50">学期</label>
       <%= f.collection_select :semester_id_eq, @semesters, :id, :name,

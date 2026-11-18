@@ -58,16 +58,19 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
     assert sk.reload.ended?
   end
 
-  test "复制历史班级到当前学期并重建课程与学员" do
+  test "复制班级到当前学期并重建课程与学员" do
     source = semester_klasses(:sk_math_1)
 
     assert_difference -> { SemesterKlass.count }, 1 do
-      post copy_create_admin_semester_klasses_path, params: { semester_klass: {
-        grade_id: source.grade_id,
-        teacher_id: source.teacher_id,
-        genre: source.genre,
-        seq: 66, times: 4, students_text: "7_学生4"
-      } }
+      post copy_create_admin_semester_klasses_path, params: {
+        student_ids: [ students(:student_7_4).id ],
+        semester_klass: {
+          grade_id: source.grade_id,
+          teacher_id: source.teacher_id,
+          genre: source.genre,
+          seq: 66, times: 4
+        }
+      }
     end
 
     copy = SemesterKlass.order(:id).last

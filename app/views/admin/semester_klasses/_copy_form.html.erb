@@ -4,10 +4,11 @@
       local: true,
       class: "space-y-4" do |f| %>
 <% active_count = @active_counts ? @active_counts.fetch(item.id, 0) : item.current_active_students.count %>
+  <%= hidden_field_tag :target_semester_id, @target_semester.id %>
 
   <div class="wt-surface p-4">
-    <h3 class="text-sm font-semibold">复制历史班级</h3>
-    <p class="mt-1 text-xs text-base-content/50">从历史班级复制课次与学员名单到当前学期，提交前可调整班级信息。</p>
+    <h3 class="text-sm font-semibold">复制班级</h3>
+    <p class="mt-1 text-xs text-base-content/50">从所选班级复制课次与学员名单到目标学期，提交前可调整班级信息。</p>
 
     <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3">
       <div class="flex flex-wrap items-center gap-1.5">
@@ -27,7 +28,7 @@
   <div class="wt-surface p-4">
     <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
       <span class="text-base-content/50">目标学期</span>
-      <span class="badge badge-soft badge-primary badge-sm"><%= Thread.current[:semester]&.name %></span>
+      <span class="badge badge-soft badge-primary badge-sm"><%= @target_semester.name %></span>
       <span class="text-base-content/50">·</span>
       <span class="text-base-content/50"><%= Thread.current[:campuse]&.name %></span>
     </div>
@@ -69,13 +70,62 @@
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">学员名单</h3>
-      <span class="text-xs text-base-content/50">按姓名匹配目标年级</span>
+      <span class="text-xs text-base-content/50">默认勾选在班学员</span>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">每行一个姓名；插班写「姓名 课次+」，例如：张三 4+。匹配不到的姓名会被忽略。</p>
-    <%= f.text_area :students_text, value: item.students_text,
-          class: "textarea textarea-sm mt-2 h-56 w-full font-mono text-xs leading-5",
-          placeholder: "张三\n李四 4+" %>
+    <p class="mt-1 text-xs text-base-content/50">勾选要复制到新班级的学员，所选学员从第 1 课开始加入；仅会加入与目标年级一致的学员，退课/转出学员默认不选。</p>
+
+    <% klass_students = item.klass_students.sort_by { |klass_student| klass_student.student.name } %>
+    <% if klass_students.any? %>
+      <div class="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
+        <% klass_students.each do |klass_student| %>
+          <% checked = klass_student.status == "in" %>
+          <label class="flex items-center gap-2 rounded-box bg-base-200/50 px-2.5 py-1.5 text-xs">
+            <%= check_box_tag "student_ids[]", klass_student.student_id, checked,
+                  id: "copy_#{item.id}_student_#{klass_student.student_id}",
+                  class: "checkbox checkbox-xs" %>
+            <span class="font-medium"><%= klass_student.student.name %></span>
+            <% if klass_student.status != "in" %>
+              <span class="badge badge-soft badge-neutral badge-xs ml-auto"><%= klass_student.status == "out" ? "退课" : "转出" %></span>
+            <% end %>
+          </label>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="mt-2 text-xs text-base-content/40">源班级暂无学员</p>
+    <% end %>
+
+    <% source_ids = item.klass_students.map(&:student_id) %>
+    <% extra_students = (@students_by_grade[item.grade_id] || []).reject { |student| source_ids.include?(student.id) } %>
+    <details class="mt-3 rounded-box border border-base-300 bg-base-100" data-controller="list-filter">
+      <summary class="cursor-pointer px-3 py-2 text-xs font-medium">
+        额外加入学员 <span class="font-normal text-base-content/40">（可选）</span>
+      </summary>
+      <div class="px-3 pb-3">
+        <p class="text-[11px] text-base-content/40">以下为同年级其他学员，勾选后会一并加入新班级。</p>
+        <% if extra_students.any? %>
+          <label class="input input-sm mt-2 flex w-full items-center gap-2 rounded-field">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+            <input type="search" class="grow" placeholder="搜索学员姓名" autocomplete="off"
+                   data-list-filter-target="input" data-action="input->list-filter#filter">
+          </label>
+          <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1">
+            <% extra_students.each do |student| %>
+              <label class="flex items-center gap-2 rounded-box bg-base-200/50 px-2.5 py-1.5 text-xs"
+                     data-list-filter-target="item" data-search-text="<%= student.name %>">
+                <%= check_box_tag "student_ids[]", student.id, false,
+                      id: "copy_extra_#{item.id}_student_#{student.id}",
+                      class: "checkbox checkbox-xs" %>
+                <span class="font-medium"><%= student.name %></span>
+              </label>
+            <% end %>
+          </div>
+          <p class="mt-2 hidden text-xs text-base-content/40" data-list-filter-target="empty">没有匹配的学员</p>
+        <% else %>
+          <p class="mt-2 text-xs text-base-content/40">没有其他同年级学员</p>
+        <% end %>
+      </div>
+    </details>
   </div>
 
-  <%= f.submit "复制到 #{Thread.current[:semester]&.name}", class: "btn btn-primary w-full" %>
+  <%= f.submit "复制到 #{@target_semester.name}", class: "btn btn-primary w-full" %>
 <% end %>

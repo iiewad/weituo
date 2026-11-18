@@ -179,8 +179,9 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get copy_admin_semester_klasses_path
 
     assert_response :success
-    assert_select "h1", text: "复制历史班级"
+    assert_select "h1", text: "复制班级"
     assert_select "tbody tr", count: 2
+    assert_select "a[href*='target_semester_id=#{semesters(:semester_next).id}']", text: /复制到/
     assert_select "td", text: /#{semester_klasses(:sk_math_1).name}/
     assert_select "th", text: "在读"
     assert_select "td", text: "1 人", minimum: 1
@@ -190,7 +191,44 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     # 复制表单应带上历史班级的班型与年级，而不是留空
     assert_select "select[name='semester_klass[genre]'] option[selected][value='TG']", count: 2
     assert_select "select[name='semester_klass[grade_id]'] option[selected][value='7']", count: 2
-    assert_select "textarea[name='semester_klass[students_text]']", count: 2
+    assert_select "input[type='checkbox'][name='student_ids[]']", minimum: 1
+    assert_select "input[name='student_ids[]'][checked][value='#{students(:student_7_1).id}']"
+    assert_select "summary", text: /额外加入学员/
+    assert_select "input#copy_extra_#{semester_klasses(:sk_math_1).id}_student_#{students(:student_7_2).id}"
+    assert_select "[data-controller='list-filter'] input[data-list-filter-target='input']", minimum: 1
+  end
+
+  test "copy can target a future semester and includes current classes" do
+    next_semester = semesters(:semester_next)
+    get copy_admin_semester_klasses_path(target_semester_id: next_semester.id, q: { genre_eq: "TG" })
+
+    assert_response :success
+    assert_select "tbody tr", count: 4
+    assert_select "td", text: /#{semester_klasses(:sk_math_2).name}/
+    assert_select "input[name='target_semester_id'][value='#{next_semester.id}']"
+    assert_select "select[name='q[genre_eq]'] option[selected][value='TG']"
+    assert_select "span.badge", text: next_semester.name, minimum: 1
+  end
+
+  test "copy_create can copy a class into a future semester" do
+    next_semester = semesters(:semester_next)
+
+    assert_difference -> { SemesterKlass.count }, 1 do
+      post copy_create_admin_semester_klasses_path, params: {
+        target_semester_id: next_semester.id,
+        student_ids: [ students(:student_7_2).id ],
+        semester_klass: {
+          grade_id: grades(:grade_7).id,
+          teacher_id: teachers(:math_teacher_1).id,
+          genre: "JY", seq: 88, times: 2
+        }
+      }
+    end
+
+    sk = SemesterKlass.order(:id).last
+    assert_equal next_semester.id, sk.semester_id
+    assert sk.klass_students.exists?(student_id: students(:student_7_2).id)
+    assert_redirected_to copy_admin_semester_klasses_path(target_semester_id: next_semester.id)
   end
 
   test "create" do
@@ -239,11 +277,14 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "copy_create copies a class into the current semester" do
     assert_difference -> { SemesterKlass.count }, 1 do
-      post copy_create_admin_semester_klasses_path, params: { semester_klass: {
-        grade_id: grades(:grade_7).id,
-        teacher_id: teachers(:math_teacher_1).id,
-        genre: "JY", seq: 88, times: 2, students_text: ""
-      } }
+      post copy_create_admin_semester_klasses_path, params: {
+        student_ids: [ students(:student_7_1).id ],
+        semester_klass: {
+          grade_id: grades(:grade_7).id,
+          teacher_id: teachers(:math_teacher_1).id,
+          genre: "JY", seq: 88, times: 2
+        }
+      }
     end
 
     sk = SemesterKlass.last
