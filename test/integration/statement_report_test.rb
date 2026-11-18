@@ -51,6 +51,11 @@ class StatementReportTest < ActionDispatch::IntegrationTest
     assert_match "下学期（", response.body
     assert_match next_math.name, response.body
 
+    # 在班名单会标注该生的新增/拓科/预留身份
+    assert_select ".roster-chip", text: /#{students(:student_7_6).name}\s*新增/
+    assert_select ".roster-chip", text: /#{students(:student_7_5).name}\s*拓科/
+    assert_select ".roster-chip", text: /#{students(:student_7_3).name}\s*预留/
+
     get export_statement_admin_semester_klasses_path
     assert_response :success
     workbook = Zip::File.open_buffer(StringIO.new(response.body))

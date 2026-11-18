@@ -62,9 +62,21 @@
       <span class="text-xs text-base-content/50">共 <%= row.active_count %> 人</span>
     </div>
     <% if row.active_students.any? %>
+      <%
+        tag_styles = {
+          "新增" => "badge-soft badge-accent",
+          "拓科" => "badge-soft badge-secondary",
+          "预留" => "badge-soft badge-primary"
+        }
+      %>
       <div class="mt-2 flex max-h-56 flex-wrap gap-1 overflow-y-auto">
-        <% row.active_students.each do |name| %>
-          <span class="badge badge-ghost badge-sm"><%= name %></span>
+        <% row.active_students.each do |entry| %>
+          <span class="roster-chip inline-flex items-center gap-1 rounded-full border border-base-300 px-2 py-0.5 text-xs">
+            <span><%= entry.name %></span>
+            <% entry.tags.each do |tag| %>
+              <span class="badge <%= tag_styles.fetch(tag, "badge-ghost") %> badge-xs"><%= tag %></span>
+            <% end %>
+          </span>
         <% end %>
       </div>
     <% else %>

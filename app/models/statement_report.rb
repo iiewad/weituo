@@ -1,5 +1,6 @@
 class StatementReport
   Entry = Struct.new(:name, :detail, keyword_init: true)
+  RosterEntry = Struct.new(:name, :tags, keyword_init: true)
 
   Row = Struct.new(
     :semester_klass, :active_count, :new_count, :expand_count, :reserve_count,
@@ -127,15 +128,26 @@ class StatementReport
         new_count: new_ids.size,
         expand_count: expand_ids.size,
         reserve_count: reserve_ids.size,
-        active_students: student_names(active_ids),
+        active_students: roster_entries(active_ids, new_ids, expand_ids, reserve_ids),
         new_students: new_entries(new_ids),
         expand_students: expand_entries(expand_ids, previous_semester_id, semester_klass.subject_id),
         reserve_students: reserve_entries(reserve_ids, next_semester_id, semester_klass.subject_id)
       )
     end
 
-    def student_names(ids)
-      ids.map { |id| @student_info[id]&.name }.compact.sort
+    # 在班名单附带该学员在本班的新增/拓科/预留标签，便于对照
+    def roster_entries(ids, new_ids, expand_ids, reserve_ids)
+      ids.filter_map { |id|
+        student = @student_info[id]
+        next unless student
+
+        tags = []
+        tags << "新增" if new_ids.include?(id)
+        tags << "拓科" if expand_ids.include?(id)
+        tags << "预留" if reserve_ids.include?(id)
+
+        RosterEntry.new(name: student.name, tags:)
+      }.sort_by(&:name)
     end
 
     def new_entries(ids)
