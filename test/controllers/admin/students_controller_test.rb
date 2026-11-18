@@ -64,6 +64,33 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal campuses(:campuse_1).id, Student.find_by!(name: "新学员").campuse_id
   end
 
+  test "promote moves selected students to the next grade" do
+    selected = [ students(:student_7_1), students(:student_7_2) ]
+
+    post promote_admin_students_path, params: { student_ids: selected.map(&:id) }
+
+    assert_redirected_to admin_students_path
+    selected.each { |student| assert_equal grades(:grade_8), student.reload.grade }
+    assert_match "已为 2 名学员升年级", flash[:notice]
+  end
+
+  test "promote skips students without an authorized next grade" do
+    student = students(:student_9_1)
+
+    post promote_admin_students_path, params: { student_ids: [ student.id ] }
+
+    assert_redirected_to admin_students_path
+    assert_equal grades(:grade_9), student.reload.grade
+    assert_match "没有可升的年级", flash[:alert]
+  end
+
+  test "promote requires a selection" do
+    post promote_admin_students_path, params: { student_ids: [ "" ] }
+
+    assert_redirected_to admin_students_path
+    assert_match "请先勾选", flash[:alert]
+  end
+
   test "update" do
     student = students(:student_7_1)
     put admin_student_path(student), params: { student: { name: "改名" } }

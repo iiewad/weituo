@@ -29,10 +29,36 @@
   <%= render "admin/students/filter_form" %>
 </div>
 
-<div class="wt-surface overflow-x-auto">
+<%= form_with url: promote_admin_students_path, method: :post, id: "bulk-promote-form", class: "hidden" do |form| %>
+<% end %>
+
+<div data-controller="bulk-select" data-action="change->bulk-select#update">
+  <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <p class="text-xs text-base-content/50">勾选学员后可批量升年级；只更新学员年级，不会调整已入班的班级记录。</p>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-base-content/50">
+        已选 <span class="font-semibold text-base-content" data-bulk-select-target="count">0</span> 人
+      </span>
+      <%= button_tag "批量升年级",
+            type: "submit",
+            form: "bulk-promote-form",
+            data: { bulk_select_target: "submit", turbo_confirm: "确定将选中的学员升入下一年级吗？只更新学员年级，不会调整已入班的班级记录。" },
+            class: "btn btn-sm btn-primary",
+            disabled: true %>
+    </div>
+  </div>
+
+  <div class="wt-surface overflow-x-auto">
   <table class="table table-sm">
     <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
       <tr>
+        <th class="w-8">
+          <%= check_box_tag "bulk_all", "1", false,
+                id: "bulk-select-all",
+                class: "checkbox checkbox-xs",
+                aria: { label: "全选当前页学员" },
+                data: { bulk_select_target: "all", action: "change->bulk-select#toggleAll" } %>
+        </th>
         <th class="w-12">#</th>
         <th>学员</th>
         <th>性别</th>
@@ -48,6 +74,14 @@
     <tbody>
       <% @students.each.with_index(1) do |student, index| %>
         <tr id="student-row-<%= student.id %>" class="hover:bg-base-200/40">
+          <td>
+            <%= check_box_tag "student_ids[]", student.id, false,
+                  form: "bulk-promote-form",
+                  id: "student-select-#{student.id}",
+                  class: "checkbox checkbox-xs",
+                  aria: { label: "选择 #{student.name}" },
+                  data: { bulk_select_target: "item" } %>
+          </td>
           <td class="text-base-content/40"><%= index %></td>
           <td>
             <div class="flex items-center gap-2.5">
@@ -88,9 +122,10 @@
       <% end %>
     </tbody>
   </table>
-  <% if @students.empty? %>
-    <div class="p-12 text-center text-sm text-base-content/50">暂无符合条件的学员</div>
-  <% end %>
+    <% if @students.empty? %>
+      <div class="p-12 text-center text-sm text-base-content/50">暂无符合条件的学员</div>
+    <% end %>
+  </div>
 </div>
 
 <div class="mt-4 flex items-center justify-center gap-1">

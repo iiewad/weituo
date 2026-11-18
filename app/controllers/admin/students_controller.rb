@@ -30,6 +30,47 @@ class Admin::StudentsController < AdminController
     end
   end
 
+  def promote
+    student_ids = Array(params[:student_ids]).reject(&:blank?)
+    if student_ids.empty?
+      redirect_back fallback_location: admin_students_path, alert: "请先勾选要升年级的学员"
+      return
+    end
+
+    allowed_grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    students = Student.where(
+      id: student_ids,
+      campuse_id: Thread.current[:campuse].id,
+      grade_id: allowed_grade_ids
+    ).includes(:grade).to_a
+
+    promoted = 0
+    skipped = 0
+
+    Student.transaction do
+      students.group_by(&:grade).each do |grade, group|
+        next_grade = Grade.find_by(level: grade.level + 1)
+        unless next_grade && allowed_grade_ids.include?(next_grade.id)
+          skipped += group.size
+          next
+        end
+
+        Student.where(id: group.map(&:id)).update_all(grade_id: next_grade.id, updated_at: Time.current)
+        promoted += group.size
+      end
+    end
+
+    if promoted.zero?
+      message = skipped.positive? ? "#{skipped} 名学员没有可升的年级" : "没有找到可升年级的学员"
+      redirect_back fallback_location: admin_students_path, alert: message
+      return
+    end
+
+    message = "已为 #{promoted} 名学员升年级"
+    message += "，#{skipped} 名学员没有可升的年级已跳过" if skipped.positive?
+    redirect_back fallback_location: admin_students_path, notice: message
+  end
+
   def update
     @student = Student.where(campuse_id: Thread.current[:campuse].id).find(params[:id])
 

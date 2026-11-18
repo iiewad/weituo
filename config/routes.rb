@@ -32,7 +32,11 @@ Rails.application.routes.draw do
       end
     end
     resources :teachers, only: [ :index, :create, :update ]
-    resources :students, only: [ :index, :create, :update ]
+    resources :students, only: [ :index, :create, :update ] do
+      collection do
+        post :promote
+      end
+    end
     resources :users, only: [ :index, :create, :update ]
     resources :schools, only: [ :index, :update ] do
       resources :semesters do
