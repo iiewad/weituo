@@ -28,15 +28,15 @@ class CopyKlassTest < ApplicationSystemTestCase
 
     drawer = find("#drawer-cp-klass-#{source.id}", visible: :all).ancestor(".drawer-end")
     within(drawer) do
-      find("[data-student-remote-multiselect-target='input']").set("7_学生2")
+      find("[data-student-multiselect-target='input']").set("7_学生2")
 
-      result = find("[data-student-remote-multiselect-target='results'] button", text: "7_学生2")
-      assert_no_selector "[data-student-remote-multiselect-target='results'] button", text: "7_学生3"
+      assert_selector "#copy_#{source.id}_student_#{students(:student_7_2).id}", visible: true
+      assert_no_selector "#copy_#{source.id}_student_#{students(:student_7_3).id}", visible: true
 
-      result.click
-      assert_selector "[data-student-remote-multiselect-target='selected']", text: students(:student_7_2).name
+      find("#copy_#{source.id}_student_#{students(:student_7_2).id}").check
+      assert_selector "[data-student-multiselect-target='selected']", text: students(:student_7_2).name
 
-      find("[data-student-remote-multiselect-target='input']").set("不存在的学员")
+      find("[data-student-multiselect-target='input']").set("不存在的学员")
       assert_text "没有匹配的学员"
     end
   end

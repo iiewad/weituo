@@ -14,27 +14,15 @@ class Admin::StudentsController < AdminController
     @per_page = PER_PAGE_OPTIONS.include?(params[:per_page].to_i) ? params[:per_page].to_i : DEFAULT_PER_PAGE
     @per_page_options = PER_PAGE_OPTIONS
 
-    @students = base.includes(:grade, :day_school, :guardians)
+    @students = base.includes(:grade, :day_school, :guardians, received_referral: :referrer)
     @students = apply_filter(@students, params[:filter]) if params[:filter].present?
     @students = @students.page(params[:page]).per(@per_page)
 
     @filter_counts = filter_counts(base)
-  end
-
-  def detail
-    @student = scoped_student
-    @history = klass_student_history([ @student.id ])[@student.id] || []
-    @attendance_stats = attendance_stats_for(@history)
-
-    render :detail
-  end
-
-  def edit
-    @student = scoped_student
-    @day_schools = Current.campuse.day_schools.order(:name)
-    @klass_students_by_student = klass_students_by_student([ @student.id ])
-
-    render :edit
+    student_ids = @students.map(&:id)
+    @klass_students_by_student = klass_students_by_student(student_ids)
+    @history_by_student = klass_student_history(student_ids)
+    @attendance_stats = attendance_stats_for(@history_by_student.values.flatten)
   end
 
   def create
@@ -60,11 +48,6 @@ class Admin::StudentsController < AdminController
 
     scope = Student.where(campuse_id: Current.campuse.id).includes(:grade)
     scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
-    if params[:exclude_ids].present?
-      excluded_ids = params[:exclude_ids].to_s.split(",").map(&:to_i)
-      scope = scope.where.not(id: excluded_ids) if excluded_ids.any?
-    end
-    scope = scope.where(grade_id: params[:grade_id]) if params[:grade_id].present?
     scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(query)}%")
 
     render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, detail: student.identity_detail } }
@@ -168,13 +151,6 @@ class Admin::StudentsController < AdminController
   end
 
   private
-    def scoped_student
-      @grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level)
-      Student.where(campuse_id: Current.campuse.id, grade_id: @grades.ids)
-        .includes(:grade, :day_school, :guardians, received_referral: :referrer)
-        .find(params[:id])
-    end
-
     def student_params
       params.require(:student).permit(
         :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :remark, :referrer_id,
@@ -223,7 +199,7 @@ class Admin::StudentsController < AdminController
 
     # 当前页学员的全部历史报名，按学期倒序，供详情抽屉追溯在班记录
     def klass_student_history(student_ids)
-      KlassStudent.unscoped
+      KlassStudent
         .where(student_id: student_ids)
         .includes(semester_klass: [ :semester, :grade, :subject, :teacher ])
         .group_by(&:student_id)

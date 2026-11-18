@@ -48,18 +48,15 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr#student-row-#{student.id}"
     assert_select "label.btn", text: "详情", minimum: 1
 
-    get detail_admin_student_path(student)
-
-    assert_response :success
-    body = Nokogiri::HTML(response.body).text
-    assert_includes body, "历史班级"
-    assert_includes body, semester_klasses(:sk_math_1).name
-    assert_includes body, semester_klasses(:sk_math_2).name
-    assert_includes body, "在班"
-    assert_includes body, "当前学期"
-    assert_includes body, "考勤 1 次 · 出勤 1"
-    assert_includes body, "家长要求每节课反馈"
-    assert_includes body, "9_学生1"
+    drawer = Nokogiri::HTML(response.body).at_css("#drawer-student-detail-#{student.id}").parent
+    assert_includes drawer.text, "历史班级"
+    assert_includes drawer.text, semester_klasses(:sk_math_1).name
+    assert_includes drawer.text, semester_klasses(:sk_math_2).name
+    assert_includes drawer.text, "在班"
+    assert_includes drawer.text, "当前学期"
+    assert_includes drawer.text, "考勤 1 次 · 出勤 1"
+    assert_includes drawer.text, "家长要求每节课反馈"
+    assert_includes drawer.text, "9_学生1"
   end
 
   %w[in_class not_in_class out_class].each do |filter|
@@ -75,16 +72,6 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to admin_students_path
     assert_equal "需要关注", Student.find_by!(name: "新学员").remark
-  end
-
-  test "edit renders the student form lazily" do
-    student = students(:student_7_1)
-
-    get edit_admin_student_path(student)
-
-    assert_response :success
-    assert_select "form input[name='student[name]'][value='#{student.name}']"
-    assert_select "form textarea[name='student[remark]']"
   end
 
   test "manager cannot create a student in an unauthorized grade" do
@@ -135,15 +122,6 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes payload.map { |student| student["id"] }, excluded.id
     assert payload.all? { |student| student["name"].include?("8_学生1") }
     assert payload.all? { |student| student["detail"].present? }
-  end
-
-  test "options filters by grade for class member search" do
-    get options_admin_students_path(q: "学生", grade_id: grades(:grade_8).id)
-
-    assert_response :success
-    payload = JSON.parse(response.body)
-    assert payload.any?
-    assert payload.all? { |student| student["detail"].start_with?("八年级") }
   end
 
   test "options requires a search query" do

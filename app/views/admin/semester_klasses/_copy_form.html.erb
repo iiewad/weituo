@@ -69,23 +69,34 @@
 
 <%
   source_klass_students = item.klass_students.to_a
-  selected_students = source_klass_students.select { |klass_student| klass_student.status == "in" }.map do |klass_student|
-    { id: klass_student.student.id, name: klass_student.student.name, detail: klass_student.student.identity_detail }
+  source_ids = source_klass_students.map(&:student_id)
+  student_options = source_klass_students.map do |klass_student|
+    badge = case klass_student.status
+    when "out" then "退课"
+    when "transfer" then "转出"
+    end
+    { student: klass_student.student, checked: klass_student.status == "in", badge: badge }
   end
+  (@students_by_grade[item.grade_id] || []).each do |student|
+    next if source_ids.include?(student.id)
+
+    student_options << { student: student, checked: false, badge: nil }
+  end
+  student_options.sort_by! { |option| option[:student].name }
 %>
 
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">学员名单</h3>
-      <span class="text-xs text-base-content/50">默认选中 <%= selected_students.size %> 人</span>
+      <span class="text-xs text-base-content/50">共 <%= student_options.size %> 人可选</span>
     </div>
     <p class="mt-1 text-xs text-base-content/50">默认勾选源班在班学员；可搜索同年级其他学员一并加入，退课/转出默认不选。</p>
 
-    <%= render "admin/shared/student_remote_multiselect",
-          options_url: options_admin_students_path,
-          grade_selector: "#copy_#{item.id}_semester_klass_grade_id",
-          selected: selected_students,
-          hint: "所选学员从第 1 课开始加入；只加入与目标年级一致的学员。" %>
+    <%= render "admin/shared/student_multiselect",
+          options: student_options,
+          id_prefix: "copy_#{item.id}",
+          hint: "所选学员从第 1 课开始加入；只加入与目标年级一致的学员。",
+          empty_message: "没有可复制的学员，请先确认源班或同年级学员。" %>
   </div>
 
   <%= f.submit "复制到 #{@target_semester.name}", class: "btn btn-primary w-full" %>

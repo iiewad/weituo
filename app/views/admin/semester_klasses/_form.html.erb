@@ -76,13 +76,14 @@
   </div>
 
   <% enrolled_ids = existing_klass_students.map(&:student_id) %>
+  <% candidates = (@new_class_candidates || []).reject { |student| enrolled_ids.include?(student.id) } %>
 
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">学员名单</h3>
-      <span class="text-xs text-base-content/50"><%= item.new_record? ? "输入姓名搜索添加" : "输入姓名搜索追加" %></span>
+      <span class="text-xs text-base-content/50">共 <%= candidates.size %> 人可选</span>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">输入姓名搜索并添加学员；已入班学员不会重复出现。</p>
+    <p class="mt-1 text-xs text-base-content/50">搜索并勾选要加入本班的学员；已入班学员不会重复出现。</p>
 
     <% if item.persisted? && existing_klass_students.any? %>
       <details class="mt-2 rounded-box border border-base-300 bg-base-100">
@@ -108,10 +109,12 @@
       <%= number_field_tag :join_course_seq, 1, min: 1, class: "input input-sm w-full" %>
     </div>
 
-    <%= render "admin/shared/student_remote_multiselect",
-          options_url: options_admin_students_path(exclude_ids: enrolled_ids.join(",")),
-          grade_selector: "#klass_#{item.id || "new"}_semester_klass_grade_id",
-          hint: "所选学员从入班课次开始加入，之前课次补记为缺课；默认第 1 课。" %>
+    <%= render "admin/shared/student_multiselect",
+          options: candidates.map { |student| { student: student, checked: false, badge: nil } },
+          id_prefix: "klass_#{item.id || "new"}",
+          grade_selector: "#klass_#{item.id || "new"}_grade_id",
+          hint: "所选学员从入班课次开始加入，之前课次补记为缺课；默认第 1 课。",
+          empty_message: "没有可加入的学员，请先在学员管理中建档或检查年级。" %>
   </div>
 
   <%= form.submit item.new_record? ? "开班" : "保存修改", class: "btn btn-primary w-full" %>

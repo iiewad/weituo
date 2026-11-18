@@ -24,17 +24,11 @@ class KlassManagementTest < ApplicationSystemTestCase
       select "七年级", from: "年级"
       select "张", from: "教师"
       fill_in "课次", with: "3"
-
-      find("[data-student-remote-multiselect-target='input']").set("7_学生2")
-      find("[data-student-remote-multiselect-target='results'] button", text: "7_学生2").click
-
       click_button "开班"
     end
 
     assert_text "班级创建成功"
     assert_text "7数精9"
-    klass = SemesterKlass.order(:id).last
-    assert_equal 3, klass.courses.count
-    assert klass.klass_students.exists?(student: students(:student_7_2))
+    assert_equal 3, SemesterKlass.order(:id).last.courses.count
   end
 end

@@ -45,6 +45,7 @@ class Admin::SemesterKlassesController < AdminController
     @total_courses = @sks.sum { |sk| sk.times.to_i }
     @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
     @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }
+    @new_class_candidates = new_class_candidates
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
   end
 
@@ -104,6 +105,10 @@ class Admin::SemesterKlassesController < AdminController
     )
     @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
+    @students_by_grade = Student.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
+      .includes(:grade)
+      .order(:name)
+      .group_by(&:grade_id)
   end
 
   def copy_create
@@ -166,9 +171,21 @@ class Admin::SemesterKlassesController < AdminController
     ).includes(:marked_by).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
+    @insert_student_candidates = Student.where(
+      campuse_id: Current.campuse.id,
+      grade_id: @sk.grade_id
+    ).where.not(id: @sk.klass_students.select(:student_id)).includes(:grade).order(:name)
+    @new_class_candidates = new_class_candidates
   end
 
   private
+  def new_class_candidates
+    Student.where(
+      campuse_id: Current.campuse.id,
+      grade_id: Current.user.grades_by_campuse(Current.campuse.id).ids
+    ).includes(:grade).order(:name)
+  end
+
   def apply_students(semester_klass)
     student_ids = Array(params[:student_ids]).reject(&:blank?)
 

@@ -33,10 +33,6 @@ Rails.application.routes.draw do
     end
     resources :teachers, only: [ :index, :create, :update ]
     resources :students, only: [ :index, :create, :update ] do
-      member do
-        get :detail
-        get :edit
-      end
       collection do
         post :promote
         post :import
