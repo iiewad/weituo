@@ -16,6 +16,7 @@ This file provides guidance to the AI agent when working with code in this repos
 - Tests: `bin/rails test` (Minitest + `fixtures :all`). Single test: `bin/rails test test/models/semester_test.rb` or `bin/rails test test/models/semester_test.rb:18`. Authenticated controller tests use `sign_in_as(users(:one))` from `test/test_helpers/session_test_helper.rb`.
 - Lint: `bin/rubocop` — style is rubocop-rails-omakase defaults, no overrides (`.rubocop.yml` only inherits the gem config).
 - Security checks: `bin/bundler-audit`, `bin/importmap audit`, `bin/brakeman`.
+- Data preflight: `bin/rails data:integrity` reports duplicate business keys and orphan rows; run it before applying new unique indexes/foreign keys in production.
 - One-off CSS build: `bin/rails tailwindcss:build` (writes `app/assets/builds/tailwind.css`); the Dockerfile runs `assets:precompile` for production.
 - CI: `.github/workflows/ci.yml` runs `bin/ci` on pull requests and pushes to `main` (MySQL 8 service, `RAILS_ENV=test`); a successful run on `main` triggers CD.
 - Deploy: Kamal. `.github/workflows/cd.yml` is triggered by a successful CI `workflow_run` on `main` and checks out the exact commit CI verified — it no longer deploys on push in parallel with the checks; do not push to `main` casually. Aliases: `bin/kamal console|shell|logs|dbc` (`config/deploy.yml`).

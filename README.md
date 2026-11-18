@@ -15,6 +15,7 @@ bin/dev                   # Rails + Tailwind watcher（改样式必须开着）
 bin/rails test            # 全量测试
 bin/rails test test/models/semester_test.rb:18   # 单个用例
 bin/ci                    # 全套本地检查：rubocop / bundler-audit / importmap audit / brakeman / 测试 / seeds
+bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 ```
 
 单独检查：`bin/rubocop`、`bin/bundler-audit`、`bin/importmap audit`、`bin/brakeman`、`bin/rails tailwindcss:build`。
