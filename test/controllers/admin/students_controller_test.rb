@@ -94,6 +94,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert payload.any?
     assert_not_includes payload.map { |student| student["id"] }, excluded.id
     assert payload.all? { |student| student["name"].include?("8_学生1") }
+    assert payload.all? { |student| student["detail"].present? }
   end
 
   test "options requires a search query" do

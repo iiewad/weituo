@@ -77,7 +77,7 @@ export default class extends Controller {
       chip.className = "badge badge-ghost badge-sm gap-1"
 
       const name = document.createElement("span")
-      name.textContent = option.dataset.searchText
+      name.textContent = option.dataset.displayText || option.dataset.searchText
 
       const remove = document.createElement("button")
       remove.type = "button"

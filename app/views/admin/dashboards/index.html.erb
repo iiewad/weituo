@@ -140,7 +140,7 @@
             <div class="min-w-0">
               <p class="truncate text-sm font-medium"><%= student.name %></p>
               <p class="text-xs text-base-content/50">
-                <%= student.grade&.name || "未设置年级" %> · <%= student.day_school&.name || "未设置日校" %>
+                <%= [ student.grade&.name || "未设置年级", student.day_school&.name || "未设置日校", student.identity_suffix ].compact.join(" · ") %>
               </p>
             </div>
             <span class="ml-auto shrink-0 text-xs text-base-content/40">

@@ -5,7 +5,7 @@
      data-student-picker-options-url-value="<%= local_assigns[:options_url] %>"
      data-student-picker-exclude-id-value="<%= local_assigns[:exclude_id] %>"
      data-student-picker-selected-name-value="<%= selected&.name %>"
-     data-student-picker-selected-grade-value="<%= selected&.grade&.name %>">
+     data-student-picker-selected-detail-value="<%= selected&.identity_detail %>">
   <div class="flex min-h-6 flex-wrap items-center gap-1" data-student-picker-target="selected"></div>
 
   <%= hidden_field_tag local_assigns[:input_name], selected&.id, data: { student_picker_target: "hidden" } %>

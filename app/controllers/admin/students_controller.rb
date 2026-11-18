@@ -45,7 +45,7 @@ class Admin::StudentsController < AdminController
     scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
     scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(query)}%")
 
-    render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, grade: student.grade&.name } }
+    render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, detail: student.identity_detail } }
   end
 
   def import

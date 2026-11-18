@@ -97,7 +97,7 @@ class AttendanceSheet
 
     def build_rows(sheet, styles)
       @klass_students.each do |klass_student|
-        values = [ klass_student.student.name ]
+        values = [ klass_student.student.identity_label ]
         cell_styles = [ styles[:name] ]
 
         @courses.each do |course|

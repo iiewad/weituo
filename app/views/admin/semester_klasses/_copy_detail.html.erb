@@ -71,7 +71,7 @@
     <% if students.any? %>
       <div class="mt-3 flex max-h-64 flex-wrap gap-1.5 overflow-y-auto">
         <% students.each do |student| %>
-          <span class="badge badge-ghost badge-sm"><%= student.name %></span>
+          <span class="badge badge-ghost badge-sm"><%= student.name %><% if student.identity_suffix.present? %> <span class="text-base-content/40"><%= student.identity_suffix %></span><% end %></span>
         <% end %>
       </div>
     <% else %>

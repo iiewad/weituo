@@ -21,6 +21,22 @@ class Student < ApplicationRecord
     [ "name", "grade_id" ]
   end
 
+  # 同名学员的辅助区分信息：优先电话尾号，其次生日，最后记录 ID。
+  def identity_suffix
+    return "尾号#{phone[-4, 4]}" if phone.present?
+    return birthday.strftime("%Y-%m-%d") if birthday.present?
+    "ID #{id}" if id.present?
+  end
+
+  def identity_detail
+    [ grade&.name, identity_suffix ].compact.join(" · ")
+  end
+
+  def identity_label
+    suffix = identity_suffix
+    suffix.present? ? "#{name}（#{suffix}）" : name
+  end
+
   def join_klass(sk, course_seq: 1)
     return if sk.grade_id != grade_id || sk.campuse_id != campuse_id
     ks = klass_students.find_or_create_by(semester_klass_id: sk.id)

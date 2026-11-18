@@ -13,7 +13,7 @@
        class="card fixed z-50 hidden w-64 flex-col gap-2.5 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
-        <p class="truncate text-xs font-semibold"><%= student.name %></p>
+        <p class="truncate text-xs font-semibold"><%= student.name %><% if student.identity_suffix.present? %> <span class="font-normal text-base-content/40"><%= student.identity_suffix %></span><% end %></p>
         <p class="mt-0.5 text-[11px] text-base-content/50">第 <%= course.seq %> 课考勤</p>
       </div>
       <span class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-xs shrink-0">

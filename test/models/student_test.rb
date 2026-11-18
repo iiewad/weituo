@@ -35,6 +35,24 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal grades(:grade_9).id, top.reload.grade_id
   end
 
+  test "allows students with the same name and distinguishes them by detail" do
+    campuse = campuses(:campuse_1)
+    first = Student.create!(name: "同名", campuse:, grade: grades(:grade_7), phone: "13800001111")
+    second = Student.create!(name: "同名", campuse:, grade: grades(:grade_7), phone: "13800002222")
+
+    assert_equal "尾号1111", first.identity_suffix
+    assert_equal "尾号2222", second.identity_suffix
+    refute_equal first.identity_detail, second.identity_detail
+  end
+
+  test "identity suffix falls back to birthday and id" do
+    with_birthday = Student.new(name: "无电话", birthday: Date.new(2010, 5, 1))
+    assert_equal "2010-05-01", with_birthday.identity_suffix
+
+    without_contact = Student.create!(name: "无联系方式", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+    assert_equal "ID #{without_contact.id}", without_contact.identity_suffix
+  end
+
   test "assigning referrer id creates and clears the referral" do
     student = students(:student_7_5)
     referrer = students(:student_9_2)

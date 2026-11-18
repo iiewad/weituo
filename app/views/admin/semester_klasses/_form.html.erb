@@ -92,6 +92,9 @@
           <% existing_klass_students.sort_by { |klass_student| klass_student.student.name }.each do |klass_student| %>
             <span class="badge badge-ghost badge-sm">
               <%= klass_student.student.name %>
+              <% if klass_student.student.identity_suffix.present? %>
+                <span class="text-base-content/40"><%= klass_student.student.identity_suffix %></span>
+              <% end %>
               <% if klass_student.status != "in" %>
                 <span class="text-base-content/40"><%= klass_student.status == "out" ? "退" : "转" %></span>
               <% end %>

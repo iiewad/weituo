@@ -4,7 +4,7 @@ import { Controller } from "@hotwired/stimulus"
 // 单个学员搜索选择器：远程按姓名搜索，选中后以标签展示，可清除。
 export default class extends Controller {
   static targets = [ "input", "hidden", "results", "selected" ]
-  static values = { optionsUrl: String, excludeId: String, selectedName: String, selectedGrade: String }
+  static values = { optionsUrl: String, excludeId: String, selectedName: String, selectedDetail: String }
 
   connect() {
     this.requestId = 0
@@ -62,17 +62,17 @@ export default class extends Controller {
       students.forEach((student) => {
         const button = document.createElement("button")
         button.type = "button"
-        button.className = "flex w-full items-center gap-2 rounded-box px-2.5 py-1.5 text-left text-xs hover:bg-base-200/60"
+        button.className = "flex w-full flex-col rounded-box px-2.5 py-1.5 text-left text-xs hover:bg-base-200/60"
 
         const name = document.createElement("span")
         name.className = "font-medium"
         name.textContent = student.name
 
-        const grade = document.createElement("span")
-        grade.className = "ml-auto text-[10px] text-base-content/40"
-        grade.textContent = student.grade || ""
+        const detail = document.createElement("span")
+        detail.className = "text-[10px] text-base-content/40"
+        detail.textContent = student.detail || ""
 
-        button.append(name, grade)
+        button.append(name, detail)
         button.addEventListener("click", () => this.select(student))
         this.resultsTarget.append(button)
       })
@@ -84,7 +84,7 @@ export default class extends Controller {
   select(student) {
     this.hiddenTarget.value = student.id
     this.selectedNameValue = student.name
-    this.selectedGradeValue = student.grade || ""
+    this.selectedDetailValue = student.detail || ""
     this.inputTarget.value = ""
     this.renderSelected()
     this.close()
@@ -105,7 +105,7 @@ export default class extends Controller {
     chip.className = "badge badge-ghost badge-sm gap-1"
 
     const name = document.createElement("span")
-    name.textContent = [ this.selectedNameValue, this.selectedGradeValue ].filter(Boolean).join(" · ")
+    name.textContent = [ this.selectedNameValue, this.selectedDetailValue ].filter(Boolean).join(" · ")
 
     const remove = document.createElement("button")
     remove.type = "button"
@@ -122,7 +122,7 @@ export default class extends Controller {
     event?.preventDefault()
     this.hiddenTarget.value = ""
     this.selectedNameValue = ""
-    this.selectedGradeValue = ""
+    this.selectedDetailValue = ""
     this.inputTarget.value = ""
     this.renderSelected()
     this.close()
