@@ -4,13 +4,13 @@ class Admin::TeachersController < AdminController
     @subjects = Subject.order(:id)
     @teachers = @q.result
       .includes(:subject, :campuse)
-      .where(campuse_id: Thread.current[:campuse].id)
+      .where(campuse_id: Current.campuse.id)
       .page(params[:page])
   end
 
   def create
     @teacher = Teacher.new(teacher_params)
-    @teacher.campuse_id = Thread.current[:campuse].id
+    @teacher.campuse_id = Current.campuse.id
 
     if @teacher.save
       redirect_to admin_teachers_path, notice: "教师创建成功"
@@ -20,7 +20,7 @@ class Admin::TeachersController < AdminController
   end
 
   def update
-    @teacher = Teacher.where(campuse_id: Thread.current[:campuse].id).find(params[:id])
+    @teacher = Teacher.where(campuse_id: Current.campuse.id).find(params[:id])
 
     if @teacher.update(teacher_params)
       redirect_to admin_teachers_path, notice: "教师更新成功"

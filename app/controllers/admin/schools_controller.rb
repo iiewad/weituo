@@ -2,12 +2,12 @@ class Admin::SchoolsController < AdminController
   before_action :require_admin
 
   def index
-    @schools = School.where(id: Thread.current[:school].id)
+    @schools = School.where(id: Current.school.id)
       .includes(:campuses, :semesters, :grade_subjects, :user_campuses)
   end
 
   def update
-    @school = School.find(Thread.current[:school].id)
+    @school = School.find(Current.school.id)
 
     if @school.update(school_params)
       redirect_to admin_schools_path, notice: "学校更新成功"

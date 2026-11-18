@@ -1,5 +1,5 @@
-<% campuse = Thread.current[:campuse] %>
-<% semester = Thread.current[:semester] %>
+<% campuse = Current.campuse %>
+<% semester = Current.semester %>
 <div class="sticky top-0 z-30 border-b border-base-300/70 bg-base-100/90 backdrop-blur">
   <div class="flex h-16 items-center gap-2 px-3 lg:px-6">
     <% if authenticated? %>

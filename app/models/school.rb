@@ -20,8 +20,4 @@ class School < ApplicationRecord
   def current_semester
     Semester.current(id)
   end
-
-  def previous_semester
-    Semester.previous(id)
-  end
 end

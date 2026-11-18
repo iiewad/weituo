@@ -13,7 +13,6 @@ class Semester < ApplicationRecord
     where(school_id: school_id).where(seq: ...current_semester.seq).order(seq: :desc)
   end
   has_many :semester_klasses, dependent: :destroy
-  has_many :klasses, through: :semester_klasses
 
   def related_next_semester
     Semester.where(school_id: school_id).where(

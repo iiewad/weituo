@@ -437,8 +437,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     sk = SemesterKlass.last
     assert_redirected_to admin_semester_klass_path(sk)
-    assert_equal Thread.current[:semester].id, sk.semester_id
-    assert_equal Thread.current[:campuse].id, sk.campuse_id
+    assert_equal semesters(:semester_current).id, sk.semester_id
+    assert_equal campuses(:campuse_1).id, sk.campuse_id
     assert_equal subjects(:math).id, sk.subject_id
     assert_equal 2, sk.courses.count
   end

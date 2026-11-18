@@ -10,7 +10,7 @@ class Admin::CampusesControllerTest < ActionDispatch::IntegrationTest
     get switch_thread_campuse_admin_school_campuse_path(schools(:school_1), other), headers: { "HTTP_REFERER" => root_path }
 
     assert_redirected_to root_path
-    assert_equal other, Thread.current[:campuse]
+    assert_equal other.id, session[:current_campuse_id]
   end
 
   test "cannot switch to a campus the user is not authorized for" do

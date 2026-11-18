@@ -30,7 +30,7 @@
       <span class="text-base-content/50">目标学期</span>
       <span class="badge badge-soft badge-primary badge-sm"><%= @target_semester.name %></span>
       <span class="text-base-content/50">·</span>
-      <span class="text-base-content/50"><%= Thread.current[:campuse]&.name %></span>
+      <span class="text-base-content/50"><%= Current.campuse&.name %></span>
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -50,7 +50,7 @@
       <div>
         <%= f.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= f.select :grade_id,
-              Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
+              Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
               { selected: item.grade_id }, { class: "select select-sm w-full", required: true } %>
       </div>
 

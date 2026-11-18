@@ -1,4 +1,4 @@
-<% user_campuses = item.user_campuses.select { |user_campuse| user_campuse.school_id == Thread.current[:school].id } %>
+<% user_campuses = item.user_campuses.select { |user_campuse| user_campuse.school_id == Current.school.id } %>
 <%= form_with model: item,
       url: item.new_record? ? admin_users_path : admin_user_path(item),
       namespace: "user_#{item.id || 'new'}",

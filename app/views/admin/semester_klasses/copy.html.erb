@@ -21,7 +21,7 @@
       <% end %>
     </div>
   </div>
-  <p class="text-xs text-base-content/50">来源：目标学期之前的学期<%= "（包含当前学期）" if @target_semester != Thread.current[:semester] %></p>
+  <p class="text-xs text-base-content/50">来源：目标学期之前的学期<%= "（包含当前学期）" if @target_semester != Current.semester %></p>
 </div>
 
 <div class="mb-4 flex flex-wrap items-center gap-2 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-sm">

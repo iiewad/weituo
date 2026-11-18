@@ -1,7 +1,7 @@
 class Admin::DashboardsController < AdminController
   def index
-    @campuse = Thread.current[:campuse]
-    @semester = Thread.current[:semester]
+    @campuse = Current.campuse
+    @semester = Current.semester
     @grades = Current.user.grades_by_campuse(@campuse.id).order(:level)
     grade_ids = @grades.ids
 

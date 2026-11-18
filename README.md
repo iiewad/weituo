@@ -32,7 +32,7 @@ bin/ci                    # 全套本地检查：rubocop / bundler-audit / impor
 
 用户通过 `UserCampuse` 关联到校区，一个用户可有多个校区授权，每个授权带一份 JSON `grade_ids`。`Current.user.grades_by_campuse` / `subjects_by_campuse` 决定筛选与表单里可选的年级、科目。
 
-**当前上下文**：登录后 `AdminController#set_thread_current` 把当前校区、学校、学期写入 `Thread.current` 并记在 session 里；顶栏可切换校区/学期。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取覆盖今天的学期，取不到则回退到 `seq` 最大的学期。
+**当前上下文**：登录后 `AdminController#set_current_context` 把当前校区、学校、学期写入 `Current` 并记在 session 里；顶栏可切换校区/学期。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取覆盖今天的学期，取不到则回退到 `seq` 最大的学期。
 
 账号以用户名 + 密码登录（`users` 表无邮箱字段），不提供自助邮件重置密码；需要重置时由管理员在「用户管理」中修改。
 
@@ -172,7 +172,7 @@ stateDiagram-v2
 
 ### 8. 学期 / 校区切换
 
-顶栏下拉切换后写入 session 与 `Thread.current`；班级列表、班级详情、报表等都随之切换作用域。切换学期时若目标学期的班级不在当前上下文中，详情会打不开——先切换学期再进入对应班级。
+顶栏下拉切换后写入 session 与 `Current`；班级列表、班级详情、报表等都随之切换作用域。切换学期时若目标学期的班级不在当前上下文中，详情会打不开——先切换学期再进入对应班级。
 
 ## 页面入口
 

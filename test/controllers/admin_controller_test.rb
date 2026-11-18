@@ -26,15 +26,15 @@ class AdminControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "sets the thread current campus, school and semester" do
+  test "sets the current campus, school and semester" do
     sign_in_as users(:one)
 
     get root_path
 
     assert_response :success
-    assert_equal campuses(:campuse_1).id, Thread.current[:campuse].id
-    assert_equal schools(:school_1).id, Thread.current[:school].id
-    assert_equal semesters(:semester_current), Thread.current[:semester]
+    assert_equal campuses(:campuse_1).id, session[:current_campuse_id]
+    assert_equal schools(:school_1).id, session[:current_school_id]
+    assert_equal semesters(:semester_current).id, session[:current_semester_id]
   end
 
   test "user without any campus authorization is signed out with a hint" do

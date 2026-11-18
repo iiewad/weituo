@@ -47,7 +47,7 @@
         <span class="wt-sidebar-text">教师管理</span>
       <% end %>
 
-      <% if Current.user.has_role_by_campuse_id(Thread.current[:campuse]&.id, "admin") %>
+      <% if Current.user.has_role_by_campuse_id(Current.campuse&.id, "admin") %>
         <p class="wt-sidebar-heading px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-base-content/40">系统设置</p>
         <%= link_to admin_schools_path, class: "wt-side-link", title: "学校管理", aria: { current: ("page" if under.call("/admin/schools")) } do %>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M9 10h.01M15 10h.01M9 14h.01M15 14h.01" /></svg>
@@ -69,7 +69,7 @@
     <div class="wt-sidebar-footer border-t border-base-300/70 p-3">
       <div class="rounded-box bg-base-200/70 p-3 text-xs">
         <p class="font-medium text-base-content/70">当前学期</p>
-        <p class="mt-1 font-semibold"><%= Thread.current[:semester]&.name || "未设置" %></p>
+        <p class="mt-1 font-semibold"><%= Current.semester&.name || "未设置" %></p>
       </div>
     </div>
   </aside>

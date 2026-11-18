@@ -19,12 +19,12 @@
 
       <div>
         <%= f.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= f.select :grade_id, (@grades || Current.user.grades_by_campuse(Thread.current[:campuse].id).order(:level)).map { |grade| [ grade.name, grade.id ] }, { prompt: "请选择年级" }, class: "select select-sm w-full", required: true %>
+        <%= f.select :grade_id, (@grades || Current.user.grades_by_campuse(Current.campuse.id).order(:level)).map { |grade| [ grade.name, grade.id ] }, { prompt: "请选择年级" }, class: "select select-sm w-full", required: true %>
       </div>
 
       <div>
         <%= f.label :day_school_id, "日校", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= f.select :day_school_id, (@day_schools || DaySchool.where(campuse_id: Thread.current[:campuse].id).order(:name)).map { |day_school| [ day_school.name, day_school.id ] }, { prompt: "请选择日校" }, class: "select select-sm w-full" %>
+        <%= f.select :day_school_id, (@day_schools || DaySchool.where(campuse_id: Current.campuse.id).order(:name)).map { |day_school| [ day_school.name, day_school.id ] }, { prompt: "请选择日校" }, class: "select select-sm w-full" %>
       </div>
 
       <div>
@@ -81,7 +81,7 @@
     <div class="wt-surface mt-3 p-4">
       <div class="mb-2 flex items-center justify-between">
         <h3 class="text-sm font-semibold">班级信息</h3>
-        <span class="text-xs text-base-content/50"><%= Thread.current[:semester]&.name %></span>
+        <span class="text-xs text-base-content/50"><%= Current.semester&.name %></span>
       </div>
 
       <% if klass_students.empty? %>

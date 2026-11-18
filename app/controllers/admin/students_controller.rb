@@ -4,10 +4,10 @@ class Admin::StudentsController < AdminController
 
   def index
     @q = Student.ransack(params[:q])
-    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).order(:level)
-    @day_schools = DaySchool.where(campuse_id: Thread.current[:campuse].id).order(:name)
+    @grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level)
+    @day_schools = DaySchool.where(campuse_id: Current.campuse.id).order(:name)
     base = @q.result.where(
-      campuse_id: Thread.current[:campuse].id,
+      campuse_id: Current.campuse.id,
       grade_id: @grades.ids
     )
 
@@ -32,7 +32,7 @@ class Admin::StudentsController < AdminController
     end
 
     @student = Student.new(student_params)
-    @student.campuse_id = Thread.current[:campuse].id
+    @student.campuse_id = Current.campuse.id
 
     if @student.save
       redirect_to admin_students_path, notice: "学员创建成功"
@@ -46,7 +46,7 @@ class Admin::StudentsController < AdminController
     query = params[:q].to_s.strip
     return render json: [] if query.blank?
 
-    scope = Student.where(campuse_id: Thread.current[:campuse].id).includes(:grade)
+    scope = Student.where(campuse_id: Current.campuse.id).includes(:grade)
     scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
     scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(query)}%")
 
@@ -60,7 +60,7 @@ class Admin::StudentsController < AdminController
   end
 
   def import
-    grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    grade_ids = Current.user.grades_by_campuse(Current.campuse.id).ids
 
     if params[:students_file].present?
       unless File.extname(params[:students_file].original_filename.to_s).casecmp?(".xlsx")
@@ -69,7 +69,7 @@ class Admin::StudentsController < AdminController
       end
 
       begin
-        created, skipped = Student.add_by_xlsx(Thread.current[:campuse].id, params[:students_file], grade_ids: grade_ids)
+        created, skipped = Student.add_by_xlsx(Current.campuse.id, params[:students_file], grade_ids: grade_ids)
       rescue Roo::Error, Zip::Error, Errno::ENOENT
         redirect_to admin_students_path, alert: "Excel 文件读取失败，请确认文件内容与格式"
         return
@@ -81,7 +81,7 @@ class Admin::StudentsController < AdminController
         return
       end
 
-      created, skipped = Student.add_by_text(Thread.current[:campuse].id, text, grade_ids: grade_ids)
+      created, skipped = Student.add_by_text(Current.campuse.id, text, grade_ids: grade_ids)
     end
 
     message = "新增 #{created} 名学员"
@@ -101,10 +101,10 @@ class Admin::StudentsController < AdminController
       return
     end
 
-    allowed_grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    allowed_grade_ids = Current.user.grades_by_campuse(Current.campuse.id).ids
     students = Student.where(
       id: student_ids,
-      campuse_id: Thread.current[:campuse].id,
+      campuse_id: Current.campuse.id,
       grade_id: allowed_grade_ids
     ).includes(:grade).to_a
 
@@ -141,7 +141,7 @@ class Admin::StudentsController < AdminController
       return
     end
 
-    @student = Student.where(campuse_id: Thread.current[:campuse].id).find(params[:id])
+    @student = Student.where(campuse_id: Current.campuse.id).find(params[:id])
 
     if @student.update(student_params)
       redirect_to admin_students_path, notice: "学员信息更新成功"
@@ -161,8 +161,8 @@ class Admin::StudentsController < AdminController
     def student_scope_valid?
       grade_id = params.dig(:student, :grade_id)
       day_school_id = params.dig(:student, :day_school_id)
-      grade_ok = grade_id.blank? || Current.user.grades_by_campuse(Thread.current[:campuse].id).exists?(id: grade_id)
-      day_school_ok = day_school_id.blank? || Thread.current[:campuse].day_schools.exists?(id: day_school_id)
+      grade_ok = grade_id.blank? || Current.user.grades_by_campuse(Current.campuse.id).exists?(id: grade_id)
+      day_school_ok = day_school_id.blank? || Current.campuse.day_schools.exists?(id: day_school_id)
 
       grade_ok && day_school_ok
     end
@@ -170,7 +170,7 @@ class Admin::StudentsController < AdminController
     # 当前学期内的报名记录，用于「在班 / 有退课 / 未入班」筛选与计数
     def klass_students_in_current_semester
       KlassStudent.joins(:semester_klass).where(
-        semester_klasses: { semester_id: Thread.current[:semester].id }
+        semester_klasses: { semester_id: Current.semester.id }
       )
     end
 
@@ -192,7 +192,7 @@ class Admin::StudentsController < AdminController
     def klass_students_by_student(student_ids)
       KlassStudent
         .joins(:semester_klass)
-        .where(semester_klasses: { semester_id: Thread.current[:semester].id }, student_id: student_ids)
+        .where(semester_klasses: { semester_id: Current.semester.id }, student_id: student_ids)
         .includes(semester_klass: [ :grade, :subject, :teacher ])
         .group_by(&:student_id)
     end

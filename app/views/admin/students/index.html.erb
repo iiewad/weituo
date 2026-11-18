@@ -1,5 +1,5 @@
 <% content_for :page_title, "学员管理" %>
-<% content_for :page_subtitle, "共 #{@students.total_count} 名学员 · #{Thread.current[:campuse]&.name}" %>
+<% content_for :page_subtitle, "共 #{@students.total_count} 名学员 · #{Current.campuse&.name}" %>
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-new", button_name: "添加学员", drawer_width: "240", drawer_content: "admin/students/form" %>
   <%= render "admin/shared/drawer", item: Student.new, drawer_id: "drawer-student-import", button_name: "批量导入", drawer_width: "200", drawer_content: "admin/students/import_form" %>

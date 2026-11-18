@@ -7,7 +7,6 @@ class Student < ApplicationRecord
   belongs_to :grade, optional: true
   has_many :guardians, dependent: :destroy
   has_many :klass_students, dependent: :destroy
-  has_many :klasses, through: :klass_students
   has_one :received_referral, class_name: "StudentReferral", foreign_key: :referred_id, dependent: :destroy, inverse_of: :referred
   has_one :referrer, through: :received_referral
   has_many :given_referrals, class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy, inverse_of: :referrer

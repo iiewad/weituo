@@ -4,8 +4,8 @@
       namespace: "klass_#{item.id || 'new'}",
       local: true,
       class: "space-y-4" do |form| %>
-  <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
-  <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+  <%= form.hidden_field :semester_id, value: Current.semester.id %>
+  <%= form.hidden_field :campuse_id, value: Current.campuse.id %>
   <% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
 
   <div class="wt-surface p-4">
@@ -34,9 +34,9 @@
   <div class="wt-surface p-4">
     <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
       <span class="text-base-content/50">目标学期</span>
-      <span class="badge badge-soft badge-primary badge-sm"><%= Thread.current[:semester]&.name %></span>
+      <span class="badge badge-soft badge-primary badge-sm"><%= Current.semester&.name %></span>
       <span class="text-base-content/50">·</span>
-      <span class="text-base-content/50"><%= Thread.current[:campuse]&.name %></span>
+      <span class="text-base-content/50"><%= Current.campuse&.name %></span>
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -56,7 +56,7 @@
       <div>
         <%= form.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= form.select :grade_id,
-              Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
+              Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
               { include_blank: "选择年级", selected: item.grade_id },
               { class: "select select-sm w-full", required: true } %>
       </div>

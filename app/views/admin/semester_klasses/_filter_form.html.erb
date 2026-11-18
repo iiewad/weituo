@@ -13,14 +13,14 @@
 
     <div class="w-full sm:w-32">
       <label class="mb-1 block text-xs font-medium text-base-content/50">年级</label>
-      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name,
+      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Current.campuse.id), :id, :name,
             { include_blank: "全部年级", selected: params[:q].try(:[], :grade_id_eq) },
             class: "select select-sm w-full" %>
     </div>
 
     <div class="w-full sm:w-32">
       <label class="mb-1 block text-xs font-medium text-base-content/50">科目</label>
-      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name,
+      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Current.campuse.id), :id, :name,
             { include_blank: "全部科目", selected: params[:q].try(:[], :subject_id_eq) },
             class: "select select-sm w-full" %>
     </div>

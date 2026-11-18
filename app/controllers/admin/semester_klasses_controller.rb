@@ -1,43 +1,43 @@
 class Admin::SemesterKlassesController < AdminController
   def export_attendances
     send_data AttendanceWorkbook.new(
-      campuse: Thread.current[:campuse],
-      semester: Thread.current[:semester],
+      campuse: Current.campuse,
+      semester: Current.semester,
       grade_ids: allowed_grade_ids
     ).to_xlsx,
-      filename: "班级考勤表-#{Thread.current[:semester].name}-#{Thread.current[:campuse].name}.xlsx",
+      filename: "班级考勤表-#{Current.semester.name}-#{Current.campuse.name}.xlsx",
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       disposition: "attachment"
   end
 
   def statement
     @q = SemesterKlass.ransack(params[:q])
-    report = StatementReport.new(statement_scope, campuse: Thread.current[:campuse])
+    report = StatementReport.new(statement_scope, campuse: Current.campuse)
     @rows = report.rows
     @summary = report.summary
-    @semesters = Semester.where(school_id: Thread.current[:school].id)
+    @semesters = Semester.where(school_id: Current.school.id)
   end
 
   def export_statement
     @q = SemesterKlass.ransack(params[:q])
-    report = StatementReport.new(statement_scope, campuse: Thread.current[:campuse])
+    report = StatementReport.new(statement_scope, campuse: Current.campuse)
 
     send_data StatementSheet.new(
       rows: report.rows,
       summary: report.summary,
-      campuse: Thread.current[:campuse],
-      semester: Thread.current[:semester],
+      campuse: Current.campuse,
+      semester: Current.semester,
       filter_summary: statement_filter_summary
     ).to_xlsx,
-      filename: "班级报表-#{Thread.current[:semester].name}-#{Thread.current[:campuse].name}.xlsx",
+      filename: "班级报表-#{Current.semester.name}-#{Current.campuse.name}.xlsx",
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       disposition: "attachment"
   end
 
   def index
     @sks = SemesterKlass.where(
-      campuse_id: Thread.current[:campuse].id,
-      semester_id: Thread.current[:semester].id,
+      campuse_id: Current.campuse.id,
+      semester_id: Current.semester.id,
       grade_id: allowed_grade_ids,
     ).includes(:grade, :subject, :teacher, :courses).to_a
       .sort_by { |sk| [ sk.grade.level, sk.subject.name, sk.genre, sk.seq ] }
@@ -56,9 +56,9 @@ class Admin::SemesterKlassesController < AdminController
     end
 
     @sk = SemesterKlass.new(semester_klass_params.except(:students_text, :teacher_id))
-    @sk.campuse_id = Thread.current[:campuse].id
-    @sk.semester_id = Thread.current[:semester].id
-    @sk.teacher = Thread.current[:campuse].teachers.find(params[:semester_klass][:teacher_id])
+    @sk.campuse_id = Current.campuse.id
+    @sk.semester_id = Current.semester.id
+    @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
     @sk.subject = @sk.teacher.subject
 
     if @sk.save
@@ -77,7 +77,7 @@ class Admin::SemesterKlassesController < AdminController
     end
 
     @sk = campuse_semester_klasses.find(params[:id])
-    teacher = Thread.current[:campuse].teachers.find(params[:semester_klass][:teacher_id])
+    teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
     if @sk.update(semester_klass_params.except(:students_text, :teacher_id).merge(teacher_id: teacher.id, subject_id: teacher.subject_id))
       apply_students(@sk)
       redirect_to admin_semester_klass_path(@sk), notice: "班级更新成功"
@@ -91,7 +91,7 @@ class Admin::SemesterKlassesController < AdminController
     @target_semesters = copy_target_semesters
     @q = SemesterKlass.ransack(params[:q])
     @sks = @q.result.joins(:semester, :grade, :subject).includes(:semester, :grade, :subject, :teacher, :students, :courses, klass_students: { student: :grade }).where(
-      campuse_id: Thread.current[:campuse].id,
+      campuse_id: Current.campuse.id,
       grade_id: allowed_grade_ids,
     ).where(
       "semesters.seq < ?", @target_semester.seq
@@ -99,13 +99,13 @@ class Admin::SemesterKlassesController < AdminController
       "semesters.seq desc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc"
     )
     @semesters = Semester.where(
-      school_id: Thread.current[:school].id
+      school_id: Current.school.id
     ).where(
       "semesters.seq < ?", @target_semester.seq,
     )
     @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
-    @students_by_grade = Student.where(campuse_id: Thread.current[:campuse].id, grade_id: @sks.map(&:grade_id).uniq)
+    @students_by_grade = Student.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
       .includes(:grade)
       .order(:name)
       .group_by(&:grade_id)
@@ -120,8 +120,8 @@ class Admin::SemesterKlassesController < AdminController
     target_semester = copy_target_semester
     @sk = SemesterKlass.new(semester_klass_params.except(:students_text, :teacher_id))
     @sk.semester_id = target_semester.id
-    @sk.campuse_id = Thread.current[:campuse].id
-    @sk.teacher = Thread.current[:campuse].teachers.find(params[:semester_klass][:teacher_id])
+    @sk.campuse_id = Current.campuse.id
+    @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
     @sk.subject = @sk.teacher.subject
 
     if @sk.save
@@ -130,7 +130,7 @@ class Admin::SemesterKlassesController < AdminController
         student.join_klass(@sk, course_seq: 1)
       end
 
-      if target_semester == Thread.current[:semester]
+      if target_semester == Current.semester
         redirect_to admin_semester_klass_path(@sk), notice: "复制成功，已生成 #{@sk.name}"
       else
         redirect_to copy_admin_semester_klasses_path(target_semester_id: target_semester.id),
@@ -143,8 +143,8 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def export_attendance
-    @sk = Thread.current[:semester].semester_klasses
-      .where(campuse_id: Thread.current[:campuse].id, grade_id: allowed_grade_ids)
+    @sk = Current.semester.semester_klasses
+      .where(campuse_id: Current.campuse.id, grade_id: allowed_grade_ids)
       .find(params[:id])
     send_data AttendanceSheet.new(@sk).to_xlsx,
       filename: "#{@sk.name}-#{@sk.semester.name}-考勤表.xlsx",
@@ -153,13 +153,13 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def show
-    @sk = Thread.current[:semester].semester_klasses
-      .where(campuse_id: Thread.current[:campuse].id, grade_id: allowed_grade_ids)
+    @sk = Current.semester.semester_klasses
+      .where(campuse_id: Current.campuse.id, grade_id: allowed_grade_ids)
       .includes(:semester, :grade, :subject, :teacher)
       .find(params[:id])
     @sks = SemesterKlass.where(
-      campuse_id: Thread.current[:campuse].id,
-      semester_id: Thread.current[:semester].id,
+      campuse_id: Current.campuse.id,
+      semester_id: Current.semester.id,
       grade_id: allowed_grade_ids,
     ).includes(:grade, :subject, :teacher)
     @klass_students = @sk.klass_students.includes(:student).to_a
@@ -171,7 +171,7 @@ class Admin::SemesterKlassesController < AdminController
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
     @insert_student_candidates = Student.where(
-      campuse_id: Thread.current[:campuse].id,
+      campuse_id: Current.campuse.id,
       grade_id: @sk.grade_id
     ).where.not(id: @sk.klass_students.select(:student_id)).includes(:grade).order(:name)
     @new_class_candidates = new_class_candidates
@@ -180,8 +180,8 @@ class Admin::SemesterKlassesController < AdminController
   private
   def new_class_candidates
     Student.where(
-      campuse_id: Thread.current[:campuse].id,
-      grade_id: Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+      campuse_id: Current.campuse.id,
+      grade_id: Current.user.grades_by_campuse(Current.campuse.id).ids
     ).includes(:grade).order(:name)
   end
 
@@ -201,23 +201,23 @@ class Admin::SemesterKlassesController < AdminController
 
   # 目标学期只能选当前学期及其之后的学期；默认当前学期
   def copy_target_semester
-    return Thread.current[:semester] if params[:target_semester_id].blank?
+    return Current.semester if params[:target_semester_id].blank?
 
-    Semester.where(school_id: Thread.current[:school].id)
-      .where("seq >= ?", Thread.current[:semester].seq)
-      .find_by(id: params[:target_semester_id]) || Thread.current[:semester]
+    Semester.where(school_id: Current.school.id)
+      .where("seq >= ?", Current.semester.seq)
+      .find_by(id: params[:target_semester_id]) || Current.semester
   end
 
   def copy_target_semesters
-    Semester.where(school_id: Thread.current[:school].id)
-      .where("seq >= ?", Thread.current[:semester].seq)
+    Semester.where(school_id: Current.school.id)
+      .where("seq >= ?", Current.semester.seq)
       .order(:seq, :id)
   end
 
   def statement_scope
     @q.result.joins(:semester, :grade, :subject)
       .includes(:semester, :grade, :subject, :teacher)
-      .where(campuse_id: Thread.current[:campuse].id, grade_id: allowed_grade_ids)
+      .where(campuse_id: Current.campuse.id, grade_id: allowed_grade_ids)
       .order("semesters.seq desc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc")
   end
 

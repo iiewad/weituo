@@ -1,5 +1,5 @@
 <% content_for :page_title, "班级管理" %>
-<% content_for :page_subtitle, "#{Thread.current[:semester]&.name} · #{Thread.current[:campuse]&.name} · 共 #{@sks.size} 个班级" %>
+<% content_for :page_subtitle, "#{Current.semester&.name} · #{Current.campuse&.name} · 共 #{@sks.size} 个班级" %>
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "240", drawer_content: "admin/semester_klasses/form" %>
   <%= link_to export_attendances_admin_semester_klasses_path, class: "btn btn-xs btn-outline btn-primary", title: "导出当前学期全部班级考勤", data: { turbo: false } do %>

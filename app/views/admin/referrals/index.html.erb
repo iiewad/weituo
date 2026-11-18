@@ -1,5 +1,5 @@
 <% content_for :page_title, "推荐统计" %>
-<% content_for :page_subtitle, [ Thread.current[:campuse]&.name, "共 #{@referral_count} 条推荐关系" ].compact.join(" · ") %>
+<% content_for :page_subtitle, [ Current.campuse&.name, "共 #{@referral_count} 条推荐关系" ].compact.join(" · ") %>
 
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
   <div class="wt-surface p-4">

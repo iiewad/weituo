@@ -2,8 +2,8 @@ class Admin::ReferralsController < AdminController
   PER_PAGE = 20
 
   def index
-    @grades = Current.user.grades_by_campuse(Thread.current[:campuse].id).order(:level)
-    student_ids = Student.where(campuse_id: Thread.current[:campuse].id, grade_id: @grades.ids).select(:id)
+    @grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level)
+    student_ids = Student.where(campuse_id: Current.campuse.id, grade_id: @grades.ids).select(:id)
     @referrals = StudentReferral.where(referrer_id: student_ids, referred_id: student_ids)
 
     @selected_grade = @grades.find_by(id: params[:grade_id])

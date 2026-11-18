@@ -3,7 +3,7 @@ class Admin::UsersController < AdminController
 
   def index
     @users = users_in_current_school.includes(user_campuses: :campuse).order(:name)
-    @campuses = Thread.current[:school].campuses.order(:name, :id)
+    @campuses = Current.school.campuses.order(:name, :id)
     @grades = Grade.order(:level).to_a
     @grades_by_id = @grades.index_by(&:id)
     @grade_school_ids = GradeSubject.pluck(:grade_id, :school_id)
@@ -41,7 +41,7 @@ class Admin::UsersController < AdminController
 
   private
     def users_in_current_school
-      User.where(id: UserCampuse.where(school_id: Thread.current[:school].id).select(:user_id))
+      User.where(id: UserCampuse.where(school_id: Current.school.id).select(:user_id))
     end
 
     def user_campuses_within_school?
@@ -49,11 +49,11 @@ class Admin::UsersController < AdminController
       rows.each_value.all? do |row|
         if row[:id].present?
           user_campuse = UserCampuse.find_by(id: row[:id])
-          next false unless user_campuse && user_campuse.school_id == Thread.current[:school].id
+          next false unless user_campuse && user_campuse.school_id == Current.school.id
         end
 
         campuse_id = row[:campuse_id]
-        campuse_id.blank? || Thread.current[:school].campuses.exists?(id: campuse_id)
+        campuse_id.blank? || Current.school.campuses.exists?(id: campuse_id)
       end
     end
 

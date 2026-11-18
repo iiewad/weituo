@@ -27,7 +27,7 @@ class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
     get admin_teachers_path
 
     assert_response :success
-    assert_equal campuses(:campuse_1).id, Thread.current[:campuse].id
+    assert_equal campuses(:campuse_1).id, session[:current_campuse_id]
   end
 
   test "index only lists teachers in the current campus" do

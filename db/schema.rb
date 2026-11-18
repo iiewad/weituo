@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_115745) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_121732) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -68,14 +68,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_115745) do
     t.bigint "student_id", null: false
     t.index ["semester_klass_id", "student_id"], name: "index_klass_students_on_semester_klass_id_and_student_id", unique: true
     t.index ["student_id"], name: "index_klass_students_on_student_id"
-  end
-
-  create_table "klasses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "campuse_id", null: false
-    t.string "genre", null: false
-    t.integer "seq", null: false
-    t.bigint "subject_id", null: false
-    t.bigint "teacher_id", null: false
   end
 
   create_table "schools", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
