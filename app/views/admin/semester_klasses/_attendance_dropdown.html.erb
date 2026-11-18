@@ -1,33 +1,75 @@
-<div class="dropdown dropdown-hover inline-block">
-  <div tabindex="0" role="button"
+<div class="relative inline-block"
+     data-controller="floating-card"
+     data-action="mouseenter->floating-card#open mouseleave->floating-card#scheduleClose focusin->floating-card#open focusout->floating-card#scheduleClose">
+  <div tabindex="0" role="button" data-floating-card-target="trigger"
        class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-sm min-w-6 cursor-pointer justify-center font-semibold"
        title="<%= attendance&.status_name || "未录入" %>"
        aria-label="考勤状态：<%= attendance&.status_name || "未录入" %>">
     <%= attendance&.status_label || "—" %>
   </div>
-  <div tabindex="0" class="card dropdown-content z-40 w-56 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
-    <p class="mb-2 text-xs font-semibold"><%= student.name %> · 第 <%= course.seq %> 课考勤</p>
-    <% if attendance.present? %>
-      <div class="flex flex-wrap gap-1.5">
-        <% if attendance.status.in?(%w[normal filled]) %>
-          <%= button_to "缺课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "absent"), method: :put, class: "btn btn-xs btn-error" %>
-          <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
-          <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-warning" %>
-          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-ghost" %>
-          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-ghost" %>
-        <% elsif attendance.status == "absent" %>
-          <%= button_to "事假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "personal_leave"), method: :put, class: "btn btn-xs btn-warning" %>
-          <%= button_to "病假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "sick_leave"), method: :put, class: "btn btn-xs btn-warning" %>
-          <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "filled"), method: :put, class: "btn btn-xs btn-success" %>
-          <%= button_to "退课", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "quit"), method: :put, class: "btn btn-xs btn-ghost" %>
-          <%= button_to "转出", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "transfer"), method: :put, class: "btn btn-xs btn-ghost" %>
-        <% elsif attendance.status.in?(%w[personal_leave sick_leave]) %>
-          <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "filled"), method: :put, class: "btn btn-xs btn-success" %>
-        <% elsif attendance.status.in?(%w[quit transfer]) %>
-          <%= button_to "重新加入", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "rejoin"), method: :put, class: "btn btn-xs btn-primary" %>
-          <%= button_to "补课销假", mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "filled"), method: :put, class: "btn btn-xs btn-success" %>
-        <% end %>
+
+  <div data-floating-card-target="card"
+       data-action="mouseenter->floating-card#keepOpen mouseleave->floating-card#scheduleClose focusin->floating-card#keepOpen focusout->floating-card#scheduleClose"
+       class="card fixed z-50 hidden w-64 flex-col gap-2.5 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
+    <div class="flex items-start justify-between gap-2">
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold"><%= student.name %></p>
+        <p class="mt-0.5 text-[11px] text-base-content/50">第 <%= course.seq %> 课考勤</p>
       </div>
+      <span class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-xs shrink-0">
+        <%= attendance&.status_name || "未录入" %>
+      </span>
+    </div>
+
+    <% if attendance.present? %>
+      <%
+        action_groups =
+          case attendance.status
+          when "normal", "filled"
+            [
+              [
+                [ "缺课", "absent", "btn-error" ],
+                [ "事假", "personal_leave", "btn-warning" ],
+                [ "病假", "sick_leave", "btn-warning" ]
+              ],
+              [
+                [ "退课", "quit", "btn-ghost" ],
+                [ "转出", "transfer", "btn-ghost" ]
+              ]
+            ]
+          when "absent"
+            [
+              [
+                [ "事假", "personal_leave", "btn-warning" ],
+                [ "病假", "sick_leave", "btn-warning" ],
+                [ "补课销假", "filled", "btn-success" ]
+              ],
+              [
+                [ "退课", "quit", "btn-ghost" ],
+                [ "转出", "transfer", "btn-ghost" ]
+              ]
+            ]
+          when "personal_leave", "sick_leave"
+            [ [ [ "补课销假", "filled", "btn-success" ] ] ]
+          else
+            [ [ [ "重新加入", "rejoin", "btn-primary" ], [ "补课销假", "filled", "btn-success" ] ] ]
+          end
+      %>
+
+      <% action_groups.each_with_index do |actions, group_index| %>
+        <div class="<%= "mt-0.5 border-t border-base-300 pt-2.5" if group_index.positive? %>">
+          <div class="grid grid-cols-2 gap-1.5">
+            <% actions.each_with_index do |(label, status, color), index| %>
+              <% full_width = actions.size.odd? && index == actions.size - 1 %>
+              <%= button_to label,
+                    mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status:),
+                    method: :put,
+                    class: "btn btn-xs w-full #{color}",
+                    form_class: (full_width ? "col-span-2" : nil) %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     <% else %>
       <p class="text-xs text-error">考勤记录异常，请联系管理员</p>
     <% end %>

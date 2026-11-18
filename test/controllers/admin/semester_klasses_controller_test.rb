@@ -29,6 +29,21 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href*='export_statement']", text: /导出报表/
   end
 
+  test "show renders the attendance action card in a two-column grid" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.create!(seq: 1, start_date: Date.current)
+    course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "[data-floating-card-target='card'] .grid.grid-cols-2"
+    card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
+    assert_includes card.text, "正常"
+    assert_includes card.text, "缺课"
+    assert_includes card.text, "转出"
+  end
+
   test "statement keeps the filter selections after searching" do
     get statement_admin_semester_klasses_path(q: {
       semester_id_eq: semesters(:semester_previous).id,
