@@ -1,0 +1,29 @@
+<%= form_with url: import_admin_students_path, method: :post, local: true, class: "space-y-4" do |form| %>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold">批量导入学员</h3>
+    <p class="mt-1 text-xs text-base-content/50">每行一个学员，字段用英文逗号分隔：姓名、性别、生日、年级 level、层级、入学日期、日校；最后三列监护人信息可选。</p>
+
+    <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3 font-mono text-[11px] leading-5 text-base-content/60">
+      张三,男,2013-05-01,7,3,2026-09-01,一中,张建国,13800000000,父亲<br>
+      李四,女,2012-11-20,8,2,2026-09-01,二中
+    </div>
+
+    <ul class="mt-2 space-y-1 text-[11px] leading-snug text-base-content/50">
+      <li>· 年级填 level（如 7、8、9），日校必须是当前校区已有的名称。</li>
+      <li>· 性别支持 男 / 女，也支持 male / female。</li>
+      <li>· 监护人信息可选，填写姓名和电话才会创建；关系可留空（如父亲 / 母亲）。</li>
+      <li>· 资料完全相同的学员会跳过；只导入档案，不自动加入班级。</li>
+      <li>· 年级或日校不匹配、或年级不在当前账号授权范围内的行会被跳过。</li>
+    </ul>
+  </div>
+
+  <div class="wt-surface p-4">
+    <%= form.label :students_text, "学员数据", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+    <%= form.text_area :students_text, value: params[:students_text],
+          class: "textarea textarea-sm h-64 w-full font-mono text-xs leading-5",
+          placeholder: "张三,男,2013-05-01,7,3,2026-09-01,一中,张建国,13800000000,父亲\n李四,女,2012-11-20,8,2,2026-09-01,二中",
+          required: true %>
+  </div>
+
+  <%= form.submit "开始导入", class: "btn btn-primary w-full" %>
+<% end %>

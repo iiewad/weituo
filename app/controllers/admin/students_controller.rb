@@ -36,6 +36,26 @@ class Admin::StudentsController < AdminController
     end
   end
 
+  def import
+    text = params[:students_text].to_s
+    if text.strip.blank?
+      redirect_to admin_students_path, alert: "请粘贴要导入的学员数据"
+      return
+    end
+
+    grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    created, skipped = Student.add_by_text(Thread.current[:campuse].id, text, grade_ids: grade_ids)
+
+    message = "新增 #{created} 名学员"
+    message += "，跳过 #{skipped} 行（年级或日校不匹配、或已存在）" if skipped.positive?
+
+    if created.positive?
+      redirect_to admin_students_path, notice: message
+    else
+      redirect_to admin_students_path, alert: message
+    end
+  end
+
   def promote
     student_ids = Array(params[:student_ids]).reject(&:blank?)
     if student_ids.empty?

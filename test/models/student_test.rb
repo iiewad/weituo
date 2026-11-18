@@ -35,6 +35,35 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal grades(:grade_9).id, top.reload.grade_id
   end
 
+  test "import by text maps genders and reports created and skipped rows" do
+    text = [
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲",
+      "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
+      "坏日校,男,2000-01-01,7,1,2026-01-01,不存在",
+      "未授权年级,男,2000-01-01,9,1,2026-01-01,三中",
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲"
+    ].join("\n")
+
+    created, skipped = Student.add_by_text(
+      campuses(:campuse_1).id,
+      text,
+      grade_ids: [ grades(:grade_7).id ]
+    )
+
+    assert_equal 2, created
+    assert_equal 3, skipped
+    assert_equal "male", Student.find_by!(name: "导入甲").gender
+    assert_equal "female", Student.find_by!(name: "导入乙").gender
+    assert_equal grades(:grade_7), Student.find_by!(name: "导入甲").grade
+    assert_equal day_schools(:one), Student.find_by!(name: "导入甲").day_school
+
+    guardian = Student.find_by!(name: "导入甲").guardians.sole
+    assert_equal "家长甲", guardian.name
+    assert_equal "13800000001", guardian.phone
+    assert_equal "父亲", guardian.relationship
+    assert_empty Student.find_by!(name: "导入乙").guardians
+  end
+
   test "add by text imports only rows with a valid grade and day school" do
     text = "新学员,男,2000-01-01,7,1,2026-01-01,三中\n坏年级,男,2000-01-01,99,1,2026-01-01,三中\n坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
 

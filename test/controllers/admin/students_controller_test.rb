@@ -80,6 +80,33 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal campuses(:campuse_1).id, Student.find_by!(name: "新学员").campuse_id
   end
 
+  test "import creates students from pasted csv text" do
+    text = [
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲",
+      "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
+      "坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
+    ].join("\n")
+
+    assert_difference -> { Student.count }, 2 do
+      assert_difference -> { Guardian.count }, 1 do
+        post import_admin_students_path, params: { students_text: text }
+      end
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "新增 2 名学员", flash[:notice]
+    assert_match "跳过 1 行", flash[:notice]
+  end
+
+  test "import without text redirects with an alert" do
+    assert_no_difference -> { Student.count } do
+      post import_admin_students_path, params: { students_text: "  " }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "请粘贴", flash[:alert]
+  end
+
   test "promote moves selected students to the next grade" do
     selected = [ students(:student_7_1), students(:student_7_2) ]
 

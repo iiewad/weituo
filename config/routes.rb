@@ -35,6 +35,7 @@ Rails.application.routes.draw do
     resources :students, only: [ :index, :create, :update ] do
       collection do
         post :promote
+        post :import
       end
     end
     resources :users, only: [ :index, :create, :update ]
