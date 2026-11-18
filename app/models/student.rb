@@ -16,16 +16,15 @@ class Student < ApplicationRecord
 
   attr_writer :referrer_id
   after_save :sync_referrer, unless: -> { @referrer_id.nil? }
+  before_save :assign_name_seq, if: :name_seq_needs_assignment?
 
   def self.ransackable_attributes(auth_object = nil)
     [ "name", "grade_id" ]
   end
 
-  # 同名学员的辅助区分信息：优先电话尾号，其次生日，最后记录 ID。
+  # 同名学员的辅助区分信息：同校区同名按建档顺序累加序号，仅重名时展示。
   def identity_suffix
-    return "尾号#{phone[-4, 4]}" if phone.present?
-    return birthday.strftime("%Y-%m-%d") if birthday.present?
-    "ID #{id}" if id.present?
+    "序号 #{name_seq}" if name_seq.to_i > 1
   end
 
   def identity_detail
@@ -151,6 +150,15 @@ class Student < ApplicationRecord
   end
 
   private
+    def name_seq_needs_assignment?
+      new_record? || will_save_change_to_name? || will_save_change_to_campuse_id?
+    end
+
+    def assign_name_seq
+      max = self.class.where(campuse_id: campuse_id, name: name).where.not(id: id).maximum(:name_seq).to_i
+      self.name_seq = max + 1
+    end
+
     def sync_referrer
       if @referrer_id.blank?
         received_referral&.destroy

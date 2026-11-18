@@ -60,7 +60,7 @@
             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold <%= index <= 3 ? "bg-primary/15 text-primary" : "bg-base-200 text-base-content/50" %>"><%= index %></span>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2 text-sm">
-                <span class="truncate font-medium"><%= student.name %></span>
+                <span class="truncate font-medium"><%= student.identity_label %></span>
                 <span class="shrink-0 text-xs text-base-content/50"><%= count %> 人</span>
               </div>
               <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-base-200">
@@ -120,9 +120,9 @@
         <tbody>
           <% @referral_records.each do |referral| %>
             <tr class="hover:bg-base-200/40">
-              <td class="font-medium"><%= referral.referred.name %></td>
+              <td class="font-medium"><%= referral.referred.identity_label %></td>
               <td><span class="badge badge-ghost badge-sm"><%= referral.referred.grade&.name || "—" %></span></td>
-              <td><%= referral.referrer.name %></td>
+              <td><%= referral.referrer.identity_label %></td>
               <td class="text-base-content/60"><%= referral.referrer.grade&.name || "—" %></td>
               <td class="whitespace-nowrap text-base-content/60"><%= referral.created_at.strftime("%Y-%m-%d %H:%M") %></td>
             </tr>

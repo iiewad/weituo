@@ -146,7 +146,7 @@ class StatementReport
         tags << "拓科" if expand_ids.include?(id)
         tags << "预留" if reserve_ids.include?(id)
 
-        RosterEntry.new(name: student.name, tags:)
+        RosterEntry.new(name: student.identity_label, tags:)
       }.sort_by(&:name)
     end
 
@@ -161,7 +161,7 @@ class StatementReport
           "历史学期无记录"
         ].compact.join(" · ")
 
-        Entry.new(name: student.name, detail:)
+        Entry.new(name: student.identity_label, detail:)
       }.sort_by(&:name)
     end
 
@@ -185,7 +185,7 @@ class StatementReport
           "上学期没有其他科目记录"
         end
 
-        Entry.new(name: student.name, detail:)
+        Entry.new(name: student.identity_label, detail:)
       }.sort_by(&:name)
     end
 
@@ -208,7 +208,7 @@ class StatementReport
           "下学期暂无同科目班级"
         end
 
-        Entry.new(name: student.name, detail:)
+        Entry.new(name: student.identity_label, detail:)
       }.sort_by(&:name)
     end
 end

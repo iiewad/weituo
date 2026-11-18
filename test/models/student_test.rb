@@ -35,22 +35,32 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal grades(:grade_9).id, top.reload.grade_id
   end
 
-  test "allows students with the same name and distinguishes them by detail" do
+  test "same-name students get increasing name sequences and identity detail" do
     campuse = campuses(:campuse_1)
-    first = Student.create!(name: "同名", campuse:, grade: grades(:grade_7), phone: "13800001111")
-    second = Student.create!(name: "同名", campuse:, grade: grades(:grade_7), phone: "13800002222")
+    first = Student.create!(name: "同名", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "同名", campuse:, grade: grades(:grade_7))
+    third = Student.create!(name: "同名", campuse:, grade: grades(:grade_8))
 
-    assert_equal "尾号1111", first.identity_suffix
-    assert_equal "尾号2222", second.identity_suffix
-    refute_equal first.identity_detail, second.identity_detail
+    assert_equal 1, first.name_seq
+    assert_equal 2, second.name_seq
+    assert_equal 3, third.name_seq
+    assert_nil first.identity_suffix
+    assert_equal "序号 2", second.identity_suffix
+    assert_equal "同名（序号 2）", second.identity_label
+    assert_equal "七年级 · 序号 2", second.identity_detail
   end
 
-  test "identity suffix falls back to birthday and id" do
-    with_birthday = Student.new(name: "无电话", birthday: Date.new(2010, 5, 1))
-    assert_equal "2010-05-01", with_birthday.identity_suffix
+  test "name sequence is scoped by campus and recalculated after rename" do
+    other_campuse = Campuse.create!(name: "第二校区", school: schools(:school_1))
+    first = Student.create!(name: "跨校区同名", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+    second = Student.create!(name: "跨校区同名", campuse: other_campuse, grade: grades(:grade_7))
 
-    without_contact = Student.create!(name: "无联系方式", campuse: campuses(:campuse_1), grade: grades(:grade_7))
-    assert_equal "ID #{without_contact.id}", without_contact.identity_suffix
+    assert_equal 1, first.name_seq
+    assert_equal 1, second.name_seq
+
+    renamed = Student.create!(name: "改名前", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+    renamed.update!(name: "跨校区同名")
+    assert_equal 2, renamed.name_seq
   end
 
   test "assigning referrer id creates and clears the referral" do

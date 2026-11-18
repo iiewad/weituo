@@ -24,8 +24,8 @@
           <% student = option[:student] %>
           <label class="flex items-center gap-2 rounded-box px-2.5 py-1.5 text-xs hover:bg-base-200/60"
                  data-student-multiselect-target="option"
-                 data-search-text="<%= [ student.name, student.phone ].compact.join(" ") %>"
-                 data-display-text="<%= student.name %>"
+                 data-search-text="<%= student.name %>"
+                 data-display-text="<%= student.identity_label %>"
                  data-grade-id="<%= student.grade_id %>">
             <%= check_box_tag "student_ids[]", student.id, option[:checked],
                   id: "#{id_prefix}_student_#{student.id}",
