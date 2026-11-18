@@ -1,4 +1,11 @@
 class Admin::SemesterKlassesController < AdminController
+  def export_attendances
+    send_data AttendanceWorkbook.new(campuse: Thread.current[:campuse], semester: Thread.current[:semester]).to_xlsx,
+      filename: "班级考勤表-#{Thread.current[:semester].name}-#{Thread.current[:campuse].name}.xlsx",
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      disposition: "attachment"
+  end
+
   def statement
     @q = SemesterKlass.ransack(params[:q])
     scope = @q.result.joins(:semester, :grade, :subject)

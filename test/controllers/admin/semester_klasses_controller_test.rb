@@ -12,6 +12,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "班级管理"
     assert_select "h2", text: "七年级"
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_2))}']", count: 1
+    assert_select "a[href='#{export_attendances_admin_semester_klasses_path}']", text: /导出考勤/
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
@@ -38,6 +39,35 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "summary", text: /数学/
     # 同年级同科目下的其他班级也出现在菜单里，便于切换
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_3))}']"
+  end
+
+  test "exports one attendance sheet per class in a single workbook" do
+    grade_8_klass = SemesterKlass.create!(
+      campuse: campuses(:campuse_1),
+      semester: semesters(:semester_current),
+      grade: grades(:grade_8),
+      subject: subjects(:math),
+      teacher: teachers(:math_teacher_1),
+      genre: "TG",
+      seq: 1,
+      times: 2
+    )
+
+    get export_attendances_admin_semester_klasses_path
+
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.media_type
+    assert_match(/attachment/, response.headers["Content-Disposition"])
+    assert response.body.start_with?("PK")
+
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    sheets = workbook.read("xl/workbook.xml").force_encoding("UTF-8")
+    assert_includes sheets, "七年级-#{semester_klasses(:sk_math_2).name}"
+    assert_includes sheets, "八年级-#{grade_8_klass.name}"
+
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, "学员"
+    assert_includes strings, semester_klasses(:sk_math_2).klass_students.first.student.name
   end
 
   test "exports the attendance sheet as xlsx" do

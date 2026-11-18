@@ -1,6 +1,5 @@
 class AttendanceSheet
   TITLE_ROW = 1
-  INFO_ROW = 2
   LEGEND_ROW = 3
   HEADER_ROW = 4
   DATA_START_ROW = 5
@@ -17,55 +16,65 @@ class AttendanceSheet
 
   LEGEND = "√ 正常 · 补 补课 · 缺 缺课 · 事 事假 · 病 病假 · 退 退课 · 转 转出"
 
-  def initialize(semester_klass)
+  def self.build_styles(workbook)
+    styles = workbook.styles
+
+    {
+      title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }),
+      label: styles.add_style(b: true, fg_color: "475569"),
+      value: styles.add_style({}),
+      header: styles.add_style(
+        b: true,
+        bg_color: "F1F5F9",
+        alignment: { horizontal: :center, vertical: :center, wrap_text: true },
+        border: { style: :thin, color: "CBD5E1" }
+      ),
+      name: styles.add_style(alignment: { horizontal: :left }),
+      cell: styles.add_style(alignment: { horizontal: :center }),
+      muted: styles.add_style(fg_color: "94A3B8", alignment: { horizontal: :center }),
+      legend: styles.add_style(fg_color: "64748B", sz: 9),
+      status: STATUS_FILLS.transform_values { |fill|
+        styles.add_style(bg_color: fill, alignment: { horizontal: :center })
+      }
+    }
+  end
+
+  def initialize(semester_klass, sheet_name: nil, attendances: nil)
     @semester_klass = semester_klass
-    @courses = semester_klass.courses.order(:seq).to_a
-    @klass_students = semester_klass.klass_students.includes(:student).to_a
+    @sheet_name = sheet_name
+    @courses = if semester_klass.courses.loaded?
+      semester_klass.courses.sort_by(&:seq)
+    else
+      semester_klass.courses.order(:seq).to_a
+    end
+    @klass_students = if semester_klass.klass_students.loaded?
+      semester_klass.klass_students.to_a
+    else
+      semester_klass.klass_students.includes(:student).to_a
+    end
     @active_count = @klass_students.count { |klass_student| klass_student.status == "in" }
-    @attendances = Attendance.where(course_id: @courses.map(&:id))
+    @attendances = attendances || Attendance.where(course_id: @courses.map(&:id))
       .index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
   end
 
-  def to_xlsx
-    package = Axlsx::Package.new
-    package.use_shared_strings = true
-    workbook = package.workbook
-
-    styles = build_styles(workbook)
+  def add_to(workbook, styles: nil)
+    styles ||= self.class.build_styles(workbook)
 
     workbook.add_worksheet(name: sheet_name) do |sheet|
       build_header(sheet, styles)
       build_rows(sheet, styles)
       decorate(sheet)
     end
+  end
 
+  def to_xlsx
+    package = Axlsx::Package.new
+    package.use_shared_strings = true
+    add_to(package.workbook)
     package.to_stream.read
   end
 
   private
-    def build_styles(workbook)
-      styles = workbook.styles
-
-      {
-        title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }),
-        label: styles.add_style(b: true, fg_color: "475569"),
-        value: styles.add_style({}),
-        header: styles.add_style(
-          b: true,
-          bg_color: "F1F5F9",
-          alignment: { horizontal: :center, vertical: :center, wrap_text: true },
-          border: { style: :thin, color: "CBD5E1" }
-        ),
-        name: styles.add_style(alignment: { horizontal: :left }),
-        cell: styles.add_style(alignment: { horizontal: :center }),
-        muted: styles.add_style(fg_color: "94A3B8", alignment: { horizontal: :center }),
-        legend: styles.add_style(fg_color: "64748B", sz: 9),
-        status: STATUS_FILLS.transform_values { |fill|
-          styles.add_style(bg_color: fill, alignment: { horizontal: :center })
-        }
-      }
-    end
-
     def build_header(sheet, styles)
       sheet.add_row([ "#{@semester_klass.name} · 考勤表" ], style: styles[:title])
       sheet.merge_cells("A#{TITLE_ROW}:#{last_column}#{TITLE_ROW}")
@@ -139,6 +148,6 @@ class AttendanceSheet
     end
 
     def sheet_name
-      "#{@semester_klass.name} 考勤".gsub(/[\[\]:*?\/\\]/, "-")[0, 31]
+      @sheet_name || "#{@semester_klass.name} 考勤".gsub(/[\[\]:*?\/\\]/, "-")[0, 31]
     end
 end
