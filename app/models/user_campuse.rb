@@ -8,6 +8,9 @@ class UserCampuse < ApplicationRecord
     manager: "管理员"
   }.freeze
 
+  validates :campuse_id, uniqueness: { scope: :user_id }
+  validates :role, inclusion: { in: ROLES.keys.map(&:to_s) }, allow_blank: true
+
   before_validation :fill_school_from_campuse
 
   def role_label

@@ -115,6 +115,14 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert duplicate.errors[:semester_id].any?
   end
 
+  test "rejects a subject that differs from the teacher subject" do
+    sk = semester_klasses(:sk_math_1)
+    sk.subject = subjects(:eng)
+
+    assert_not sk.valid?
+    assert_includes sk.errors[:subject_id], "与教师科目不一致"
+  end
+
   test "ransackable attributes and associations are declared" do
     assert_includes SemesterKlass.ransackable_attributes, "grade_id"
     assert_includes SemesterKlass.ransackable_associations, "courses"

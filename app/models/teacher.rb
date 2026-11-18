@@ -3,6 +3,7 @@ class Teacher < ApplicationRecord
   belongs_to :campuse
 
   validates :name, presence: true
+  validate :subject_offered_by_school
 
   def self.ransackable_attributes(auth_object = nil)
     [ "name", "phone", "subject_id", "campuse_id" ]
@@ -25,4 +26,12 @@ class Teacher < ApplicationRecord
   def name_with_subject
     "#{subject.name} #{name}"
   end
+
+  private
+    def subject_offered_by_school
+      return if subject.blank? || campuse.blank?
+      return if campuse.school.subjects.exists?(id: subject_id)
+
+      errors.add(:subject_id, "未在该学校开设")
+    end
 end

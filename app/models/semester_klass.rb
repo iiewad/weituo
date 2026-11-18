@@ -17,6 +17,7 @@ class SemesterKlass < ApplicationRecord
   validates :times, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :genre, inclusion: { in: %w[TG JY XZ XQ CC] }
   validate :campuse_and_semester_share_school
+  validate :subject_matches_teacher
 
   GENRE_MAP = {
     "提高班" => "TG",
@@ -171,5 +172,11 @@ class SemesterKlass < ApplicationRecord
       return if campuse.blank? || semester.blank? || campuse.school_id == semester.school_id
 
       errors.add(:campuse_id, "与学期不属于同一学校")
+    end
+
+    def subject_matches_teacher
+      return if subject.blank? || teacher.blank? || subject_id == teacher.subject_id
+
+      errors.add(:subject_id, "与教师科目不一致")
     end
 end
