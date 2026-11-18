@@ -8,10 +8,11 @@ class AuthenticationTest < ApplicationSystemTestCase
     assert_text "欢迎回来"
   end
 
-  test "用账号密码登录后进入学员管理首页" do
+  test "用账号密码登录后进入首页概览" do
     sign_in
 
-    assert_text "学员管理"
+    assert_text "首页概览"
+    assert_text "快捷操作"
   end
 
   test "密码错误时回到登录页并给出提示" do

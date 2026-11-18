@@ -177,7 +177,7 @@ stateDiagram-v2
 
 | 路径 | 用途 |
 | --- | --- |
-| `/` | 学员管理（首页） |
+| `/` | 首页概览（学员 / 班级 / 课次 / 快捷入口） |
 | `/admin/semester_klasses` | 班级管理 |
 | `/admin/semester_klasses/statement` | 班级报表 |
 | `/admin/semester_klasses/copy` | 复制班级（可选目标学期） |

@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  root "admin/students#index"
+  root "admin/dashboards#index"
   namespace :admin do
     get "guide", to: "guides#show", as: :guide
 

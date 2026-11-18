@@ -22,7 +22,7 @@ This file provides guidance to the AI agent when working with code in this repos
 
 ## Architecture
 
-- Tutoring-school admin app. Root is `admin/students#index` and nearly all routes live under `namespace :admin` (`config/routes.rb`); only session, passwords and `/up` are public.
+- Tutoring-school admin app. Root is `admin/dashboards#index` (overview) and nearly all routes live under `namespace :admin` (`config/routes.rb`); only session, passwords and `/up` are public.
 - Domain chain: `School` → `Campuse` (校区) → `Semester` (per school, ordered by `seq`; `current` / `history` / `related_*` scopes are date-based) → `SemesterKlass` (班级 = semester + grade + subject + genre + seq) → `Course` (课次, `seq`, `start_date`) → `Attendance` (one per course × `KlassStudent`). `SemesterKlass` creates `times` courses in an `after_create`; `Course#start!` creates an Attendance for every enrolled student. `Student` / `Teacher` belong to a campuse; `Guardian`, `DaySchool`, `Grade`, `Subject`, `GradeSubject` are supporting tables.
 - Access control: `User` → `UserCampuse` (role `admin` / `manager`, JSON `grade_ids`) → `Campuse`; `Current` (ActiveSupport::CurrentAttributes) holds the session and delegates `user`. `Current.user.grades_by_campuse` / `subjects_by_campuse` limit which grades and subjects a manager sees.
 - Request context: `AdminController#set_thread_current` populates `Thread.current[:campuse]`, `[:school]`, `[:semester]` from the session; switching happens in `Admin::CampusesController#switch_thread_campuse` and `Admin::SemestersController#switch_thread_semester`. Views read these directly too (hidden fields and filter forms under `app/views/admin/`) — check views as well as controllers when changing scope.
