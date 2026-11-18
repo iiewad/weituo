@@ -42,6 +42,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "正常"
     assert_includes card.text, "缺课"
     assert_includes card.text, "转出"
+    assert_select "[data-controller='list-filter'] input[data-list-filter-target='input']", minimum: 1
+    assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
   end
 
   test "statement keeps the filter selections after searching" do

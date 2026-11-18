@@ -128,6 +128,10 @@ class Admin::SemesterKlassesController < AdminController
       campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
     ).includes(:grade, :subject, :teacher)
+    @insert_student_candidates = Student.where(
+      campuse_id: Thread.current[:campuse].id,
+      grade_id: @sk.grade_id
+    ).where.not(id: @sk.klass_students.select(:student_id)).order(:name)
   end
 
   private
