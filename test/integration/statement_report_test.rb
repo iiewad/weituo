@@ -1,4 +1,6 @@
 require "test_helper"
+require "stringio"
+require "zip"
 
 class StatementReportTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
@@ -48,5 +50,15 @@ class StatementReportTest < ActionDispatch::IntegrationTest
     assert_match "上学期（", response.body
     assert_match "下学期（", response.body
     assert_match next_math.name, response.body
+
+    get export_statement_admin_semester_klasses_path
+    assert_response :success
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, "学员明细"
+    assert_includes strings, "历史学期无记录"
+    assert_includes strings, "上学期（"
+    assert_includes strings, "下学期（"
+    assert_includes strings, next_math.name
   end
 end

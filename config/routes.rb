@@ -10,6 +10,7 @@ Rails.application.routes.draw do
         get :copy
         post :copy_create
         get :export_attendances
+        get :export_statement
       end
       resources :klass_students do
         # member do

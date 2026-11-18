@@ -26,6 +26,48 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "th", text: "预留率"
     assert_select "tbody tr", count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
     assert_select "h3", text: /学员构成/, count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
+    assert_select "a[href*='export_statement']", text: /导出报表/
+  end
+
+  test "exports the statement as xlsx" do
+    get export_statement_admin_semester_klasses_path
+
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.media_type
+    assert_match(/attachment/, response.headers["Content-Disposition"])
+
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, "班级报表"
+    assert_includes strings, "新增率(%)"
+    assert_includes strings, "拓科率(%)"
+    assert_includes strings, "预留率(%)"
+    assert_includes strings, semester_klasses(:sk_math_2).name
+    assert_includes strings, "筛选条件：全部班级"
+    assert_includes strings, "学员明细"
+    assert_includes strings, "类型"
+    assert_includes strings, "说明"
+  end
+
+  test "exports only the filtered classes" do
+    grade_8_klass = SemesterKlass.create!(
+      campuse: campuses(:campuse_1),
+      semester: semesters(:semester_current),
+      grade: grades(:grade_8),
+      subject: subjects(:math),
+      teacher: teachers(:math_teacher_1),
+      genre: "TG",
+      seq: 1,
+      times: 2
+    )
+
+    get export_statement_admin_semester_klasses_path(q: { grade_id_eq: grades(:grade_7).id })
+
+    assert_response :success
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, "年级：七年级"
+    assert_not_includes strings, grade_8_klass.name
   end
 
   test "show renders the class menu with the current class active" do

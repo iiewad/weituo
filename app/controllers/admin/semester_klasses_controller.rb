@@ -8,14 +8,26 @@ class Admin::SemesterKlassesController < AdminController
 
   def statement
     @q = SemesterKlass.ransack(params[:q])
-    scope = @q.result.joins(:semester, :grade, :subject)
-      .includes(:semester, :grade, :subject, :teacher)
-      .where(campuse_id: Thread.current[:campuse].id)
-      .order("semesters.seq desc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc")
-    report = StatementReport.new(scope, campuse: Thread.current[:campuse])
+    report = StatementReport.new(statement_scope, campuse: Thread.current[:campuse])
     @rows = report.rows
     @summary = report.summary
     @semesters = Semester.where(school_id: Thread.current[:school].id)
+  end
+
+  def export_statement
+    @q = SemesterKlass.ransack(params[:q])
+    report = StatementReport.new(statement_scope, campuse: Thread.current[:campuse])
+
+    send_data StatementSheet.new(
+      rows: report.rows,
+      summary: report.summary,
+      campuse: Thread.current[:campuse],
+      semester: Thread.current[:semester],
+      filter_summary: statement_filter_summary
+    ).to_xlsx,
+      filename: "班级报表-#{Thread.current[:semester].name}-#{Thread.current[:campuse].name}.xlsx",
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      disposition: "attachment"
   end
 
   def index
@@ -103,6 +115,35 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   private
+  def statement_scope
+    @q.result.joins(:semester, :grade, :subject)
+      .includes(:semester, :grade, :subject, :teacher)
+      .where(campuse_id: Thread.current[:campuse].id)
+      .order("semesters.seq desc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc")
+  end
+
+  def statement_filter_summary
+    filters = params[:q] || {}
+    parts = []
+    if filters[:semester_id_eq].present?
+      parts << "学期：#{Semester.find_by(id: filters[:semester_id_eq])&.name}"
+    end
+    if filters[:grade_id_eq].present?
+      parts << "年级：#{Grade.find_by(id: filters[:grade_id_eq])&.name}"
+    end
+    if filters[:subject_id_eq].present?
+      parts << "科目：#{Subject.find_by(id: filters[:subject_id_eq])&.name}"
+    end
+    if filters[:teacher_id_eq].present?
+      parts << "教师：#{Teacher.find_by(id: filters[:teacher_id_eq])&.name}"
+    end
+    if filters[:genre_eq].present?
+      parts << "班型：#{SemesterKlass::GENRE_MAP_REVERSE[filters[:genre_eq]] || filters[:genre_eq]}"
+    end
+
+    parts.presence&.join(" · ") || "全部班级"
+  end
+
   def semester_klass_params
     params.require(:semester_klass).permit(:campuse_id, :genre, :seq, :times, :teacher_id, :semester_id, :grade_id, :students_text)
   end
