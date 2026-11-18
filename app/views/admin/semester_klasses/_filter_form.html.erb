@@ -2,32 +2,34 @@
   <%= search_form_with model: @q, url: form_url, method: :get, class: "flex flex-wrap items-end gap-2" do |f| %>
     <div class="w-full sm:w-36">
       <label class="mb-1 block text-xs font-medium text-base-content/50">学期</label>
-      <%= f.collection_select :semester_id_eq, @semesters, :id, :name, { include_blank: "全部学期" },
+      <%= f.collection_select :semester_id_eq, @semesters, :id, :name,
+            { include_blank: "全部学期", selected: params[:q].try(:[], :semester_id_eq) },
             class: "select select-sm w-full" %>
     </div>
 
     <div class="w-full sm:w-32">
       <label class="mb-1 block text-xs font-medium text-base-content/50">年级</label>
-      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name, { include_blank: "全部年级" },
+      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Thread.current[:campuse].id), :id, :name,
+            { include_blank: "全部年级", selected: params[:q].try(:[], :grade_id_eq) },
             class: "select select-sm w-full" %>
     </div>
 
     <div class="w-full sm:w-32">
       <label class="mb-1 block text-xs font-medium text-base-content/50">科目</label>
-      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name, { include_blank: "全部科目" },
+      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Thread.current[:campuse].id), :id, :name,
+            { include_blank: "全部科目", selected: params[:q].try(:[], :subject_id_eq) },
             class: "select select-sm w-full" %>
     </div>
 
     <div class="w-full sm:w-40">
       <label class="mb-1 block text-xs font-medium text-base-content/50">教师</label>
+      <% selected_teacher_id = params[:q].try(:[], :teacher_id_eq) %>
       <% options = if params[:q].try(:[], :subject_id_eq).blank?
-        option_groups_from_collection_for_select(Subject.includes(:teachers), :teachers, :name, :id, :name)
+        option_groups_from_collection_for_select(Subject.includes(:teachers), :teachers, :name, :id, :name, selected_teacher_id)
       else
-        option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)).includes(:teachers), :teachers, :name, :id, :name)
+        option_groups_from_collection_for_select(Subject.where(id: params[:q].try(:[], :subject_id_eq)).includes(:teachers), :teachers, :name, :id, :name, selected_teacher_id)
       end %>
-      <%= f.select :teacher_id_eq, options,
-            { include_blank: "全部教师", selected: params[:q].try(:[], :teacher_id_eq) },
-            class: "select select-sm w-full" %>
+      <%= f.select :teacher_id_eq, options, { include_blank: "全部教师" }, class: "select select-sm w-full" %>
     </div>
 
     <div class="w-full sm:w-32">

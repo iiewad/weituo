@@ -8,6 +8,15 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index keeps the filter and quick filter state after searching" do
+    get admin_students_path(q: { name_cont: "7_学生1", grade_id_eq: grades(:grade_7).id }, filter: "in_class")
+
+    assert_response :success
+    assert_select "input[name='q[name_cont]'][value='7_学生1']"
+    assert_select "select[name='q[grade_id_eq]'] option[selected][value='#{grades(:grade_7).id}']"
+    assert_select "input[name='filter'][value='in_class']"
+  end
+
   test "index renders a detail drawer with the student's class history" do
     student = students(:student_7_1)
     klass_student = klass_students(:ks_1)

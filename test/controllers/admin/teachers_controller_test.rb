@@ -3,6 +3,26 @@ require "test_helper"
 class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
+  test "index keeps the filter state after searching" do
+    get admin_teachers_path(q: { name_cont: "张", subject_id_eq: subjects(:math).id })
+
+    assert_response :success
+    assert_select "input[name='q[name_cont]'][value='张']"
+    assert_select "select[name='q[subject_id_eq]'] option[selected][value='#{subjects(:math).id}']"
+  end
+
+  test "pagination keeps the filter params" do
+    30.times do |index|
+      Teacher.create!(name: "分页教师#{index}", campuse: campuses(:campuse_1), subject: subjects(:math))
+    end
+
+    get admin_teachers_path(q: { subject_id_eq: subjects(:math).id })
+
+    link = css_select("a[href*='page=2']").first
+    assert link, "应出现下一页链接"
+    assert_includes link["href"], "subject_id_eq"
+  end
+
   test "index sets thread context through AdminController" do
     get admin_teachers_path
 

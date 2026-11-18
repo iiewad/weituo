@@ -29,6 +29,31 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href*='export_statement']", text: /导出报表/
   end
 
+  test "statement keeps the filter selections after searching" do
+    get statement_admin_semester_klasses_path(q: {
+      semester_id_eq: semesters(:semester_previous).id,
+      grade_id_eq: grades(:grade_7).id,
+      subject_id_eq: subjects(:math).id,
+      teacher_id_eq: teachers(:math_teacher_1).id,
+      genre_eq: "TG"
+    })
+
+    assert_response :success
+    assert_select "select[name='q[semester_id_eq]'] option[selected][value='#{semesters(:semester_previous).id}']"
+    assert_select "select[name='q[grade_id_eq]'] option[selected][value='#{grades(:grade_7).id}']"
+    assert_select "select[name='q[subject_id_eq]'] option[selected][value='#{subjects(:math).id}']"
+    assert_select "select[name='q[teacher_id_eq]'] option[selected][value='#{teachers(:math_teacher_1).id}']"
+    assert_select "select[name='q[genre_eq]'] option[selected][value='TG']"
+    assert_select "a[href*='export_statement'][href*='grade_id_eq']"
+  end
+
+  test "copy keeps the semester filter after searching" do
+    get copy_admin_semester_klasses_path(q: { semester_id_eq: semesters(:semester_previous).id })
+
+    assert_response :success
+    assert_select "select[name='q[semester_id_eq]'] option[selected][value='#{semesters(:semester_previous).id}']"
+  end
+
   test "exports the statement as xlsx" do
     get export_statement_admin_semester_klasses_path
 
