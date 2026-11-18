@@ -136,7 +136,8 @@ campuses.each_with_index do |campuse, campus_index|
         grade:,
         layer: (index % 5) + 1,
         in_date: semesters.first.start_date - (index % 40).days,
-        day_school: day_schools[campuse.id][index % day_schools[campuse.id].size]
+        day_school: day_schools[campuse.id][index % day_schools[campuse.id].size],
+        remark: (index % 7).zero? ? "家长要求每节课后反馈学习情况" : nil
       )
       Guardian.create!(
         student:,

@@ -69,6 +69,7 @@
         <th>生日</th>
         <th>电话</th>
         <th>监护人</th>
+        <th>备注</th>
         <th class="text-right">操作</th>
       </tr>
     </thead>
@@ -104,6 +105,13 @@
           <td class="whitespace-nowrap text-base-content/70"><%= student.birthday&.strftime("%Y-%m-%d") || "—" %></td>
           <td class="whitespace-nowrap text-base-content/70"><%= student.phone.presence || "—" %></td>
           <td class="text-base-content/70"><%= student.guardians.map { |g| [ g.relationship, g.phone ].compact.join(" ") }.join("、").presence || "—" %></td>
+          <td class="max-w-[12rem] text-base-content/70">
+            <% if student.remark.present? %>
+              <div class="truncate" title="<%= student.remark %>"><%= student.remark %></div>
+            <% else %>
+              <span class="text-base-content/40">—</span>
+            <% end %>
+          </td>
           <td class="text-right whitespace-nowrap">
             <div class="flex justify-end gap-1">
               <%= render "admin/shared/drawer", item: student,
