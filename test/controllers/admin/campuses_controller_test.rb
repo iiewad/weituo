@@ -26,4 +26,14 @@ class Admin::CampusesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_schools_path
     assert_equal "新校区", campuses(:campuse_1).reload.name
   end
+
+  test "managers cannot update campuses" do
+    sign_in_as users(:two)
+
+    put admin_school_campuse_path(schools(:school_1), campuses(:campuse_1)), params: { campuse: { name: "越权改名" } }
+
+    assert_redirected_to root_path
+    assert_match "超级管理员", flash[:alert]
+    assert_equal "区1", campuses(:campuse_1).reload.name
+  end
 end

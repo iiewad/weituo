@@ -4,7 +4,8 @@ class AttendanceCardTest < ApplicationSystemTestCase
   test "考勤操作卡不被表格裁切并可切换状态" do
     sign_in
     sk = semester_klasses(:sk_math_2)
-    course = sk.courses.create!(seq: 1, start_date: Date.current)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
     attendance = course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
 
     visit admin_semester_klass_path(sk)

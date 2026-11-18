@@ -42,6 +42,24 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "quit", later.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
   end
 
+  test "cannot mark attendance from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    sk = SemesterKlass.create!(
+      campuse: other_campuse, semester: semesters(:semester_current),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+    ks = KlassStudent.create!(semester_klass: sk, student: students(:student_7_1), status: "in")
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+    attendance = course.attendances.find_by!(klass_student: ks)
+
+    put mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "absent")
+
+    assert_response :not_found
+    assert_equal "normal", attendance.reload.status
+  end
+
   test "mark ignores an unknown status" do
     attendance = prepared_attendance
 

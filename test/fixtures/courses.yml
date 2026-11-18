@@ -9,3 +9,21 @@ sk_1_course_<%= i + 1 %>:
   semester_klass_id: 1
   seq: <%= i + 1 %>
 <% end %>
+
+<% 16.times do |i| %>
+sk_2_course_<%= i + 1 %>:
+  semester_klass_id: 2
+  seq: <%= i + 1 %>
+<% end %>
+
+<% 16.times do |i| %>
+sk_3_course_<%= i + 1 %>:
+  semester_klass_id: 3
+  seq: <%= i + 1 %>
+<% end %>
+
+<% 16.times do |i| %>
+sk_eng_1_course_<%= i + 1 %>:
+  semester_klass_id: 4
+  seq: <%= i + 1 %>
+<% end %>

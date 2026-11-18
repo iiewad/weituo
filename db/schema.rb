@@ -10,28 +10,33 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_115745) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
     t.json "mark_at"
     t.integer "status", default: 1, null: false
+    t.index ["course_id", "klass_student_id"], name: "index_attendances_on_course_id_and_klass_student_id", unique: true
+    t.index ["klass_student_id"], name: "index_attendances_on_klass_student_id"
   end
 
   create_table "campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "school_id", null: false
+    t.index ["school_id"], name: "index_campuses_on_school_id"
   end
 
   create_table "courses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "semester_klass_id"
     t.integer "seq", null: false
     t.date "start_date"
+    t.index ["semester_klass_id", "seq"], name: "index_courses_on_semester_klass_id_and_seq", unique: true
   end
 
   create_table "day_schools", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "campuse_id", null: false
     t.string "name"
+    t.index ["campuse_id"], name: "index_day_schools_on_campuse_id"
   end
 
   create_table "grade_subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -39,6 +44,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.bigint "school_id", null: false
     t.bigint "subject_id", null: false
     t.index ["grade_id"], name: "index_grade_subjects_on_grade_id"
+    t.index ["school_id", "grade_id", "subject_id"], name: "index_grade_subjects_on_school_id_and_grade_id_and_subject_id", unique: true
     t.index ["school_id"], name: "index_grade_subjects_on_school_id"
     t.index ["subject_id"], name: "index_grade_subjects_on_subject_id"
   end
@@ -53,12 +59,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.string "phone", null: false
     t.string "relationship"
     t.bigint "student_id", null: false
+    t.index ["student_id"], name: "index_guardians_on_student_id"
   end
 
   create_table "klass_students", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "semester_klass_id"
     t.integer "status", default: 1
     t.bigint "student_id", null: false
+    t.index ["semester_klass_id", "student_id"], name: "index_klass_students_on_semester_klass_id_and_student_id", unique: true
+    t.index ["student_id"], name: "index_klass_students_on_student_id"
   end
 
   create_table "klasses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -84,6 +93,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.bigint "teacher_id"
     t.integer "times", null: false
     t.datetime "updated_at", null: false
+    t.index ["campuse_id", "semester_id"], name: "index_semester_klasses_on_campuse_id_and_semester_id"
+    t.index ["grade_id"], name: "fk_rails_bdc752021b"
+    t.index ["semester_id", "campuse_id", "grade_id", "subject_id", "genre", "seq"], name: "index_semester_klasses_on_business_key", unique: true
+    t.index ["subject_id"], name: "fk_rails_9c09232f85"
+    t.index ["teacher_id"], name: "index_semester_klasses_on_teacher_id"
   end
 
   create_table "semesters", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -92,6 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.bigint "school_id", null: false
     t.integer "seq"
     t.date "start_date", null: false
+    t.index ["school_id"], name: "index_semesters_on_school_id"
   end
 
   create_table "sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -127,6 +142,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.text "remark"
     t.integer "name_seq", default: 1, null: false
     t.index ["campuse_id", "name", "name_seq"], name: "index_students_on_campuse_id_and_name_and_name_seq", unique: true
+    t.index ["campuse_id"], name: "index_students_on_campuse_id"
+    t.index ["day_school_id"], name: "index_students_on_day_school_id"
+    t.index ["grade_id"], name: "index_students_on_grade_id"
   end
 
   create_table "subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -139,6 +157,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.string "name", null: false
     t.string "phone"
     t.bigint "subject_id", null: false
+    t.index ["campuse_id"], name: "index_teachers_on_campuse_id"
+    t.index ["subject_id"], name: "index_teachers_on_subject_id"
   end
 
   create_table "user_campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -151,6 +171,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.bigint "user_id", null: false
     t.index ["campuse_id"], name: "index_user_campuses_on_campuse_id"
     t.index ["school_id"], name: "index_user_campuses_on_school_id"
+    t.index ["user_id", "campuse_id"], name: "index_user_campuses_on_user_id_and_campuse_id", unique: true
     t.index ["user_id"], name: "index_user_campuses_on_user_id"
   end
 
@@ -162,9 +183,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_085409) do
     t.index ["name"], name: "index_users_on_name", unique: true
   end
 
+  add_foreign_key "attendances", "courses"
+  add_foreign_key "attendances", "klass_students"
+  add_foreign_key "campuses", "schools"
+  add_foreign_key "courses", "semester_klasses"
+  add_foreign_key "day_schools", "campuses"
+  add_foreign_key "grade_subjects", "grades"
+  add_foreign_key "grade_subjects", "schools"
+  add_foreign_key "grade_subjects", "subjects"
+  add_foreign_key "guardians", "students"
+  add_foreign_key "klass_students", "semester_klasses"
+  add_foreign_key "klass_students", "students"
+  add_foreign_key "semester_klasses", "campuses"
+  add_foreign_key "semester_klasses", "grades"
+  add_foreign_key "semester_klasses", "semesters"
+  add_foreign_key "semester_klasses", "subjects"
+  add_foreign_key "semester_klasses", "teachers"
+  add_foreign_key "semesters", "schools"
   add_foreign_key "sessions", "users"
   add_foreign_key "student_referrals", "students", column: "referred_id"
   add_foreign_key "student_referrals", "students", column: "referrer_id"
+  add_foreign_key "students", "campuses"
+  add_foreign_key "students", "day_schools"
+  add_foreign_key "students", "grades"
+  add_foreign_key "teachers", "campuses"
+  add_foreign_key "teachers", "subjects"
   add_foreign_key "user_campuses", "campuses"
   add_foreign_key "user_campuses", "schools"
   add_foreign_key "user_campuses", "users"

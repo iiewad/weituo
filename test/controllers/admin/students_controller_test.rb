@@ -74,6 +74,33 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "需要关注", Student.find_by!(name: "新学员").remark
   end
 
+  test "manager cannot create a student in an unauthorized grade" do
+    sign_in_as users(:two)
+
+    assert_no_difference -> { Student.count } do
+      post admin_students_path, params: { student: {
+        name: "越权学员", grade_id: grades(:grade_7).id, day_school_id: day_schools(:one).id
+      } }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "授权范围", flash[:alert]
+  end
+
+  test "cannot assign a day school from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_day_school = other_campuse.day_schools.create!(name: "其他日校")
+
+    assert_no_difference -> { Student.count } do
+      post admin_students_path, params: { student: {
+        name: "越权日校", grade_id: grades(:grade_7).id, day_school_id: other_day_school.id
+      } }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "授权范围", flash[:alert]
+  end
+
   test "create saves the referrer" do
     referrer = students(:student_9_2)
 

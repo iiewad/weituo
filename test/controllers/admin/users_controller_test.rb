@@ -99,6 +99,21 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_not UserCampuse.exists?(added.id)
   end
 
+  test "cannot grant a campus from another school" do
+    other_school = School.create!(name: "其他学校")
+    other_campus = other_school.campuses.create!(name: "其他校区")
+    user = users(:two)
+
+    assert_no_difference -> { user.user_campuses.count } do
+      put admin_user_path(user), params: { user: {
+        user_campuses_attributes: { "0" => { campuse_id: other_campus.id, role: "admin" } }
+      } }
+    end
+
+    assert_redirected_to admin_users_path
+    assert_match "其他学校", flash[:alert]
+  end
+
   test "managers cannot manage users" do
     sign_in_as users(:two)
 

@@ -31,7 +31,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "show queries do not scale with students and courses" do
     sk = semester_klasses(:sk_math_2)
-    course = sk.courses.create!(seq: 1, start_date: Date.current)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
     sk.klass_students.each { |klass_student| course.attendances.create!(klass_student: klass_student, status: "normal") }
 
     baseline = count_queries { get admin_semester_klass_path(sk) }
@@ -42,7 +43,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     end
 
     3.times do |index|
-      extra_course = sk.courses.create!(seq: index + 2, start_date: Date.current)
+      extra_course = sk.courses.create!(seq: index + 17, start_date: Date.current)
       sk.klass_students.reload.each do |klass_student|
         extra_course.attendances.create!(klass_student: klass_student, status: "normal")
       end
@@ -55,7 +56,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "show renders the attendance action card in a two-column grid" do
     sk = semester_klasses(:sk_math_2)
-    course = sk.courses.create!(seq: 1, start_date: Date.current)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
     course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
 
     get admin_semester_klass_path(sk)
@@ -319,8 +321,68 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ 1, 2, 3 ], sk.courses.order(:seq).pluck(:seq)
   end
 
+  test "create always uses the current campus and semester" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = School.find(schools(:school_1).id).semesters.create!(
+      name: "其他学期", start_date: Date.current + 1.year, end_date: Date.current + 1.year + 1.month, seq: 88
+    )
+
+    assert_difference -> { SemesterKlass.count }, 1 do
+      post admin_semester_klasses_path, params: { semester_klass: {
+        semester_id: other_semester.id,
+        campuse_id: other_campuse.id,
+        grade_id: grades(:grade_7).id,
+        teacher_id: teachers(:math_teacher_1).id,
+        genre: "JY", seq: 98, times: 1, students_text: ""
+      } }
+    end
+
+    created = SemesterKlass.find_by!(genre: "JY", seq: 98)
+    assert_equal campuses(:campuse_1), created.campuse
+    assert_equal semesters(:semester_current), created.semester
+  end
+
+  test "manager only sees classes in authorized grades" do
+    sign_in_as users(:two)
+
+    get admin_semester_klasses_path
+    assert_response :success
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_2))}']", count: 0
+
+    get admin_semester_klass_path(semester_klasses(:sk_math_2))
+    assert_response :not_found
+  end
+
+  test "manager cannot create a class in an unauthorized grade" do
+    sign_in_as users(:two)
+
+    assert_no_difference -> { SemesterKlass.count } do
+      post admin_semester_klasses_path, params: { semester_klass: {
+        grade_id: grades(:grade_7).id,
+        teacher_id: teachers(:math_teacher_1).id,
+        genre: "JY", seq: 97, times: 1, students_text: ""
+      } }
+    end
+
+    assert_redirected_to admin_semester_klasses_path
+    assert_match "无权操作该年级", flash[:alert]
+  end
+
+  test "cannot view a class from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    sk = SemesterKlass.create!(
+      campuse: other_campuse, semester: semesters(:semester_current),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :not_found
+  end
+
   test "create with a duplicate class redirects with an alert" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
 
     assert_no_difference -> { SemesterKlass.count } do
       post admin_semester_klasses_path, params: { semester_klass: {

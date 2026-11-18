@@ -5,9 +5,11 @@ class Course < ApplicationRecord
   def start!(date = Date.today)
     return if started?
 
-    update!(start_date: date)
-    semester_klass.klass_students.each do |ks|
-      attendances.find_or_create_by(klass_student_id: ks.id)
+    transaction do
+      update!(start_date: date)
+      semester_klass.klass_students.where(status: :in).find_each do |ks|
+        attendances.find_or_create_by(klass_student_id: ks.id)
+      end
     end
   end
 

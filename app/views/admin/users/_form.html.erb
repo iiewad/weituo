@@ -1,3 +1,4 @@
+<% user_campuses = item.user_campuses.select { |user_campuse| user_campuse.school_id == Thread.current[:school].id } %>
 <%= form_with model: item,
       url: item.new_record? ? admin_users_path : admin_user_path(item),
       namespace: "user_#{item.id || 'new'}",
@@ -22,7 +23,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">
         校区授权
-        <span class="badge badge-ghost badge-sm" data-user-campuses-target="count"><%= item.user_campuses.size %></span>
+        <span class="badge badge-ghost badge-sm" data-user-campuses-target="count"><%= user_campuses.size %></span>
       </h3>
       <button type="button" data-action="user-campuses#add" class="btn btn-xs btn-outline btn-primary">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
@@ -32,7 +33,7 @@
     <p class="mt-1 text-xs text-base-content/50">用户只能登录被授权的校区；授权年级决定其可见的班级与学员范围。</p>
 
     <div class="mt-3 space-y-2" data-user-campuses-target="container">
-      <%= form.fields_for :user_campuses, item.user_campuses do |user_campuse_form| %>
+      <%= form.fields_for :user_campuses, user_campuses do |user_campuse_form| %>
         <%= render "admin/users/user_campuse_fields", form: user_campuse_form %>
       <% end %>
     </div>

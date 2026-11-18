@@ -26,6 +26,11 @@ class Admin::StudentsController < AdminController
   end
 
   def create
+    unless student_scope_valid?
+      redirect_to admin_students_path, alert: "年级或日校不在当前校区授权范围内"
+      return
+    end
+
     @student = Student.new(student_params)
     @student.campuse_id = Thread.current[:campuse].id
 
@@ -131,6 +136,11 @@ class Admin::StudentsController < AdminController
   end
 
   def update
+    unless student_scope_valid?
+      redirect_to admin_students_path, alert: "年级或日校不在当前校区授权范围内"
+      return
+    end
+
     @student = Student.where(campuse_id: Thread.current[:campuse].id).find(params[:id])
 
     if @student.update(student_params)
@@ -146,6 +156,15 @@ class Admin::StudentsController < AdminController
         :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :remark, :referrer_id,
         guardians_attributes: [ :id, :name, :phone, :relationship, :_destroy ]
       )
+    end
+
+    def student_scope_valid?
+      grade_id = params.dig(:student, :grade_id)
+      day_school_id = params.dig(:student, :day_school_id)
+      grade_ok = grade_id.blank? || Current.user.grades_by_campuse(Thread.current[:campuse].id).exists?(id: grade_id)
+      day_school_ok = day_school_id.blank? || Thread.current[:campuse].day_schools.exists?(id: day_school_id)
+
+      grade_ok && day_school_ok
     end
 
     # 当前学期内的报名记录，用于「在班 / 有退课 / 未入班」筛选与计数

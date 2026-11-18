@@ -28,6 +28,20 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
   end
 
+  test "cannot start a class from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    sk = SemesterKlass.create!(
+      campuse: other_campuse, semester: semesters(:semester_current),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+    course = sk.courses.find_by!(seq: 1)
+
+    put start_admin_semester_klass_course_path(sk, course)
+
+    assert_response :not_found
+  end
+
   test "insert students requires a selection" do
     sk = semester_klasses(:sk_math_1)
     course = sk.courses.find_by!(seq: 4)

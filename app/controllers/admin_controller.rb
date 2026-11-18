@@ -5,6 +5,20 @@ class AdminController < ApplicationController
   def index;end
 
   private
+    def require_admin
+      return if Current.user&.has_role_by_campuse_id(Thread.current[:campuse]&.id, "admin")
+
+      redirect_to root_path, alert: "只有超级管理员可以执行此操作"
+    end
+
+    def allowed_grade_ids
+      @allowed_grade_ids ||= Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    end
+
+    def campuse_semester_klasses
+      Thread.current[:campuse].semester_klasses.where(grade_id: allowed_grade_ids)
+    end
+
     def set_thread_current
       Thread.current[:campuse] = Thread.current[:school] = Thread.current[:semester] = nil
 

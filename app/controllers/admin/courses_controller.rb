@@ -1,15 +1,13 @@
 class Admin::CoursesController < AdminController
   def start
-    @sk = SemesterKlass.find(params[:semester_klass_id])
+    @sk = campuse_semester_klasses.find(params[:semester_klass_id])
     @course = @sk.courses.find(params[:id])
     @course.start!
     redirect_to admin_semester_klass_path(@sk), notice: "考勤已开始"
   end
 
   def insert_students
-    @sk = SemesterKlass.where(
-      campuse_id: Thread.current[:campuse].id,
-    ).find(params[:semester_klass_id])
+    @sk = campuse_semester_klasses.find(params[:semester_klass_id])
     course = @sk.courses.find(params[:id])
     student_ids = Array(params[:student_ids]).reject(&:blank?)
 

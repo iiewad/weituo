@@ -8,6 +8,15 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "managers cannot manage school settings" do
+    sign_in_as users(:two)
+
+    get admin_schools_path
+
+    assert_redirected_to root_path
+    assert_match "超级管理员", flash[:alert]
+  end
+
   test "update" do
     put admin_school_path(schools(:school_1)), params: { school: { name: "新学校" } }
     assert_redirected_to admin_schools_path

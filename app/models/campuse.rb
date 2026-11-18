@@ -5,5 +5,6 @@ class Campuse < ApplicationRecord
   has_many :students
   has_many :teachers
   has_many :day_schools
+  has_many :semester_klasses
   has_many :klasses
 end

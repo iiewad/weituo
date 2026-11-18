@@ -1,7 +1,8 @@
 class Admin::AttendancesController < AdminController
   def mark
-    @sk = SemesterKlass.find(params[:semester_klass_id])
-    @attendance = Attendance.find(params[:id])
+    @sk = campuse_semester_klasses.find(params[:semester_klass_id])
+    @course = @sk.courses.find(params[:course_id])
+    @attendance = @course.attendances.find(params[:id])
     mark_status(@attendance, params[:status])
     redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
   end

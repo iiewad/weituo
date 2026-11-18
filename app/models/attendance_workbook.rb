@@ -1,8 +1,10 @@
 class AttendanceWorkbook
-  def initialize(campuse:, semester:)
+  def initialize(campuse:, semester:, grade_ids: nil)
     @campuse = campuse
     @semester = semester
-    @semester_klasses = SemesterKlass.where(campuse_id: campuse.id, semester_id: semester.id)
+    scope = SemesterKlass.where(campuse_id: campuse.id, semester_id: semester.id)
+    scope = scope.where(grade_id: grade_ids) unless grade_ids.nil?
+    @semester_klasses = scope
       .includes(:grade, :subject, :teacher, :courses, klass_students: :student)
       .to_a
       .sort_by { |sk| [ sk.grade.level, sk.subject.name, sk.genre.to_s, sk.seq.to_i ] }

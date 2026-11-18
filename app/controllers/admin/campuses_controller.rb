@@ -1,13 +1,15 @@
 class Admin::CampusesController < AdminController
+  before_action :require_admin, only: :update
+
   def switch_thread_campuse
     @campuse = Current.user.campuses.find(params[:id])
     session[:current_campuse_id] = @campuse.id
     Thread.current[:campuse] = @campuse
-    redirect_to request.referrer, notice: "校区切换成功"
+    redirect_back fallback_location: root_path, notice: "校区切换成功"
   end
 
   def update
-    @school = School.find(params[:school_id])
+    @school = Thread.current[:school]
     @campus = @school.campuses.find(params[:id])
     if @campus.update(campus_params)
       redirect_to admin_schools_path, notice: "校区更新成功"

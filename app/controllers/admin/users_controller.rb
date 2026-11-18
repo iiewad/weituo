@@ -2,8 +2,8 @@ class Admin::UsersController < AdminController
   before_action :require_admin
 
   def index
-    @users = User.includes(user_campuses: :campuse).order(:name)
-    @campuses = Campuse.includes(:school).order(:school_id, :name, :id)
+    @users = users_in_current_school.includes(user_campuses: :campuse).order(:name)
+    @campuses = Thread.current[:school].campuses.order(:name, :id)
     @grades = Grade.order(:level).to_a
     @grades_by_id = @grades.index_by(&:id)
     @grade_school_ids = GradeSubject.pluck(:grade_id, :school_id)
@@ -12,6 +12,11 @@ class Admin::UsersController < AdminController
   end
 
   def create
+    unless user_campuses_within_school?
+      redirect_to admin_users_path, alert: "无权授予其他学校的校区权限"
+      return
+    end
+
     @user = User.new(user_params)
     if @user.save
       redirect_to admin_users_path, notice: "用户创建成功"
@@ -21,7 +26,12 @@ class Admin::UsersController < AdminController
   end
 
   def update
-    @user = User.find(params[:id])
+    unless user_campuses_within_school?
+      redirect_to admin_users_path, alert: "无权授予其他学校的校区权限"
+      return
+    end
+
+    @user = users_in_current_school.find(params[:id])
     if @user.update(user_params)
       redirect_to admin_users_path, notice: "用户更新成功"
     else
@@ -30,10 +40,21 @@ class Admin::UsersController < AdminController
   end
 
   private
-    def require_admin
-      return if Current.user.has_role_by_campuse_id(Thread.current[:campuse]&.id, "admin")
+    def users_in_current_school
+      User.where(id: UserCampuse.where(school_id: Thread.current[:school].id).select(:user_id))
+    end
 
-      redirect_to root_path, alert: "只有超级管理员可以管理用户与校区授权"
+    def user_campuses_within_school?
+      rows = params.dig(:user, :user_campuses_attributes) || {}
+      rows.each_value.all? do |row|
+        if row[:id].present?
+          user_campuse = UserCampuse.find_by(id: row[:id])
+          next false unless user_campuse && user_campuse.school_id == Thread.current[:school].id
+        end
+
+        campuse_id = row[:campuse_id]
+        campuse_id.blank? || Thread.current[:school].campuses.exists?(id: campuse_id)
+      end
     end
 
     def user_params
