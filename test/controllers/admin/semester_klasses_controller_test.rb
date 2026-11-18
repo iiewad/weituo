@@ -233,6 +233,38 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to copy_admin_semester_klasses_path(target_semester_id: next_semester.id)
   end
 
+  test "create adds selected students from the chosen lesson" do
+    assert_difference -> { KlassStudent.count }, 1 do
+      post admin_semester_klasses_path, params: {
+        student_ids: [ students(:student_7_4).id ],
+        join_course_seq: 2,
+        semester_klass: {
+          semester_id: semesters(:semester_current).id,
+          grade_id: grades(:grade_7).id,
+          teacher_id: teachers(:math_teacher_1).id,
+          campuse_id: campuses(:campuse_1).id,
+          genre: "JY", seq: 55, times: 3
+        }
+      }
+    end
+
+    sk = SemesterKlass.order(:id).last
+    ks = sk.klass_students.find_by!(student_id: students(:student_7_4).id)
+    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student: ks).status
+  end
+
+  test "index renders the student picker for the new class form" do
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "form[data-controller='list-filter']"
+    assert_select "select[name='semester_klass[grade_id]'][data-list-filter-target='grade']"
+    assert_select "input[type='search'][data-list-filter-target='input']"
+    assert_select "input[name='join_course_seq'][value='1']"
+    assert_select "input#klass_new_student_#{students(:student_7_4).id}"
+    assert_select "textarea[name='semester_klass[students_text]']", count: 0
+  end
+
   test "create" do
     assert_difference -> { SemesterKlass.count }, 1 do
       post admin_semester_klasses_path, params: { semester_klass: {
@@ -262,6 +294,20 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klasses_path
     assert_match "失败", flash[:alert]
+  end
+
+  test "update adds selected students from the chosen lesson" do
+    sk = semester_klasses(:sk_math_2)
+
+    assert_difference -> { sk.klass_students.count }, 1 do
+      put admin_semester_klass_path(sk), params: {
+        student_ids: [ students(:student_7_3).id ],
+        join_course_seq: 1,
+        semester_klass: { genre: sk.genre, seq: sk.seq, times: sk.times, teacher_id: sk.teacher_id, students_text: "" }
+      }
+    end
+
+    assert sk.klass_students.exists?(student_id: students(:student_7_3).id)
   end
 
   test "update" do

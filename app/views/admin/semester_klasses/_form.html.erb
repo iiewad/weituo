@@ -3,14 +3,15 @@
       method: item.new_record? ? :post : :put,
       namespace: "klass_#{item.id || 'new'}",
       local: true,
-      class: "space-y-4" do |form| %>
+      class: "space-y-4",
+      data: { controller: "list-filter" } do |form| %>
   <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
   <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
 
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold"><%= item.new_record? ? "开班" : "班级详情 · #{item.name}" %></h3>
     <p class="mt-1 text-xs text-base-content/50">
-      <%= item.new_record? ? "创建后自动按课次排课，并可从名单导入学员。" : "修改班级信息会同步更新班级名称与课次。" %>
+      <%= item.new_record? ? "创建后自动按课次排课，并可勾选学员入班。" : "修改班级信息会同步更新班级名称与课次，可在下方追加学员。" %>
     </p>
 
     <% if item.persisted? %>
@@ -56,7 +57,9 @@
         <%= form.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= form.select :grade_id,
               Current.user.grades_by_campuse(Thread.current[:campuse].id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
-              { include_blank: "选择年级", selected: item.grade_id }, { class: "select select-sm w-full", required: true } %>
+              { include_blank: "选择年级", selected: item.grade_id },
+              { class: "select select-sm w-full", required: true,
+                data: { list_filter_target: "grade", action: "change->list-filter#filter" } } %>
       </div>
 
       <div>
@@ -73,15 +76,67 @@
     </div>
   </div>
 
+<% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
+  <% enrolled_ids = existing_klass_students.map(&:student_id) %>
+  <% candidates = (@new_class_candidates || []).reject { |student| enrolled_ids.include?(student.id) } %>
+
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
       <h3 class="text-sm font-semibold">学员名单</h3>
-      <span class="text-xs text-base-content/50">按姓名匹配当前年级</span>
+      <span class="text-xs text-base-content/50">共 <%= candidates.size %> 人可选</span>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">每行一个姓名；插班写「姓名 课次+」，例如：张三 4+。匹配不到的姓名会被忽略。</p>
-    <%= form.text_area :students_text, value: item.new_record? ? "" : item.students_text,
-          class: "textarea textarea-sm mt-2 h-56 w-full font-mono text-xs leading-5",
-          placeholder: "张三\n李四 4+" %>
+    <p class="mt-1 text-xs text-base-content/50">搜索并勾选要加入本班的学员；已入班学员不会重复出现。</p>
+
+    <% if item.persisted? && existing_klass_students.any? %>
+      <details class="mt-2 rounded-box border border-base-300 bg-base-100">
+        <summary class="cursor-pointer px-3 py-2 text-xs font-medium">当前学员 <%= existing_klass_students.size %> 人</summary>
+        <div class="flex flex-wrap gap-1 px-3 pb-3">
+          <% existing_klass_students.sort_by { |klass_student| klass_student.student.name }.each do |klass_student| %>
+            <span class="badge badge-ghost badge-sm">
+              <%= klass_student.student.name %>
+              <% if klass_student.status != "in" %>
+                <span class="text-base-content/40"><%= klass_student.status == "out" ? "退" : "转" %></span>
+              <% end %>
+            </span>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+
+    <% if candidates.any? %>
+      <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_8rem] sm:items-end">
+        <label class="input input-sm flex w-full items-center gap-2 rounded-field">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+          <input type="search" class="grow" placeholder="搜索学员姓名" autocomplete="off"
+                 data-list-filter-target="input" data-action="input->list-filter#filter">
+        </label>
+        <div>
+          <label class="mb-1 block text-[11px] font-medium text-base-content/50">入班课次</label>
+          <%= number_field_tag :join_course_seq, 1, min: 1, class: "input input-sm w-full" %>
+        </div>
+      </div>
+      <p class="mt-1 text-[11px] leading-tight text-base-content/40">
+        所选学员从该课次开始加入，之前课次补记为缺课；默认第 1 课。
+      </p>
+
+      <div class="mt-2 max-h-56 space-y-1 overflow-y-auto pr-1">
+        <% candidates.each do |student| %>
+          <label class="flex items-center gap-2 rounded-box bg-base-200/50 px-2.5 py-1.5 text-xs"
+                 data-list-filter-target="item"
+                 data-search-text="<%= student.name %>"
+                 data-grade-id="<%= student.grade_id %>">
+            <%= check_box_tag "student_ids[]", student.id, false,
+                  id: "klass_#{item.id || "new"}_student_#{student.id}",
+                  class: "checkbox checkbox-xs" %>
+            <span class="font-medium"><%= student.name %></span>
+            <span class="ml-auto text-[10px] text-base-content/40"><%= student.grade&.name %></span>
+          </label>
+        <% end %>
+      </div>
+      <p class="mt-2 hidden text-xs text-base-content/40" data-list-filter-target="empty">没有匹配的学员</p>
+    <% else %>
+      <p class="mt-2 text-xs text-base-content/40">没有可加入的学员，请先在学员管理中建档或检查年级。</p>
+    <% end %>
   </div>
 
   <%= form.submit item.new_record? ? "开班" : "保存修改", class: "btn btn-primary w-full" %>

@@ -40,6 +40,7 @@ class Admin::SemesterKlassesController < AdminController
     @total_courses = @sks.sum { |sk| sk.times.to_i }
     @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
     @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }
+    @new_class_candidates = new_class_candidates
   end
 
   def create
@@ -47,7 +48,7 @@ class Admin::SemesterKlassesController < AdminController
     @sk.subject = @sk.teacher.subject
 
     if @sk.save
-      @sk.add_students_by_text(params[:semester_klass][:students_text])
+      apply_students(@sk)
       redirect_to admin_semester_klass_path(@sk), notice: "班级创建成功"
     else
       redirect_to admin_semester_klasses_path, alert: "班级创建失败，#{@sk.errors.full_messages.join("；")}"
@@ -60,7 +61,7 @@ class Admin::SemesterKlassesController < AdminController
     ).find(params[:id])
     teacher = Teacher.find(params[:semester_klass][:teacher_id])
     if @sk.update(semester_klass_params.except(:students_text).merge(subject_id: teacher.subject_id))
-      @sk.add_students_by_text(params[:semester_klass][:students_text])
+      apply_students(@sk)
       redirect_to admin_semester_klass_path(@sk), notice: "班级更新成功"
     else
       redirect_to admin_semester_klasses_path, alert: "班级更新失败，#{@sk.errors.full_messages.join("；")}"
@@ -132,9 +133,31 @@ class Admin::SemesterKlassesController < AdminController
       campuse_id: Thread.current[:campuse].id,
       grade_id: @sk.grade_id
     ).where.not(id: @sk.klass_students.select(:student_id)).order(:name)
+    @new_class_candidates = new_class_candidates
   end
 
   private
+  def new_class_candidates
+    Student.where(
+      campuse_id: Thread.current[:campuse].id,
+      grade_id: Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    ).includes(:grade).order(:name)
+  end
+
+  def apply_students(semester_klass)
+    student_ids = Array(params[:student_ids]).reject(&:blank?)
+
+    if student_ids.any?
+      max_seq = [ semester_klass.times.to_i, 1 ].max
+      join_seq = [ [ params[:join_course_seq].to_i, 1 ].max, max_seq ].min
+      Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
+        .where.not(id: semester_klass.klass_students.select(:student_id))
+        .find_each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
+    elsif params.dig(:semester_klass, :students_text).present?
+      semester_klass.add_students_by_text(params[:semester_klass][:students_text])
+    end
+  end
+
   # 目标学期只能选当前学期及其之后的学期；默认当前学期
   def copy_target_semester
     return Thread.current[:semester] if params[:target_semester_id].blank?
