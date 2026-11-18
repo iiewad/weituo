@@ -43,5 +43,10 @@ class StatementReportTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "25.0%", response.body
     assert_match "50.0%", response.body
+    # 抽屉里能看到每个学员的具体来源：新生、拓科科目、下学期班级
+    assert_match "历史学期无记录", response.body
+    assert_match "上学期（", response.body
+    assert_match "下学期（", response.body
+    assert_match next_math.name, response.body
   end
 end

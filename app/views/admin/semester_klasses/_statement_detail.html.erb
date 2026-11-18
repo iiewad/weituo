@@ -40,9 +40,12 @@
             <span class="block h-1 rounded-full <%= color %>" style="width: <%= pct.clamp(0, 100) %>%"></span>
           </div>
           <% if students.any? %>
-            <div class="mt-1.5 flex flex-wrap gap-1">
-              <% students.each do |name| %>
-                <span class="badge badge-ghost badge-xs"><%= name %></span>
+            <div class="mt-1.5 max-h-44 space-y-1 overflow-y-auto pr-1">
+              <% students.each do |entry| %>
+                <div class="rounded-box bg-base-200/60 px-2.5 py-1.5">
+                  <p class="text-xs font-medium"><%= entry.name %></p>
+                  <p class="mt-0.5 text-[11px] leading-snug text-base-content/50"><%= entry.detail %></p>
+                </div>
               <% end %>
             </div>
           <% else %>

@@ -36,7 +36,7 @@ class StatementReportModelTest < ActiveSupport::TestCase
     end
 
     assert_equal SemesterKlass.where(campuse_id: @campuse.id).count, rows.size
-    assert_operator queries, :<=, 8, "报表应只做固定次数的查询，实际发出 #{queries} 次"
+    assert_operator queries, :<=, 10, "报表应只做固定次数的查询，实际发出 #{queries} 次"
   end
 
   test "summary aggregates counts and average rates" do
