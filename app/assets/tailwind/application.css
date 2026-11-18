@@ -87,6 +87,118 @@
     background: color-mix(in oklch, var(--color-base-300) 90%, transparent);
     border-radius: 999px;
   }
+
+  .guide-content {
+    font-size: 0.875rem;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+    color: color-mix(in oklch, var(--color-base-content) 88%, transparent);
+  }
+
+  .guide-content h1,
+  .guide-content h2,
+  .guide-content h3 {
+    color: var(--color-base-content);
+    font-weight: 600;
+  }
+
+  .guide-content h1 {
+    margin: 0 0 0.75rem;
+    font-size: 1.5rem;
+  }
+
+  .guide-content h2 {
+    margin: 2rem 0 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in oklch, var(--color-base-300) 80%, transparent);
+    font-size: 1.125rem;
+    scroll-margin-top: 6rem;
+  }
+
+  .guide-content h2:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .guide-content h3 {
+    margin: 1.25rem 0 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .guide-content p {
+    margin: 0.5rem 0;
+  }
+
+  .guide-content ul,
+  .guide-content ol {
+    margin: 0.5rem 0 0.75rem;
+    padding-left: 1.25rem;
+  }
+
+  .guide-content ul {
+    list-style: disc;
+  }
+
+  .guide-content ol {
+    list-style: decimal;
+  }
+
+  .guide-content li {
+    margin: 0.3rem 0;
+  }
+
+  .guide-content a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .guide-content strong {
+    color: var(--color-base-content);
+    font-weight: 600;
+  }
+
+  .guide-content code {
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.3rem;
+    background-color: var(--color-base-200);
+    font-size: 0.8em;
+  }
+
+  .guide-content blockquote {
+    margin: 0.75rem 0;
+    border-left: 3px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+    border-radius: 0 var(--radius-field) var(--radius-field) 0;
+    background-color: color-mix(in oklch, var(--color-base-200) 55%, transparent);
+    padding: 0.6rem 0.75rem;
+    color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+  }
+
+  .guide-content table {
+    width: 100%;
+    margin: 0.75rem 0 1rem;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  .guide-content th,
+  .guide-content td {
+    border: 1px solid color-mix(in oklch, var(--color-base-300) 80%, transparent);
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .guide-content th {
+    background-color: color-mix(in oklch, var(--color-base-200) 70%, transparent);
+    font-weight: 600;
+  }
+
+  .guide-content hr {
+    margin: 1.75rem 0;
+    border-color: color-mix(in oklch, var(--color-base-300) 70%, transparent);
+  }
 }
 
 /* 品牌渐变。放在 @layer 外，确保压过 daisyUI .btn 自带的 background-image: none（否则按钮只剩灰色底）。 */

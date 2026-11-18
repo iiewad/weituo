@@ -18,7 +18,8 @@ class AdminControllerTest < ActionDispatch::IntegrationTest
       statement_admin_semester_klasses_path,
       admin_teachers_path,
       admin_users_path,
-      admin_schools_path
+      admin_schools_path,
+      admin_guide_path
     ].each do |path|
       get path
       assert_redirected_to new_session_path, "#{path} should require login"

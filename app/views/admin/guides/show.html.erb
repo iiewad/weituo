@@ -1,0 +1,17 @@
+<% content_for :page_title, "操作指南" %>
+<% content_for :page_subtitle, "按模块查阅日常操作，包含考勤、报表、导出与权限说明" %>
+
+<div class="flex flex-col gap-4 lg:flex-row">
+  <aside class="wt-surface shrink-0 p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-60 lg:self-start lg:overflow-y-auto">
+    <p class="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-base-content/40">目录</p>
+    <ul class="menu menu-sm w-full">
+      <% @toc.each do |title, id| %>
+        <li><a href="#<%= id %>" class="text-xs leading-snug"><%= title %></a></li>
+      <% end %>
+    </ul>
+  </aside>
+
+  <article class="guide-content wt-surface min-w-0 flex-1 p-5 sm:p-7">
+    <%= @guide_html %>
+  </article>
+</div>

@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   root "admin/students#index"
   namespace :admin do
+    get "guide", to: "guides#show", as: :guide
+
     resources :semester_klasses do
       member do
         get :export_attendance

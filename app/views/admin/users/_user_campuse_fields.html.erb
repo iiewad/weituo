@@ -21,7 +21,7 @@
 
     <fieldset>
       <legend class="mb-1 text-xs font-medium text-base-content/60">
-        授权年级 <span class="font-normal text-base-content/40">（不选表示不限年级）</span>
+        授权年级 <span class="font-normal text-base-content/40">（不选则看不到该校区任何年级数据）</span>
       </legend>
       <%= form.hidden_field :grade_ids, value: "", multiple: true, id: nil %>
       <div class="flex flex-wrap gap-1.5" data-user-campuses-target="grades">
