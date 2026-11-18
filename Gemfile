@@ -70,3 +70,4 @@ end
 gem "ransack"
 gem "kaminari"
 gem "aasm"
+gem "caxlsx"

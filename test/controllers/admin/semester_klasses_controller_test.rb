@@ -1,4 +1,6 @@
 require "test_helper"
+require "stringio"
+require "zip"
 
 class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
@@ -31,10 +33,33 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "a.menu-active[aria-current='page']", text: /#{sk.name}/
+    assert_select "a[href='#{export_attendance_admin_semester_klass_path(sk)}']", text: /导出考勤/
     assert_select "summary", text: /七年级/
     assert_select "summary", text: /数学/
     # 同年级同科目下的其他班级也出现在菜单里，便于切换
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_3))}']"
+  end
+
+  test "exports the attendance sheet as xlsx" do
+    sk = semester_klasses(:sk_math_2)
+    get export_attendance_admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.media_type
+    assert_match(/attachment/, response.headers["Content-Disposition"])
+    assert response.body.start_with?("PK")
+
+    workbook = Zip::File.open_buffer(StringIO.new(response.body))
+    strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
+    assert_includes strings, sk.name
+    assert_includes strings, sk.klass_students.first.student.name
+    assert_includes strings, "学员"
+  end
+
+  test "cannot export a class outside the current semester" do
+    get export_attendance_admin_semester_klass_path(semester_klasses(:sk_math_1))
+
+    assert_response :not_found
   end
 
   test "copy lists historical classes with their source details" do

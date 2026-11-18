@@ -79,6 +79,14 @@ class Admin::SemesterKlassesController < AdminController
     end
   end
 
+  def export_attendance
+    @sk = Thread.current[:semester].semester_klasses.find(params[:id])
+    send_data AttendanceSheet.new(@sk).to_xlsx,
+      filename: "#{@sk.name}-#{@sk.semester.name}-考勤表.xlsx",
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      disposition: "attachment"
+  end
+
   def show
     @sk = Thread.current[:semester].semester_klasses.find(params[:id])
     @sks = SemesterKlass.where(
