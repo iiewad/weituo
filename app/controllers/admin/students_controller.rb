@@ -13,7 +13,10 @@ class Admin::StudentsController < AdminController
     @students = @students.page(params[:page])
 
     @filter_counts = filter_counts(base)
-    @klass_students_by_student = klass_students_by_student(@students.map(&:id))
+    student_ids = @students.map(&:id)
+    @klass_students_by_student = klass_students_by_student(student_ids)
+    @history_by_student = klass_student_history(student_ids)
+    @attendance_stats = attendance_stats_for(@history_by_student.values.flatten)
   end
 
   def create
@@ -73,6 +76,31 @@ class Admin::StudentsController < AdminController
         .where(semester_klasses: { semester_id: Thread.current[:semester].id }, student_id: student_ids)
         .includes(semester_klass: [ :subject, :teacher ])
         .group_by(&:student_id)
+    end
+
+    # 当前页学员的全部历史报名，按学期倒序，供详情抽屉追溯在班记录
+    def klass_student_history(student_ids)
+      KlassStudent
+        .where(student_id: student_ids)
+        .includes(semester_klass: [ :semester, :grade, :subject, :teacher ])
+        .group_by(&:student_id)
+        .transform_values do |records|
+          records
+            .select { |ks| ks.semester_klass.semester.start_date <= Date.today }
+            .sort_by { |ks| [ -ks.semester_klass.semester.seq.to_i, ks.semester_klass.seq.to_i ] }
+        end
+    end
+
+    def attendance_stats_for(klass_students)
+      ids = klass_students.map(&:id)
+      return {} if ids.empty?
+
+      Attendance.where(klass_student_id: ids)
+        .group(:klass_student_id, :status)
+        .count
+        .each_with_object({}) do |((klass_student_id, status), count), memo|
+          (memo[klass_student_id] ||= {})[status] = count
+        end
     end
 
     def filter_counts(base)

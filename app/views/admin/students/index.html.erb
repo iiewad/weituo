@@ -47,7 +47,7 @@
     </thead>
     <tbody>
       <% @students.each.with_index(1) do |student, index| %>
-        <tr class="hover:bg-base-200/40">
+        <tr id="student-row-<%= student.id %>" class="hover:bg-base-200/40">
           <td class="text-base-content/40"><%= index %></td>
           <td>
             <div class="flex items-center gap-2.5">
@@ -69,8 +69,20 @@
           <td class="whitespace-nowrap text-base-content/70"><%= student.birthday&.strftime("%Y-%m-%d") || "—" %></td>
           <td class="whitespace-nowrap text-base-content/70"><%= student.phone.presence || "—" %></td>
           <td class="text-base-content/70"><%= student.guardians.map { |g| [ g.relationship, g.phone ].compact.join(" ") }.join("、").presence || "—" %></td>
-          <td class="text-right">
-            <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/students/form" %>
+          <td class="text-right whitespace-nowrap">
+            <div class="flex justify-end gap-1">
+              <%= render "admin/shared/drawer", item: student,
+                    drawer_id: "drawer-student-detail-#{student.id}",
+                    button_name: "详情",
+                    button_class: "btn btn-xs btn-ghost",
+                    drawer_width: "260",
+                    drawer_content: "admin/students/detail",
+                    drawer_locals: {
+                      history: @history_by_student[student.id] || [],
+                      attendance_stats: @attendance_stats
+                    } %>
+              <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/students/form" %>
+            </div>
           </td>
         </tr>
       <% end %>
