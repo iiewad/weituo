@@ -57,6 +57,15 @@
       </div>
 
       <div class="sm:col-span-2">
+        <%= f.label :referrer_id, "推荐人", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= render "admin/shared/student_picker",
+              input_name: "student[referrer_id]",
+              selected: item.referrer,
+              exclude_id: item.id,
+              options_url: options_admin_students_path %>
+      </div>
+
+      <div class="sm:col-span-2">
         <%= f.label :remark, "备注", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= f.text_area :remark, rows: 2, class: "textarea textarea-sm w-full", placeholder: "选填，记录需要关注的情况", maxlength: 500 %>
       </div>

@@ -35,6 +35,27 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal grades(:grade_9).id, top.reload.grade_id
   end
 
+  test "assigning referrer id creates and clears the referral" do
+    student = students(:student_7_2)
+    referrer = students(:student_9_2)
+
+    student.update!(referrer_id: referrer.id)
+    assert_equal referrer, student.reload.referrer
+
+    student.update!(referrer_id: "")
+    assert_nil student.reload.referrer
+  end
+
+  test "referrer must belong to the same campus and cannot be the student" do
+    student = students(:student_7_2)
+
+    student.update!(referrer_id: student.id)
+    assert_nil student.reload.referrer
+
+    student.update!(referrer_id: 0)
+    assert_nil student.reload.referrer
+  end
+
   test "import by text maps genders and reports created and skipped rows" do
     text = [
       "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲",

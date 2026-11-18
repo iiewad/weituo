@@ -1,0 +1,26 @@
+<%
+  selected = local_assigns[:selected]
+%>
+<div data-controller="student-picker"
+     data-student-picker-options-url-value="<%= local_assigns[:options_url] %>"
+     data-student-picker-exclude-id-value="<%= local_assigns[:exclude_id] %>"
+     data-student-picker-selected-name-value="<%= selected&.name %>"
+     data-student-picker-selected-grade-value="<%= selected&.grade&.name %>">
+  <div class="flex min-h-6 flex-wrap items-center gap-1" data-student-picker-target="selected"></div>
+
+  <%= hidden_field_tag local_assigns[:input_name], selected&.id, data: { student_picker_target: "hidden" } %>
+
+  <label class="input input-sm mt-2 flex w-full items-center gap-2 rounded-field">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+    <input type="search" class="grow" placeholder="搜索本校区学员姓名" autocomplete="off"
+           data-student-picker-target="input"
+           data-action="focus->student-picker#search input->student-picker#search keydown.esc->student-picker#close">
+  </label>
+
+  <div class="relative">
+    <div class="absolute z-30 mt-1 hidden max-h-48 w-full overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1 shadow-lg"
+         data-student-picker-target="results"></div>
+  </div>
+
+  <p class="mt-1.5 text-[11px] leading-snug text-base-content/40">可搜索本校区学员；留空表示没有推荐人。</p>
+</div>

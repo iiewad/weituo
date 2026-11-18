@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_074845) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_075548) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -103,6 +103,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_074845) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "student_referrals", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "referrer_id", null: false
+    t.bigint "referred_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["referred_id"], name: "index_student_referrals_on_referred_id", unique: true
+    t.index ["referrer_id"], name: "index_student_referrals_on_referrer_id"
+  end
+
   create_table "students", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.date "birthday"
     t.bigint "campuse_id", null: false
@@ -152,6 +161,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_074845) do
   end
 
   add_foreign_key "sessions", "users"
+  add_foreign_key "student_referrals", "students", column: "referred_id"
+  add_foreign_key "student_referrals", "students", column: "referrer_id"
   add_foreign_key "user_campuses", "campuses"
   add_foreign_key "user_campuses", "schools"
   add_foreign_key "user_campuses", "users"

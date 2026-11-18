@@ -56,6 +56,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes drawer.text, "当前学期"
     assert_includes drawer.text, "考勤 1 次 · 出勤 1"
     assert_includes drawer.text, "家长要求每节课反馈"
+    assert_includes drawer.text, "9_学生1"
   end
 
   %w[in_class not_in_class out_class].each do |filter|
@@ -71,6 +72,28 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to admin_students_path
     assert_equal "需要关注", Student.find_by!(name: "新学员").remark
+  end
+
+  test "create saves the referrer" do
+    referrer = students(:student_9_2)
+
+    assert_difference -> { StudentReferral.count }, 1 do
+      post admin_students_path, params: { student: { name: "推荐新生", grade_id: grades(:grade_7).id, referrer_id: referrer.id } }
+    end
+
+    assert_equal referrer, Student.find_by!(name: "推荐新生").referrer
+  end
+
+  test "options returns matching students and excludes the given id" do
+    excluded = students(:student_8_1)
+
+    get options_admin_students_path(q: "8_学生1", exclude_id: excluded.id)
+
+    assert_response :success
+    payload = JSON.parse(response.body)
+    assert payload.any?
+    assert_not_includes payload.map { |student| student["id"] }, excluded.id
+    assert payload.all? { |student| student["name"].include?("8_学生1") }
   end
 
   test "create always uses the current campus" do
@@ -139,9 +162,11 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "update" do
     student = students(:student_7_1)
-    put admin_student_path(student), params: { student: { name: "改名", remark: "已更新备注" } }
+    referrer = students(:student_9_2)
+    put admin_student_path(student), params: { student: { name: "改名", remark: "已更新备注", referrer_id: referrer.id } }
     assert_redirected_to admin_students_path
     assert_equal "改名", student.reload.name
     assert_equal "已更新备注", student.remark
+    assert_equal referrer, student.referrer
   end
 end

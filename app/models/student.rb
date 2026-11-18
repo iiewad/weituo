@@ -8,7 +8,14 @@ class Student < ApplicationRecord
   has_many :guardians, dependent: :destroy
   has_many :klass_students, dependent: :destroy
   has_many :klasses, through: :klass_students
+  has_one :received_referral, class_name: "StudentReferral", foreign_key: :referred_id, dependent: :destroy, inverse_of: :referred
+  has_one :referrer, through: :received_referral
+  has_many :given_referrals, class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy, inverse_of: :referrer
+  has_many :referred_students, through: :given_referrals, source: :referred
   accepts_nested_attributes_for :guardians, reject_if: :all_blank, allow_destroy: true
+
+  attr_writer :referrer_id
+  after_save :sync_referrer, unless: -> { @referrer_id.nil? }
 
   def self.ransackable_attributes(auth_object = nil)
     [ "name", "grade_id" ]
@@ -32,6 +39,13 @@ class Student < ApplicationRecord
   def update_grade
     target_grade = Grade.find_by(level: grade.level.to_i + 1)
     update!(grade_id: target_grade.id) if target_grade.present?
+  end
+
+  # 表单里通过 student[referrer_id] 提交推荐人；留空表示清除推荐关系。
+  def referrer_id
+    return @referrer_id if defined?(@referrer_id)
+
+    received_referral&.referrer_id
   end
 
   # 按 CSV 行导入学员：姓名,性别,生日,年级level,层级,入学日期,日校[,监护人姓名,监护人电话,监护关系]
@@ -81,4 +95,17 @@ class Student < ApplicationRecord
 
     [ created, skipped ]
   end
+
+  private
+    def sync_referrer
+      if @referrer_id.blank?
+        received_referral&.destroy
+        return
+      end
+
+      referrer = self.class.find_by(id: @referrer_id, campuse_id: campuse_id)
+      return if referrer.nil? || referrer.id == id
+
+      StudentReferral.find_or_initialize_by(referred_id: id).update!(referrer_id: referrer.id)
+    end
 end

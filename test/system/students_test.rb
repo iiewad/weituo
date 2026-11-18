@@ -19,6 +19,25 @@ class StudentsTest < ApplicationSystemTestCase
     assert_equal "父亲", student.guardians.sole.relationship
   end
 
+  test "新增学员时可以选择推荐人" do
+    sign_in
+    visit admin_students_path
+
+    find("label[for='drawer-student-new']").click
+    drawer = find("#drawer-student-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      fill_in "学员名", with: "推荐新生"
+      select "七年级", from: "年级"
+      find("[data-student-picker-target='input']").set("9_学生2")
+      find("[data-student-picker-target='results'] button", text: "9_学生2").click
+      click_button "保存"
+    end
+
+    assert_text "学员创建成功"
+    assert_equal students(:student_9_2), Student.find_by!(name: "推荐新生").referrer
+  end
+
   test "勾选学员后可以批量升年级" do
     sign_in
     visit admin_students_path

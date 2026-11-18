@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       collection do
         post :promote
         post :import
+        get :options
       end
     end
     resources :users, only: [ :index, :create, :update ]

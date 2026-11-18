@@ -14,7 +14,7 @@ class Admin::StudentsController < AdminController
     @per_page = PER_PAGE_OPTIONS.include?(params[:per_page].to_i) ? params[:per_page].to_i : DEFAULT_PER_PAGE
     @per_page_options = PER_PAGE_OPTIONS
 
-    @students = base.includes(:grade, :day_school, :guardians)
+    @students = base.includes(:grade, :day_school, :guardians, received_referral: :referrer)
     @students = apply_filter(@students, params[:filter]) if params[:filter].present?
     @students = @students.page(params[:page]).per(@per_page)
 
@@ -34,6 +34,18 @@ class Admin::StudentsController < AdminController
     else
       redirect_to admin_students_path, alert: "学员创建失败，#{@student.errors.full_messages.join("；")}"
     end
+  end
+
+  # 推荐人选择器的远程候选：限定当前校区、当前账号可见年级，最多返回 20 条。
+  def options
+    grade_ids = Current.user.grades_by_campuse(Thread.current[:campuse].id).ids
+    scope = Student.where(campuse_id: Thread.current[:campuse].id, grade_id: grade_ids).includes(:grade)
+    scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
+    if params[:q].present?
+      scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(params[:q].to_s.strip)}%")
+    end
+
+    render json: scope.order(:name).limit(20).map { |student| { id: student.id, name: student.name, grade: student.grade&.name } }
   end
 
   def import
@@ -110,7 +122,7 @@ class Admin::StudentsController < AdminController
   private
     def student_params
       params.require(:student).permit(
-        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :remark,
+        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :remark, :referrer_id,
         guardians_attributes: [ :id, :name, :phone, :relationship, :_destroy ]
       )
     end

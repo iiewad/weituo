@@ -185,6 +185,20 @@ campuses.each_with_index do |campuse, campus_index|
   end
 end
 
+puts "创建推荐关系…"
+campuses.each do |campuse|
+  grades.each_with_index do |grade, grade_index|
+    referrer_grade = grade_index.zero? ? grade : grades[grade_index - 1]
+    referrer_pool = students_by[[ campuse.id, referrer_grade.id ]]
+    students_by[[ campuse.id, grade.id ]].first(3).each_with_index do |student, index|
+      referrer = referrer_pool[(index + 4) % referrer_pool.size]
+      next if referrer == student
+
+      StudentReferral.create!(referrer:, referred: student)
+    end
+  end
+end
+
 puts "创建历史、当前与未来学期的班级…"
 class_specs = curriculum.flat_map do |grade, subject_names|
   subject_names.flat_map do |subject_name|
@@ -287,7 +301,7 @@ puts <<~SUMMARY
   种子数据已生成：
     学校 #{School.count} 所 / 校区 #{Campuse.count} 个 / 学期 #{Semester.count} 个
     年级 #{Grade.count} 个 / 科目 #{Subject.count} 个 / 教师 #{Teacher.count} 名
-    学员 #{Student.count} 名 / 监护人 #{Guardian.count} 名
+    学员 #{Student.count} 名 / 监护人 #{Guardian.count} 名 / 推荐关系 #{StudentReferral.count} 条
     班级 #{SemesterKlass.count} 个 / 课次 #{Course.count} 节 / 考勤 #{Attendance.count} 条
   账号：admin、user1、user2、user3（密码 password）；pending 为未授权账号。
 SUMMARY
