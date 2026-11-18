@@ -1,6 +1,7 @@
 class Admin::TeachersController < AdminController
   def index
     @q = Teacher.ransack(params[:q])
+    @subjects = Subject.order(:id)
     @teachers = @q.result
       .includes(:subject, :campuse)
       .where(campuse_id: Thread.current[:campuse].id)

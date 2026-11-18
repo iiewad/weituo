@@ -121,7 +121,7 @@ class Admin::StudentsController < AdminController
       KlassStudent
         .joins(:semester_klass)
         .where(semester_klasses: { semester_id: Thread.current[:semester].id }, student_id: student_ids)
-        .includes(semester_klass: [ :subject, :teacher ])
+        .includes(semester_klass: [ :grade, :subject, :teacher ])
         .group_by(&:student_id)
     end
 

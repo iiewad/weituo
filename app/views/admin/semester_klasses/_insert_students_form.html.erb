@@ -1,4 +1,4 @@
-<% sk = item.semester_klass %>
+<% sk = @sk || item.semester_klass %>
 <% candidates = @insert_student_candidates || [] %>
 <% student_options = candidates.map { |student| { student: student, checked: false, badge: nil } } %>
 

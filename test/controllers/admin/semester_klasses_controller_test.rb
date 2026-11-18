@@ -29,6 +29,30 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href*='export_statement']", text: /导出报表/
   end
 
+  test "show queries do not scale with students and courses" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.create!(seq: 1, start_date: Date.current)
+    sk.klass_students.each { |klass_student| course.attendances.create!(klass_student: klass_student, status: "normal") }
+
+    baseline = count_queries { get admin_semester_klass_path(sk) }
+    assert_response :success
+
+    [ students(:student_7_2), students(:student_7_3) ].each do |student|
+      KlassStudent.create!(semester_klass: sk, student: student, status: "in")
+    end
+
+    3.times do |index|
+      extra_course = sk.courses.create!(seq: index + 2, start_date: Date.current)
+      sk.klass_students.reload.each do |klass_student|
+        extra_course.attendances.create!(klass_student: klass_student, status: "normal")
+      end
+    end
+
+    expanded = count_queries { get admin_semester_klass_path(sk) }
+    assert_response :success
+    assert_operator expanded - baseline, :<=, 4, "新增学员或课次不应带来按行查询"
+  end
+
   test "show renders the attendance action card in a two-column grid" do
     sk = semester_klasses(:sk_math_2)
     course = sk.courses.create!(seq: 1, start_date: Date.current)
@@ -231,6 +255,22 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert sk.klass_students.exists?(student_id: students(:student_7_2).id)
     assert_redirected_to copy_admin_semester_klasses_path(target_semester_id: next_semester.id)
   end
+
+  private
+    def count_queries
+      queries = 0
+      test_thread = Thread.current
+      callback = ->(_name, _start, _finish, _id, payload) {
+        if Thread.current == test_thread && !payload[:name].in?([ "SCHEMA", "TRANSACTION" ])
+          queries += 1
+        end
+      }
+
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+      queries
+    end
+
+  public
 
   test "create adds selected students from the chosen lesson" do
     assert_difference -> { KlassStudent.count }, 1 do

@@ -28,8 +28,6 @@ class Admin::DashboardsController < AdminController
       @total_courses = courses.count
       @started_courses = courses.where.not(start_date: nil).count
       @today_courses = courses.where(start_date: Date.current)
-        .includes(semester_klass: [ :grade, :subject, :teacher ])
-        .order("semester_klasses.seq")
       @recent_klasses = @klasses_scope.includes(:grade, :subject, :teacher).order(created_at: :desc).limit(5).to_a
       @recent_active_counts = KlassStudent.where(semester_klass_id: @recent_klasses.map(&:id), status: "in")
         .group(:semester_klass_id).count

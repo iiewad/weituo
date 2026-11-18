@@ -41,6 +41,7 @@ class Admin::SemesterKlassesController < AdminController
     @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
     @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }
     @new_class_candidates = new_class_candidates
+    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
   end
 
   def create
@@ -72,7 +73,7 @@ class Admin::SemesterKlassesController < AdminController
     @target_semester = copy_target_semester
     @target_semesters = copy_target_semesters
     @q = SemesterKlass.ransack(params[:q])
-    @sks = @q.result.joins(:semester, :grade, :subject).includes(:semester, :grade, :subject, :teacher, :students, :courses, klass_students: :student).where(
+    @sks = @q.result.joins(:semester, :grade, :subject).includes(:semester, :grade, :subject, :teacher, :students, :courses, klass_students: { student: :grade }).where(
       campuse_id: Thread.current[:campuse].id,
     ).where(
       "semesters.seq < ?", @target_semester.seq
@@ -85,7 +86,9 @@ class Admin::SemesterKlassesController < AdminController
       "semesters.seq < ?", @target_semester.seq,
     )
     @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
+    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
     @students_by_grade = Student.where(campuse_id: Thread.current[:campuse].id, grade_id: @sks.map(&:grade_id).uniq)
+      .includes(:grade)
       .order(:name)
       .group_by(&:grade_id)
   end
@@ -124,15 +127,25 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def show
-    @sk = Thread.current[:semester].semester_klasses.find(params[:id])
+    @sk = Thread.current[:semester].semester_klasses
+      .includes(:semester, :grade, :subject, :teacher)
+      .find(params[:id])
     @sks = SemesterKlass.where(
       campuse_id: Thread.current[:campuse].id,
       semester_id: Thread.current[:semester].id,
     ).includes(:grade, :subject, :teacher)
+    @klass_students = @sk.klass_students.includes(:student).to_a
+    @courses = @sk.courses.order(:seq).to_a
+    @attendance_by_cell = Attendance.where(
+      course_id: @courses.map(&:id),
+      klass_student_id: @klass_students.map(&:id)
+    ).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
+    @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
+    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
     @insert_student_candidates = Student.where(
       campuse_id: Thread.current[:campuse].id,
       grade_id: @sk.grade_id
-    ).where.not(id: @sk.klass_students.select(:student_id)).order(:name)
+    ).where.not(id: @sk.klass_students.select(:student_id)).includes(:grade).order(:name)
     @new_class_candidates = new_class_candidates
   end
 

@@ -56,7 +56,7 @@
 
       <div>
         <%= f.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= f.select :teacher_id, option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id),
+        <%= f.select :teacher_id, option_groups_from_collection_for_select(@subjects_with_teachers || Subject.includes(:teachers), :teachers, :name, :id, :name, item.teacher_id),
               {}, { class: "select select-sm w-full", required: true } %>
       </div>
 
@@ -68,7 +68,7 @@
   </div>
 
 <%
-  source_klass_students = item.klass_students.includes(:student).to_a
+  source_klass_students = item.klass_students.to_a
   source_ids = source_klass_students.map(&:student_id)
   student_options = source_klass_students.map do |klass_student|
     badge = case klass_student.status

@@ -6,6 +6,7 @@
       class: "space-y-4" do |form| %>
   <%= form.hidden_field :semester_id, value: Thread.current[:semester].id %>
   <%= form.hidden_field :campuse_id, value: Thread.current[:campuse].id %>
+  <% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
 
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold"><%= item.new_record? ? "开班" : "班级详情 · #{item.name}" %></h3>
@@ -24,7 +25,7 @@
           <%= item.grade.name %> · <%= item.subject.name %> · <%= item.teacher.name %> 老师
         </p>
         <p class="mt-1 text-xs text-base-content/50">
-          共 <%= item.times %> 课次 · 在班 <%= item.current_active_students.count %> 人 · 名单 <%= item.students.size %> 人
+          共 <%= item.times %> 课次 · 在班 <%= existing_klass_students.count { |klass_student| klass_student.status == "in" } %> 人 · 名单 <%= existing_klass_students.size %> 人
         </p>
       </div>
     <% end %>
@@ -62,7 +63,7 @@
 
       <div>
         <%= form.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :teacher_id, option_groups_from_collection_for_select(Subject.all, :teachers, :name, :id, :name, item.teacher_id),
+        <%= form.select :teacher_id, option_groups_from_collection_for_select(@subjects_with_teachers || Subject.includes(:teachers), :teachers, :name, :id, :name, item.teacher_id),
               { include_blank: "选择教师" }, { class: "select select-sm w-full", required: true } %>
         <p class="mt-1 text-[11px] leading-tight text-base-content/40">科目由所选教师自动带出。</p>
       </div>
@@ -74,7 +75,6 @@
     </div>
   </div>
 
-<% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
   <% enrolled_ids = existing_klass_students.map(&:student_id) %>
   <% candidates = (@new_class_candidates || []).reject { |student| enrolled_ids.include?(student.id) } %>
 

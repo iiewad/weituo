@@ -18,10 +18,10 @@
 <div class="mb-4 flex flex-wrap gap-2">
   <span class="badge badge-primary badge-sm gap-1">
     <span class="h-1.5 w-1.5 rounded-full bg-primary-content"></span>
-    在班 <%= @sk.current_active_students.count %> 人
+    在班 <%= @active_student_count %> 人
   </span>
-  <span class="badge badge-ghost badge-sm">共 <%= @sk.courses.count %> 课次</span>
-  <span class="badge badge-ghost badge-sm">已开 <%= @sk.courses.where.not(start_date: nil).count %> 课</span>
+  <span class="badge badge-ghost badge-sm">共 <%= @courses.size %> 课次</span>
+  <span class="badge badge-ghost badge-sm">已开 <%= @courses.count(&:started?) %> 课</span>
   <span class="badge badge-outline badge-secondary badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
@@ -36,20 +36,20 @@
       <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
         <tr>
           <th class="sticky left-0 z-10 bg-base-200/60">学员</th>
-          <% @sk.courses.each do |course| %>
+          <% @courses.each do |course| %>
             <th class="text-center whitespace-nowrap">第 <%= course.seq %> 课</th>
           <% end %>
           <th class="text-right">操作</th>
         </tr>
       </thead>
       <tbody>
-        <% @sk.klass_students.each do |ks| %>
+        <% @klass_students.each do |ks| %>
           <tr class="hover:bg-base-200/40">
             <th class="sticky left-0 z-10 whitespace-nowrap bg-base-100 font-medium"><%= ks.student.name %></th>
-            <% @sk.courses.each do |course| %>
+            <% @courses.each do |course| %>
               <td class="text-center">
                 <% if course.started? %>
-                  <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: course.attendances.find_by(klass_student: ks) %>
+                  <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: @attendance_by_cell[[ course.id, ks.id ]] %>
                 <% else %>
                   <span class="text-xs text-base-content/30">未开课</span>
                 <% end %>
@@ -70,8 +70,8 @@
       <tfoot>
         <tr>
           <td class="sticky left-0 z-10 bg-base-100 text-xs text-base-content/50">课次操作</td>
-          <% if @sk.students.exists? %>
-            <% @sk.courses.each do |course| %>
+          <% if @klass_students.any? %>
+            <% @courses.each do |course| %>
               <td class="text-center">
                 <% if course.started? %>
                   <span class="badge badge-success badge-xs">已开课</span>
@@ -88,7 +88,7 @@
         </tr>
       </tfoot>
     </table>
-    <% if @sk.klass_students.empty? %>
+    <% if @klass_students.empty? %>
       <div class="p-10 text-center text-sm text-base-content/50">该班级暂无学员，可通过课次下方的「添加学员」导入</div>
     <% end %>
   </div>
