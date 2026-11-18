@@ -102,6 +102,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a.menu-active[aria-current='page']", text: /#{sk.name}/
     assert_select "a[href='#{export_attendance_admin_semester_klass_path(sk)}']", text: /导出考勤/
+    assert_select "[data-turbo-confirm*='无法恢复']"
     assert_select "summary", text: /七年级/
     assert_select "summary", text: /数学/
     # 同年级同科目下的其他班级也出现在菜单里，便于切换
