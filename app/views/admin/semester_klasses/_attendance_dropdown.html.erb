@@ -32,7 +32,7 @@
             [
               [
                 [ "缺课", "absent", "btn-error" ],
-                [ "事假", "personal_leave", "btn-warning" ],
+                [ "事假", "personal_leave", "btn-info" ],
                 [ "病假", "sick_leave", "btn-warning" ]
               ],
               [
@@ -43,7 +43,7 @@
           when "absent"
             [
               [
-                [ "事假", "personal_leave", "btn-warning" ],
+                [ "事假", "personal_leave", "btn-info" ],
                 [ "病假", "sick_leave", "btn-warning" ],
                 [ "补课销假", "filled", "btn-success" ]
               ],
@@ -60,15 +60,14 @@
       %>
 
       <% action_groups.each_with_index do |actions, group_index| %>
+        <% grid_cols = { 1 => "grid-cols-1", 2 => "grid-cols-2", 3 => "grid-cols-3" }.fetch(actions.size, "grid-cols-2") %>
         <div class="<%= "mt-0.5 border-t border-base-300 pt-2.5" if group_index.positive? %>">
-          <div class="grid grid-cols-2 gap-1.5">
-            <% actions.each_with_index do |(label, status, color), index| %>
-              <% full_width = actions.size.odd? && index == actions.size - 1 %>
+          <div class="grid <%= grid_cols %> gap-1.5">
+            <% actions.each do |(label, status, color)| %>
               <%= button_to label,
                     mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status:),
                     method: :put,
-                    class: "btn btn-xs w-full #{color}",
-                    form_class: (full_width ? "col-span-2" : nil) %>
+                    class: "btn btn-xs w-full #{color}" %>
             <% end %>
           </div>
         </div>
