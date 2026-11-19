@@ -407,7 +407,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       } }
     end
 
-    created = SemesterKlass.find_by!(genre: "JY", seq: 98)
+    created = SemesterKlass.order(:id).last
+    assert_equal "JY", created.genre
     assert_equal campuses(:campuse_1), created.campuse
     assert_equal semesters(:semester_current), created.semester
   end
@@ -451,10 +452,10 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "create with a duplicate class redirects with an alert" do
+  test "create assigns the next seq when the combo already exists" do
     sk = semester_klasses(:sk_math_2)
 
-    assert_no_difference -> { SemesterKlass.count } do
+    assert_difference -> { SemesterKlass.count }, 1 do
       post admin_semester_klasses_path, params: { semester_klass: {
         semester_id: sk.semester_id, grade_id: sk.grade_id,
         teacher_id: sk.teacher_id, campuse_id: sk.campuse_id,
@@ -462,8 +463,10 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       } }
     end
 
-    assert_redirected_to admin_semester_klasses_path
-    assert_match "失败", flash[:alert]
+    created = SemesterKlass.order(:id).last
+    assert_equal 5, created.seq
+    assert_equal "7数提5", created.name
+    assert_redirected_to admin_semester_klass_path(created)
   end
 
   test "update adds selected students from the chosen lesson" do

@@ -77,6 +77,20 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert sk.ended?
   end
 
+  test "next seq increments and skips numbers containing 4" do
+    sk = semester_klasses(:sk_math_1)
+    attrs = {
+      campuse_id: sk.campuse_id, semester_id: sk.semester_id,
+      grade_id: sk.grade_id, subject_id: sk.subject_id, genre: sk.genre
+    }
+
+    # 现有 sk_math_1 序号为 1
+    assert_equal 2, SemesterKlass.next_seq(**attrs)
+
+    sk.update_column(:seq, 3)
+    assert_equal 5, SemesterKlass.next_seq(**attrs)
+  end
+
   test "name is built from grade, subject, genre and seq" do
     assert_equal "7数提1", semester_klasses(:sk_math_1).name
   end

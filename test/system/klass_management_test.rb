@@ -20,7 +20,6 @@ class KlassManagementTest < ApplicationSystemTestCase
 
     within(drawer) do
       select "精英班", from: "班型"
-      fill_in "班级序号", with: "9"
       select "七年级", from: "年级"
       select "张", from: "教师"
       fill_in "课次", with: "3"
@@ -28,7 +27,7 @@ class KlassManagementTest < ApplicationSystemTestCase
     end
 
     assert_text "班级创建成功"
-    assert_text "7数精9"
+    assert_text "7数精1"
     assert_equal 3, SemesterKlass.order(:id).last.courses.count
   end
 end

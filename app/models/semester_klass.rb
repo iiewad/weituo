@@ -46,6 +46,20 @@ class SemesterKlass < ApplicationRecord
     [ "campuse_id", "created_at", "genre", "grade_id", "id", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
   end
 
+  # 同一学期、校区、年级、科目、班型下自动取下一个序号，跳过含 4 的序号
+  def self.next_seq(campuse_id:, semester_id:, grade_id:, subject_id:, genre:)
+    candidate = where(
+      campuse_id: campuse_id,
+      semester_id: semester_id,
+      grade_id: grade_id,
+      subject_id: subject_id,
+      genre: genre
+    ).maximum(:seq).to_i + 1
+
+    candidate += 1 while candidate.to_s.include?("4")
+    candidate
+  end
+
   # 结课判断：如果所有课程都有开始时间，则结课
   def ended?
     !courses.exists?(start_date: nil)

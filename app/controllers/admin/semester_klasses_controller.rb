@@ -60,6 +60,13 @@ class Admin::SemesterKlassesController < AdminController
     @sk.semester_id = Current.semester.id
     @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
     @sk.subject = @sk.teacher.subject
+    @sk.seq = SemesterKlass.next_seq(
+      campuse_id: @sk.campuse_id,
+      semester_id: @sk.semester_id,
+      grade_id: @sk.grade_id,
+      subject_id: @sk.subject_id,
+      genre: @sk.genre
+    )
 
     if @sk.save
       apply_students(@sk)
