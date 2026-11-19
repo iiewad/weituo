@@ -79,6 +79,31 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
   end
 
+  test "class form only lists teachers from the current campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_teacher = Teacher.create!(name: "外校老师", campuse: other_campuse, subject: subjects(:math))
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "select[data-klass-times-target='teacher'] option[value='#{other_teacher.id}']", count: 0
+    assert_select "select[data-klass-times-target='teacher'] option[value='#{teachers(:math_teacher_1).id}']"
+  end
+
+  test "class form exposes grade subject times for auto-fill" do
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "form[data-controller='klass-times']"
+    assert_select "select[data-klass-times-target='grade'][data-action='change->klass-times#apply']"
+    assert_select "select[data-klass-times-target='teacher'][data-action='change->klass-times#apply']"
+    assert_select "input[data-klass-times-target='times']"
+
+    form = Nokogiri::HTML(response.body).at_css("form[data-controller='klass-times']")
+    times = JSON.parse(form["data-klass-times-times-value"])
+    assert_equal 16, times["7-1"]
+  end
+
   test "show only offers the first unstarted course to start" do
     sk = semester_klasses(:sk_math_2)
     first = sk.courses.find_by!(seq: 1)
@@ -450,6 +475,20 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klass_path(sk)
 
     assert_response :not_found
+  end
+
+  test "create falls back to the configured times when blank" do
+    grade_subjects(:one).update!(times: 20)
+
+    post admin_semester_klasses_path, params: { semester_klass: {
+      semester_id: semesters(:semester_current).id,
+      grade_id: grades(:grade_7).id,
+      teacher_id: teachers(:math_teacher_1).id,
+      campuse_id: campuses(:campuse_1).id,
+      genre: "JY", seq: 1, times: "", students_text: ""
+    } }
+
+    assert_equal 20, SemesterKlass.order(:id).last.times
   end
 
   test "create assigns the next seq when the combo already exists" do

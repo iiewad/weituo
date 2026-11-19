@@ -12,7 +12,7 @@ namespace :data do
       "班级报名" => [ "klass_students", %w[semester_klass_id student_id] ],
       "课程考勤" => [ "attendances", %w[course_id klass_student_id] ],
       "用户校区授权" => [ "user_campuses", %w[user_id campuse_id] ],
-      "学校年级科目" => [ "grade_subjects", %w[school_id grade_id subject_id] ],
+      "学校年级科目" => [ "grade_subjects", %w[school_id semester_id grade_id subject_id] ],
       "学校学期序号" => [ "semesters", %w[school_id seq] ]
     }
 
@@ -20,7 +20,7 @@ namespace :data do
       "校区 → 学校" => "campuses c LEFT JOIN schools s ON s.id = c.school_id WHERE s.id IS NULL",
       "学期 → 学校" => "semesters s LEFT JOIN schools sc ON sc.id = s.school_id WHERE sc.id IS NULL",
       "日校 → 校区" => "day_schools d LEFT JOIN campuses c ON c.id = d.campuse_id WHERE c.id IS NULL",
-      "年级科目 → 学校/年级/科目" => "grade_subjects gs LEFT JOIN schools s ON s.id = gs.school_id LEFT JOIN grades g ON g.id = gs.grade_id LEFT JOIN subjects sub ON sub.id = gs.subject_id WHERE s.id IS NULL OR g.id IS NULL OR sub.id IS NULL",
+      "年级科目 → 学校/学期/年级/科目" => "grade_subjects gs LEFT JOIN schools s ON s.id = gs.school_id LEFT JOIN semesters se ON se.id = gs.semester_id LEFT JOIN grades g ON g.id = gs.grade_id LEFT JOIN subjects sub ON sub.id = gs.subject_id WHERE s.id IS NULL OR se.id IS NULL OR g.id IS NULL OR sub.id IS NULL",
       "学员 → 校区/年级/日校" => "students st LEFT JOIN campuses c ON c.id = st.campuse_id LEFT JOIN grades g ON g.id = st.grade_id LEFT JOIN day_schools d ON d.id = st.day_school_id WHERE c.id IS NULL OR (st.grade_id IS NOT NULL AND g.id IS NULL) OR (st.day_school_id IS NOT NULL AND d.id IS NULL)",
       "监护人 → 学员" => "guardians gu LEFT JOIN students st ON st.id = gu.student_id WHERE st.id IS NULL",
       "教师 → 校区/科目" => "teachers t LEFT JOIN campuses c ON c.id = t.campuse_id LEFT JOIN subjects sub ON sub.id = t.subject_id WHERE c.id IS NULL OR sub.id IS NULL",

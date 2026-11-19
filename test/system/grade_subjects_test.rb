@@ -13,6 +13,16 @@ class GradeSubjectsTest < ApplicationSystemTestCase
     assert schools(:school_1).grade_subjects.exists?(grade_id: grades(:grade_9).id, subject_id: subjects(:math).id)
   end
 
+  test "设置课次并保存" do
+    sign_in
+    visit admin_grade_subjects_path
+
+    find("input[name='times[8-2]']").set("20")
+    click_button "保存配置"
+
+    assert_equal 20, grade_subjects(:two).reload.times
+  end
+
   test "已有班级的组合不可取消" do
     sign_in
     visit admin_grade_subjects_path

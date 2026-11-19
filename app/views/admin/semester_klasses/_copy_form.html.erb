@@ -56,7 +56,7 @@
 
       <div>
         <%= f.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= f.select :teacher_id, option_groups_from_collection_for_select(@subjects_with_teachers || Subject.includes(:teachers), :teachers, :name, :id, :name, item.teacher_id),
+        <%= f.select :teacher_id, grouped_options_for_select(@teacher_groups || [], item.teacher_id),
               {}, { class: "select select-sm w-full", required: true } %>
       </div>
 

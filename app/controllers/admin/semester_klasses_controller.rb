@@ -46,7 +46,8 @@ class Admin::SemesterKlassesController < AdminController
     @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
     @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }
     @new_class_candidates = new_class_candidates
-    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
+    set_teacher_groups
+    set_grade_subject_times_defaults
   end
 
   def create
@@ -60,6 +61,7 @@ class Admin::SemesterKlassesController < AdminController
     @sk.semester_id = Current.semester.id
     @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
     @sk.subject = @sk.teacher.subject
+    @sk.times = configured_times_for(@sk.grade_id, @sk.subject_id) if @sk.times.blank?
     @sk.seq = SemesterKlass.next_seq(
       campuse_id: @sk.campuse_id,
       semester_id: @sk.semester_id,
@@ -85,7 +87,10 @@ class Admin::SemesterKlassesController < AdminController
 
     @sk = campuse_semester_klasses.find(params[:id])
     teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
-    if @sk.update(semester_klass_params.except(:students_text, :teacher_id).merge(teacher_id: teacher.id, subject_id: teacher.subject_id))
+    attrs = semester_klass_params.except(:students_text, :teacher_id).merge(teacher_id: teacher.id, subject_id: teacher.subject_id)
+    attrs[:times] = @sk.times if attrs[:times].blank?
+
+    if @sk.update(attrs)
       apply_students(@sk)
       redirect_to admin_semester_klass_path(@sk), notice: "班级更新成功"
     else
@@ -111,7 +116,7 @@ class Admin::SemesterKlassesController < AdminController
       "semesters.seq < ?", @target_semester.seq,
     )
     @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
-    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
+    set_teacher_groups
     @students_by_grade = Student.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
       .includes(:grade)
       .order(:name)
@@ -203,7 +208,8 @@ class Admin::SemesterKlassesController < AdminController
       .pluck(:student_id, :semester_klass_id)
       .group_by(&:first)
       .transform_values { |pairs| pairs.map(&:last) }
-    @subjects_with_teachers = Subject.includes(:teachers).order(:id)
+    set_teacher_groups
+    set_grade_subject_times_defaults
     @insert_student_candidates = Student.where(
       campuse_id: Current.campuse.id,
       grade_id: @sk.grade_id
@@ -212,6 +218,29 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   private
+  # 开班 / 复制时只列出当前校区的教师，科目按教师所属科目分组
+  def set_teacher_groups
+    @teacher_groups = Current.campuse.teachers.includes(:subject)
+      .order(:subject_id, :name)
+      .group_by(&:subject)
+      .sort_by { |subject, _| subject.id }
+      .map { |subject, teachers| [ subject.name, teachers.map { |teacher| [ teacher.name, teacher.id ] } ] }
+  end
+
+  def configured_times_for(grade_id, subject_id)
+    Current.school.grade_subjects.find_by(
+      semester_id: Current.semester.id, grade_id: grade_id, subject_id: subject_id
+    )&.times || 16
+  end
+
+  def set_grade_subject_times_defaults
+    grade_subjects = Current.school.grade_subjects.where(semester_id: Current.semester.id)
+    @grade_subject_times = grade_subjects.pluck(:grade_id, :subject_id, :times)
+      .to_h { |grade_id, subject_id, times| [ "#{grade_id}-#{subject_id}", times ] }
+    @teacher_subjects = Current.campuse.teachers.pluck(:id, :subject_id)
+      .to_h { |teacher_id, subject_id| [ teacher_id.to_s, subject_id ] }
+  end
+
   def new_class_candidates
     Student.where(
       campuse_id: Current.campuse.id,

@@ -78,7 +78,7 @@ curriculum = {
   grades[2] => %w[数学 英语 物理 化学]
 }
 curriculum.each do |grade, subject_names|
-  subject_names.each { |name| GradeSubject.create!(school:, grade:, subject: subjects[name]) }
+  subject_names.each { |name| GradeSubject.create!(school:, semester: current_semester, grade:, subject: subjects[name], times: 16) }
 end
 
 day_schools = campuses.to_h do |campuse|

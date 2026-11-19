@@ -11,6 +11,29 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
   end
 
+  test "切换年级和教师会持续更新课次默认值" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "七年级", from: "年级"
+      select "张", from: "教师"
+      assert_field "课次", with: "16"
+
+      select "八年级", from: "年级"
+      select "王", from: "教师"
+      assert_field "课次", with: "12"
+
+      select "七年级", from: "年级"
+      assert_field "课次", with: ""
+      select "张", from: "教师"
+      assert_field "课次", with: "16"
+    end
+  end
+
   test "在班级管理页开班并生成课次" do
     sign_in
     visit admin_semester_klasses_path
@@ -22,6 +45,7 @@ class KlassManagementTest < ApplicationSystemTestCase
       select "精英班", from: "班型"
       select "七年级", from: "年级"
       select "张", from: "教师"
+      assert_field "课次", with: "16"
       fill_in "课次", with: "3"
       click_button "开班"
     end

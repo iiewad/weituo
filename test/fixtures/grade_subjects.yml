@@ -17,8 +17,12 @@ one:
   grade_id: 7
   school_id: 1
   subject_id: 1
+  semester_id: 2
+  times: 16
 
 two:
   school_id: 1
   grade_id: 8
   subject_id: 2
+  semester_id: 2
+  times: 12

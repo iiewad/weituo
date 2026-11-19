@@ -4,13 +4,16 @@ class Admin::GradeSubjectsController < AdminController
   def index
     @grades = Grade.order(:level).to_a
     @subjects = Subject.order(:id).to_a
-    @enabled = Current.school.grade_subjects.pluck(:grade_id, :subject_id).map { |grade_id, subject_id| [ grade_id, subject_id ] }
+    @grade_subjects = current_grade_subjects
+    @enabled = @grade_subjects.pluck(:grade_id, :subject_id)
+    @times_by_combination = @grade_subjects.pluck(:grade_id, :subject_id, :times)
+      .to_h { |grade_id, subject_id, times| [ "#{grade_id}-#{subject_id}", times ] }
     @class_counts = class_counts_by_combination
   end
 
   def sync
     selected = normalize_selection(params[:combinations])
-    current = Current.school.grade_subjects.pluck(:grade_id, :subject_id).map { |grade_id, subject_id| [ grade_id, subject_id ] }
+    current = current_grade_subjects.pluck(:grade_id, :subject_id)
     used = class_counts_by_combination.keys
 
     to_add = selected - current
@@ -19,10 +22,23 @@ class Admin::GradeSubjectsController < AdminController
 
     GradeSubject.transaction do
       to_add.each do |grade_id, subject_id|
-        Current.school.grade_subjects.create!(grade_id:, subject_id:)
+        Current.school.grade_subjects.create!(
+          semester_id: Current.semester.id,
+          grade_id: grade_id,
+          subject_id: subject_id,
+          times: submitted_times(grade_id, subject_id) || 16
+        )
       end
+
+      (selected & current).each do |grade_id, subject_id|
+        times = submitted_times(grade_id, subject_id)
+        next unless times
+
+        current_grade_subjects.find_by(grade_id: grade_id, subject_id: subject_id).update!(times: times)
+      end
+
       unused.each do |grade_id, subject_id|
-        Current.school.grade_subjects.where(grade_id:, subject_id:).delete_all
+        current_grade_subjects.where(grade_id: grade_id, subject_id: subject_id).delete_all
       end
     end
 
@@ -32,6 +48,10 @@ class Admin::GradeSubjectsController < AdminController
   end
 
   private
+    def current_grade_subjects
+      Current.school.grade_subjects.where(semester_id: Current.semester.id)
+    end
+
     def normalize_selection(values)
       grade_ids = Grade.pluck(:id)
       subject_ids = Subject.pluck(:id)
@@ -42,9 +62,16 @@ class Admin::GradeSubjectsController < AdminController
       end.uniq
     end
 
+    def submitted_times(grade_id, subject_id)
+      value = params.dig(:times, "#{grade_id}-#{subject_id}").to_s.strip
+      return nil if value.blank?
+
+      times = value.to_i
+      times.positive? ? times : nil
+    end
+
     def class_counts_by_combination
-      SemesterKlass.joins(:semester)
-        .where(semesters: { school_id: Current.school.id })
+      SemesterKlass.where(semester_id: Current.semester.id)
         .group(:grade_id, :subject_id).count
     end
 end

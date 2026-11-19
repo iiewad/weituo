@@ -3,7 +3,12 @@
       method: item.new_record? ? :post : :put,
       namespace: "klass_#{item.id || 'new'}",
       local: true,
-      class: "space-y-4" do |form| %>
+      class: "space-y-4",
+      data: {
+        controller: "klass-times",
+        klass_times_times_value: (@grade_subject_times || {}).to_json,
+        klass_times_subjects_value: (@teacher_subjects || {}).to_json
+      } do |form| %>
   <%= form.hidden_field :semester_id, value: Current.semester.id %>
   <%= form.hidden_field :campuse_id, value: Current.campuse.id %>
   <% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
@@ -45,13 +50,16 @@
         <%= form.select :grade_id,
               Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
               { include_blank: "选择年级", selected: item.grade_id },
-              { class: "select select-sm w-full", required: true } %>
+              { class: "select select-sm w-full", required: true,
+                data: { klass_times_target: "grade", action: "change->klass-times#apply" } } %>
       </div>
 
       <div>
         <%= form.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :teacher_id, option_groups_from_collection_for_select(@subjects_with_teachers || Subject.includes(:teachers), :teachers, :name, :id, :name, item.teacher_id),
-              { include_blank: "选择教师" }, { class: "select select-sm w-full", required: true } %>
+        <%= form.select :teacher_id, grouped_options_for_select(@teacher_groups || [], item.teacher_id),
+              { include_blank: "选择教师" },
+              { class: "select select-sm w-full", required: true,
+                data: { klass_times_target: "teacher", action: "change->klass-times#apply" } } %>
         <p class="mt-1 text-[11px] leading-tight text-base-content/40">科目由所选教师自动带出。</p>
       </div>
 
@@ -73,7 +81,9 @@
 
       <div class="sm:col-span-2">
         <%= form.label :times, "课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.number_field :times, value: item.times, min: 1, class: "input input-sm w-full", placeholder: "例如：16", required: true %>
+        <%= form.number_field :times, value: item.times, min: 1, class: "input input-sm w-full",
+              placeholder: "默认使用年级科目配置", data: { klass_times_target: "times" } %>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">留空时按当前学期的年级科目课次设置。</p>
       </div>
     </div>
   </div>

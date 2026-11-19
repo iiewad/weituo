@@ -1,5 +1,5 @@
 <% content_for :page_title, "年级科目管理" %>
-<% content_for :page_subtitle, "#{Current.school&.name} · 维护本校开设的年级与科目组合" %>
+<% content_for :page_subtitle, "#{Current.school&.name} · #{Current.semester&.name} · 维护本学期开设的年级科目组合与课次" %>
 <% content_for :breadcrumb do %>
   <span>系统设置</span>
   <span>/</span>
@@ -31,7 +31,9 @@
 
 <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-base-content/60">
   <span class="badge badge-soft badge-primary badge-sm">说明</span>
-  <span>勾选表示本校开设该年级的该科目；取消勾选即移除该组合。</span>
+  <span>勾选表示本学期开设该年级的该科目；取消勾选即移除该组合。</span>
+  <span class="text-base-content/30">·</span>
+  <span>每个学期单独设置，切换顶栏学期后分别维护。</span>
   <span class="text-base-content/30">·</span>
   <span>已有班级的组合不能取消，需先移除外班课次或班级。</span>
 </div>
@@ -76,6 +78,40 @@
           <% end %>
         </tbody>
       </table>
+    <% end %>
+  </div>
+
+  <div class="wt-surface p-4">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="text-sm font-semibold">课次设置</h2>
+        <p class="mt-0.5 text-xs text-base-content/50">每个学期单独设置；开班时作为该年级科目的默认课次。</p>
+      </div>
+      <span class="text-xs text-base-content/50"><%= @grade_subjects.size %> 个组合</span>
+    </div>
+
+    <% if @grade_subjects.empty? %>
+      <p class="text-sm text-base-content/50">先在矩阵中勾选并保存组合，再设置课次。</p>
+    <% else %>
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead class="bg-base-200/60 text-xs text-base-content/60">
+            <tr><th>年级</th><th>科目</th><th class="w-32">课次</th></tr>
+          </thead>
+          <tbody>
+            <% @grade_subjects.includes(:grade, :subject).sort_by { |grade_subject| [ grade_subject.grade.level, grade_subject.subject.name ] }.each do |grade_subject| %>
+              <tr>
+                <td><%= grade_subject.grade.name %></td>
+                <td><%= grade_subject.subject.name %></td>
+                <td>
+                  <%= number_field_tag "times[#{grade_subject.grade_id}-#{grade_subject.subject_id}]", grade_subject.times,
+                        min: 1, class: "input input-sm w-24", required: true %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     <% end %>
   </div>
 

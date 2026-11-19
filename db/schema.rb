@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_125253) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_131250) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -47,9 +47,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_125253) do
     t.bigint "grade_id", null: false
     t.bigint "school_id", null: false
     t.bigint "subject_id", null: false
+    t.bigint "semester_id", null: false
+    t.integer "times", default: 16, null: false
     t.index ["grade_id"], name: "index_grade_subjects_on_grade_id"
-    t.index ["school_id", "grade_id", "subject_id"], name: "index_grade_subjects_on_school_id_and_grade_id_and_subject_id", unique: true
+    t.index ["school_id", "semester_id", "grade_id", "subject_id"], name: "index_grade_subjects_on_school_semester_grade_subject", unique: true
     t.index ["school_id"], name: "index_grade_subjects_on_school_id"
+    t.index ["semester_id"], name: "index_grade_subjects_on_semester_id"
     t.index ["subject_id"], name: "index_grade_subjects_on_subject_id"
   end
 
@@ -190,6 +193,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_125253) do
   add_foreign_key "day_schools", "campuses"
   add_foreign_key "grade_subjects", "grades"
   add_foreign_key "grade_subjects", "schools"
+  add_foreign_key "grade_subjects", "semesters"
   add_foreign_key "grade_subjects", "subjects"
   add_foreign_key "guardians", "students"
   add_foreign_key "klass_students", "semester_klasses"
