@@ -14,6 +14,17 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert course.reload.started?
   end
 
+  test "cannot start a later course before earlier ones" do
+    sk = semester_klasses(:sk_math_1)
+    course = sk.courses.find_by!(seq: 2)
+
+    put start_admin_semester_klass_course_path(sk, course)
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请先开第 1 课", flash[:alert]
+    assert_not course.reload.started?
+  end
+
   test "insert students adds selected students from the chosen course" do
     sk = semester_klasses(:sk_math_1)
     course = sk.courses.find_by!(seq: 4)

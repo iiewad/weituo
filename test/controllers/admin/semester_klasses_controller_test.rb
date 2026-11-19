@@ -79,6 +79,19 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
   end
 
+  test "show only offers the first unstarted course to start" do
+    sk = semester_klasses(:sk_math_2)
+    first = sk.courses.find_by!(seq: 1)
+    second = sk.courses.find_by!(seq: 2)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button", text: "开课"
+    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, second)}'] button", text: "开课", count: 0
+    assert_select "span.badge", text: "待前序开课", minimum: 1
+  end
+
   test "transfer drawer exposes enrolled class ids and filters" do
     sk = semester_klasses(:sk_math_2)
     target = semester_klasses(:sk_math_3)

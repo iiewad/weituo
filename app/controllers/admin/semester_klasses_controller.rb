@@ -165,6 +165,8 @@ class Admin::SemesterKlassesController < AdminController
     @klass_students = @sk.klass_students.includes(:student).to_a
     @archived_klass_students = @sk.archived_klass_students.includes(:student).order(archived_at: :desc).to_a
     @courses = @sk.courses.order(:seq).to_a
+    # 开课需按顺序：只有第一个未开课课次可以开课
+    @startable_course_ids = [ @courses.find { |course| !course.started? }&.id ].compact
     @attendance_by_cell = Attendance.where(
       course_id: @courses.map(&:id),
       klass_student_id: @klass_students.map(&:id)

@@ -30,6 +30,25 @@ class CourseTest < ActiveSupport::TestCase
     end
   end
 
+  test "cannot start a later course before earlier ones" do
+    sk = semester_klasses(:sk_math_1)
+    second = sk.courses.find_by!(seq: 2)
+
+    assert_not second.start!
+    assert_not second.reload.started?
+    assert_empty second.attendances
+  end
+
+  test "starts courses in order" do
+    sk = semester_klasses(:sk_math_1)
+    first = sk.courses.find_by!(seq: 1)
+    second = sk.courses.find_by!(seq: 2)
+
+    assert first.start!
+    assert second.start!
+    assert second.reload.started?
+  end
+
   test "start keeps quit status for a student who left the class" do
     course = courses(:sk_1_course_1)
     klass_students(:ks_1).mark_out!

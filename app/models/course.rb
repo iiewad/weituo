@@ -3,7 +3,7 @@ class Course < ApplicationRecord
   has_many :attendances, dependent: :destroy
 
   def start!(date = Date.today)
-    return if started?
+    return false if started? || !previous_courses_started?
 
     transaction do
       update!(start_date: date)
@@ -16,9 +16,15 @@ class Course < ApplicationRecord
         end
       end
     end
+    true
   end
 
   def started?
     start_date.present?
+  end
+
+  # 开课必须按课次顺序：前面仍有未开课课次时不能跳着开
+  def previous_courses_started?
+    semester_klass.courses.where("seq < ?", seq).where(start_date: nil).none?
   end
 end

@@ -13,7 +13,7 @@ class AttendanceTest < ActiveSupport::TestCase
 
   test "mark absent" do
     ks = klass_students(:ks_1)
-    course = semester_klasses(:sk_math_1).courses.first
+    course = semester_klasses(:sk_math_1).courses.find_by!(seq: 1)
     course.start!
     attendance = course.attendances.find_by(klass_student_id: ks.id)
     attendance.mark_absent!
