@@ -41,19 +41,6 @@
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
-        <%= form.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
-              { selected: item.genre.presence || "TG" }, { class: "select select-sm w-full", required: true } %>
-      </div>
-
-      <div>
-        <%= form.label :seq, "班级序号", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.number_field :seq, value: item.seq, min: 1, class: "input input-sm w-full", required: true,
-              oninput: "this.value = this.value.replace(/4/g, '')" %>
-        <p class="mt-1 text-[11px] leading-tight text-base-content/40">序号不可含 4，避免同科目班型冲突。</p>
-      </div>
-
-      <div>
         <%= form.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= form.select :grade_id,
               Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
@@ -66,6 +53,19 @@
         <%= form.select :teacher_id, option_groups_from_collection_for_select(@subjects_with_teachers || Subject.includes(:teachers), :teachers, :name, :id, :name, item.teacher_id),
               { include_blank: "选择教师" }, { class: "select select-sm w-full", required: true } %>
         <p class="mt-1 text-[11px] leading-tight text-base-content/40">科目由所选教师自动带出。</p>
+      </div>
+
+      <div>
+        <%= form.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+              { selected: item.genre.presence || "TG" }, { class: "select select-sm w-full", required: true } %>
+      </div>
+
+      <div>
+        <%= form.label :seq, "班级序号", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.number_field :seq, value: item.seq, min: 1, class: "input input-sm w-full", required: true,
+              oninput: "this.value = this.value.replace(/4/g, '')" %>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">序号不可含 4，避免同科目班型冲突。</p>
       </div>
 
       <div class="sm:col-span-2">
