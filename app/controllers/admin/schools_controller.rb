@@ -22,7 +22,6 @@ class Admin::SchoolsController < AdminController
         .require(:school)
         .permit(:name,
           campuses_attributes: [ :id, :name, :_destroy ],
-          grade_subjects_attributes: [ :id, :grade_id, :subject_id, :_destroy ],
           semesters_attributes: [ :id, :name, :start_date, :end_date, :seq, :_destroy ],
         )
     end

@@ -33,17 +33,6 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_equal schools(:school_1).id, Campuse.find_by!(name: "新校区").school_id
   end
 
-  test "update destroys a nested grade subject" do
-    gs = grade_subjects(:two)
-    assert_difference -> { GradeSubject.count }, -1 do
-      put admin_school_path(schools(:school_1)), params: {
-        school: { grade_subjects_attributes: { "0" => { id: gs.id, _destroy: "true" } } }
-      }
-    end
-    assert_redirected_to admin_schools_path
-    assert_not GradeSubject.exists?(gs.id)
-  end
-
   test "update adds a nested semester" do
     assert_difference -> { Semester.count }, 1 do
       put admin_school_path(schools(:school_1)), params: {

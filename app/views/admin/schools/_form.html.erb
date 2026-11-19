@@ -54,16 +54,6 @@
 
   <details class="collapse collapse-arrow mb-3 rounded-box border border-base-300 bg-base-100">
     <summary class="collapse-title flex items-center gap-2 font-semibold">
-      年级科目管理 <span class="badge badge-ghost badge-sm"><%= item.grade_subjects.size %></span>
-    </summary>
-    <div class="collapse-content text-sm text-base-content/60">
-      <p>本校开设的年级与科目组合已改为独立矩阵页面维护，可一键启用 / 取消组合。</p>
-      <%= link_to "前往年级科目管理", admin_grade_subjects_path, class: "btn btn-sm btn-outline btn-primary mt-3" %>
-    </div>
-  </details>
-
-  <details class="collapse collapse-arrow mb-3 rounded-box border border-base-300 bg-base-100">
-    <summary class="collapse-title flex items-center gap-2 font-semibold">
       学期管理 <span class="badge badge-ghost badge-sm"><%= item.semesters.size %></span>
     </summary>
     <div class="collapse-content">
