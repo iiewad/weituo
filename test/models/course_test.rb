@@ -29,4 +29,24 @@ class CourseTest < ActiveSupport::TestCase
       course.start!
     end
   end
+
+  test "start keeps quit status for a student who left the class" do
+    course = courses(:sk_1_course_1)
+    klass_students(:ks_1).mark_out!
+
+    assert_difference -> { course.attendances.count }, 1 do
+      course.start!
+    end
+    assert_equal "quit", course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
+    assert_includes semester_klasses(:sk_math_1).klass_students, klass_students(:ks_1)
+  end
+
+  test "start keeps transfer status for a transferred student" do
+    course = courses(:sk_1_course_1)
+    klass_students(:ks_1).mark_transfer!
+
+    course.start!
+
+    assert_equal "transfer", course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
+  end
 end

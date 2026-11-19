@@ -60,6 +60,42 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
     assert sk.reload.ended?
   end
 
+  test "退课后学员保留在班级，后续开课沿用退课状态" do
+    sk = semester_klasses(:sk_math_1)
+    ks = klass_students(:ks_1)
+    first = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    first.start!
+    attendance = first.attendances.find_by!(klass_student_id: ks.id)
+
+    # 第 1 课标记退课：学员仍在班级列表，后续未开课课次暂不生成考勤
+    put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "quit")
+    assert_equal "out", ks.reload.status
+    assert_includes sk.klass_students.reload, ks
+    assert_nil later.attendances.find_by(klass_student_id: ks.id)
+
+    # 后续课次开课后，退课状态被保留
+    put start_admin_semester_klass_course_path(sk, later)
+    assert_equal "quit", later.attendances.find_by!(klass_student_id: ks.id).status
+    assert_includes sk.klass_students.reload, ks
+  end
+
+  test "转出后学员保留在班级，后续开课沿用转出状态" do
+    sk = semester_klasses(:sk_math_1)
+    ks = klass_students(:ks_1)
+    first = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    first.start!
+    attendance = first.attendances.find_by!(klass_student_id: ks.id)
+
+    put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "transfer")
+    assert_equal "transfer", ks.reload.status
+
+    put start_admin_semester_klass_course_path(sk, later)
+    assert_equal "transfer", later.attendances.find_by!(klass_student_id: ks.id).status
+    assert_includes sk.klass_students.reload, ks
+  end
+
   test "复制班级到当前学期并重建课程与学员" do
     source = semester_klasses(:sk_math_1)
 
