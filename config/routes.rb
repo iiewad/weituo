@@ -27,6 +27,7 @@ Rails.application.routes.draw do
         resources :attendances do
           member do
             put :mark
+            put :transfer
           end
         end
       end

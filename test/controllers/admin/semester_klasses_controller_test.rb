@@ -72,8 +72,30 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "事假"
     assert_includes card.text, "病假"
     assert_includes card.text, "转出"
+    assert_select "[data-action='transfer-drawer#open']", text: "转出"
+    assert_select "#drawer-transfer"
+    assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{semester_klasses(:sk_math_3).id}']"
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
     assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
+  end
+
+  test "transfer drawer exposes enrolled class ids and filters" do
+    sk = semester_klasses(:sk_math_2)
+    target = semester_klasses(:sk_math_3)
+    KlassStudent.create!(semester_klass: target, student: students(:student_7_1), status: "in")
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    button = Nokogiri::HTML(response.body).at_css("button[data-transfer-url]")
+    assert_includes button["data-transfer-class-ids"].split(","), target.id.to_s
+    assert_equal sk.subject_id.to_s, button["data-transfer-subject-id"]
+    assert_select "select#transfer_subject_filter"
+    assert_select "select#transfer_genre_filter"
+    assert_select "label[data-transfer-drawer-target='option'][data-class-id='#{target.id}'][data-subject-id='#{target.subject_id}']"
   end
 
   test "show lets a student on leave still quit or transfer" do

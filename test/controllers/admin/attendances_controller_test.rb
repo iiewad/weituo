@@ -84,6 +84,52 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "normal", attendance.reload.status
   end
 
+  test "transfer marks the source and enrolls the student in the target class" do
+    attendance = prepared_attendance
+    target = semester_klasses(:sk_eng_1)
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance,
+      target_semester_klass_id: target.id
+    )
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "transfer", attendance.reload.status
+    assert_equal "transfer", klass_students(:ks_1).reload.status
+    assert target.klass_students.exists?(student_id: students(:student_7_1).id)
+  end
+
+  test "transfer requires an available target class" do
+    attendance = prepared_attendance
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance
+    )
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
+  test "transfer rejects a class that already contains the student" do
+    attendance = prepared_attendance
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_previous), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "JY", seq: 88, times: 1
+    )
+    KlassStudent.create!(semester_klass: target, student: students(:student_7_1), status: "in")
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance,
+      target_semester_klass_id: target.id
+    )
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
   private
     def prepared_attendance
       course = semester_klasses(:sk_math_1).courses.find_by!(seq: 1)

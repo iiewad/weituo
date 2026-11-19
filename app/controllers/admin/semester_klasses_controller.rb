@@ -170,6 +170,22 @@ class Admin::SemesterKlassesController < AdminController
       klass_student_id: @klass_students.map(&:id)
     ).includes(:marked_by).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
+    @transfer_target_klasses = @sk.semester.semester_klasses
+      .where(campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
+      .where.not(id: @sk.id)
+      .includes(:subject, :teacher)
+      .order(:genre, :seq)
+      .to_a
+    transfer_target_ids = @transfer_target_klasses.map(&:id)
+    @transfer_target_counts = KlassStudent.where(
+      semester_klass_id: transfer_target_ids, status: "in"
+    ).group(:semester_klass_id).count
+    # 学员已加入的目标班：转出抽屉按学员动态隐藏，避免重复转入
+    @enrolled_target_ids_by_student = KlassStudent
+      .where(semester_klass_id: transfer_target_ids)
+      .pluck(:student_id, :semester_klass_id)
+      .group_by(&:first)
+      .transform_values { |pairs| pairs.map(&:last) }
     @subjects_with_teachers = Subject.includes(:teachers).order(:id)
     @insert_student_candidates = Student.where(
       campuse_id: Current.campuse.id,

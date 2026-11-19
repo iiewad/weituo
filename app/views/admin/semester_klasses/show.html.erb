@@ -25,6 +25,7 @@
   <span class="badge badge-outline badge-secondary badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
+<div data-controller="transfer-drawer">
 <div class="flex flex-col gap-4 lg:flex-row">
   <div class="wt-surface shrink-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-56 lg:self-start lg:overflow-y-auto">
     <p class="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-base-content/40">班级切换</p>
@@ -97,6 +98,11 @@
       <div class="p-10 text-center text-sm text-base-content/50">该班级暂无学员，可通过课次下方的「添加学员」导入</div>
     <% end %>
   </div>
+</div>
+
+<% if @transfer_target_klasses.any? %>
+  <%= render "admin/semester_klasses/transfer_drawer", target_klasses: @transfer_target_klasses, target_counts: @transfer_target_counts %>
+<% end %>
 </div>
 
 <% if @archived_klass_students.any? %>
