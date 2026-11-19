@@ -28,7 +28,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 
 | 角色 | `UserCampuse.role` | 可见范围 |
 | --- | --- | --- |
-| 超级管理员 | `admin` | 全部菜单，含用户管理、学校管理 |
+| 超级管理员 | `admin` | 全部菜单，含用户管理、学校管理、年级科目管理 |
 | 管理员 | `manager` | 按 `grade_ids` 限定的年级与科目 |
 
 用户通过 `UserCampuse` 关联到校区，一个用户可有多个校区授权，每个授权带一份 JSON `grade_ids`。`Current.user.grades_by_campuse` / `subjects_by_campuse` 决定筛选与表单里可选的年级、科目。
@@ -185,7 +185,8 @@ stateDiagram-v2
 | `/admin/semester_klasses/copy` | 复制班级（可选目标学期） |
 | `/admin/teachers` | 教师管理 |
 | `/admin/users` | 用户管理 |
-| `/admin/schools` | 学校管理（含校区、学期、年级科目维护） |
+| `/admin/schools` | 学校管理（校区、学期；年级科目已独立） |
+| `/admin/grade_subjects` | 年级科目管理（年级×科目矩阵，启用/取消本校组合） |
 | `/session/new` | 登录 |
 
 除登录、密码相关页面与 `/up` 健康检查外，所有页面都要求登录。

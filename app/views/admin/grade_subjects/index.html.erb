@@ -1,0 +1,156 @@
+<% content_for :page_title, "年级科目管理" %>
+<% content_for :page_subtitle, "#{Current.school&.name} · 维护本校开设的年级与科目组合" %>
+<% content_for :breadcrumb do %>
+  <span>系统设置</span>
+  <span>/</span>
+  <span>年级科目管理</span>
+<% end %>
+
+<%
+  used_count = @class_counts.keys.count { |grade_id, subject_id| @enabled.include?([ grade_id, subject_id ]) }
+%>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">年级</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @grades.size %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">科目</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @subjects.size %><span class="ml-1 text-sm font-normal text-base-content/50">门</span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">已启用组合</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @enabled.size %><span class="ml-1 text-sm font-normal text-base-content/50">组</span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">已有班级的组合</p>
+    <p class="mt-1 text-2xl font-semibold"><%= used_count %><span class="ml-1 text-sm font-normal text-base-content/50">组</span></p>
+  </div>
+</div>
+
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-base-content/60">
+  <span class="badge badge-soft badge-primary badge-sm">说明</span>
+  <span>勾选表示本校开设该年级的该科目；取消勾选即移除该组合。</span>
+  <span class="text-base-content/30">·</span>
+  <span>已有班级的组合不能取消，需先移除外班课次或班级。</span>
+</div>
+
+<%= form_with url: sync_admin_grade_subjects_path, method: :put, class: "space-y-4" do |form| %>
+  <div class="wt-surface overflow-x-auto">
+    <% if @grades.empty? || @subjects.empty? %>
+      <p class="p-10 text-center text-sm text-base-content/50">请先在系统字典中维护年级与科目数据</p>
+    <% else %>
+      <table class="table table-sm">
+        <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+          <tr>
+            <th class="sticky left-0 z-10 bg-base-200/60">年级 \ 科目</th>
+            <% @subjects.each do |subject| %>
+              <th class="whitespace-nowrap text-center"><%= subject.name %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% @grades.each do |grade| %>
+            <tr class="hover:bg-base-200/40">
+              <th class="sticky left-0 z-10 whitespace-nowrap bg-base-100 text-sm font-medium"><%= grade.name %></th>
+              <% @subjects.each do |subject| %>
+                <% enabled = @enabled.include?([ grade.id, subject.id ]) %>
+                <% klass_count = @class_counts.fetch([ grade.id, subject.id ], 0) %>
+                <% locked = enabled && klass_count.positive? %>
+                <td class="text-center">
+                  <% if locked %>
+                    <%= hidden_field_tag "combinations[]", "#{grade.id}-#{subject.id}", id: nil %>
+                  <% end %>
+                  <label class="inline-flex cursor-pointer items-center justify-center gap-1" title="<%= locked ? "已有 #{klass_count} 个班级，不可取消" : (enabled ? "已启用" : "未启用") %>">
+                    <%= check_box_tag "combinations[]", "#{grade.id}-#{subject.id}", enabled,
+                          disabled: locked, id: "combo_#{grade.id}_#{subject.id}",
+                          class: "checkbox checkbox-sm checkbox-primary" %>
+                    <% if klass_count.positive? %>
+                      <span class="badge badge-ghost badge-xs"><%= klass_count %> 班</span>
+                    <% end %>
+                  </label>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "取消", admin_grade_subjects_path, class: "btn btn-ghost" %>
+    <%= form.submit "保存配置", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<div class="mt-6 grid gap-4 lg:grid-cols-2">
+  <div class="wt-surface p-4">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold">年级字典</h2>
+      <span class="text-xs text-base-content/50">被学员 / 班级 / 组合 / 授权使用的年级不可删除</span>
+    </div>
+
+    <div class="space-y-1.5">
+      <% @grades.each do |grade| %>
+        <div class="flex flex-wrap items-center gap-2 rounded-box border border-base-300 px-2.5 py-1.5">
+          <%= form_with model: grade, url: admin_grade_path(grade), method: :patch, class: "flex flex-1 flex-wrap items-center gap-2" do |form| %>
+            <%= form.number_field :level, class: "input input-sm w-20", min: 1, required: true, aria: { label: "年级序号" } %>
+            <%= form.text_field :name, class: "input input-sm min-w-24 flex-1", required: true, aria: { label: "年级名称" } %>
+            <%= form.submit "保存", class: "btn btn-xs btn-ghost" %>
+          <% end %>
+          <%= button_to "删除", admin_grade_path(grade), method: :delete,
+                class: "btn btn-xs btn-ghost text-error",
+                data: { turbo_confirm: "确定删除年级 #{grade.name} 吗？被使用的年级无法删除。" } %>
+        </div>
+      <% end %>
+    </div>
+
+    <%= form_with url: admin_grades_path, method: :post, class: "mt-3 flex flex-wrap items-end gap-2 border-t border-base-200 pt-3" do |form| %>
+      <div>
+        <%= form.label :level, "序号", class: "mb-1 block text-xs text-base-content/60" %>
+        <%= form.number_field :level, name: "grade[level]", class: "input input-sm w-20", min: 1, required: true %>
+      </div>
+      <div class="min-w-32 flex-1">
+        <%= form.label :name, "年级名称", class: "mb-1 block text-xs text-base-content/60" %>
+        <%= form.text_field :name, name: "grade[name]", class: "input input-sm w-full", placeholder: "如：七年级", required: true %>
+      </div>
+      <%= form.submit "添加年级", class: "btn btn-sm btn-outline btn-primary" %>
+    <% end %>
+  </div>
+
+  <div class="wt-surface p-4">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold">科目字典</h2>
+      <span class="text-xs text-base-content/50">被教师 / 班级 / 组合使用的科目不可删除</span>
+    </div>
+
+    <div class="space-y-1.5">
+      <% @subjects.each do |subject| %>
+        <div class="flex flex-wrap items-center gap-2 rounded-box border border-base-300 px-2.5 py-1.5">
+          <%= form_with model: subject, url: admin_subject_path(subject), method: :patch, class: "flex flex-1 flex-wrap items-center gap-2" do |form| %>
+            <%= form.text_field :code, class: "input input-sm w-24", required: true, aria: { label: "科目编码" } %>
+            <%= form.text_field :name, class: "input input-sm min-w-24 flex-1", required: true, aria: { label: "科目名称" } %>
+            <%= form.submit "保存", class: "btn btn-xs btn-ghost" %>
+          <% end %>
+          <%= button_to "删除", admin_subject_path(subject), method: :delete,
+                class: "btn btn-xs btn-ghost text-error",
+                data: { turbo_confirm: "确定删除科目 #{subject.name} 吗？被使用的科目无法删除。" } %>
+        </div>
+      <% end %>
+    </div>
+
+    <%= form_with url: admin_subjects_path, method: :post, class: "mt-3 flex flex-wrap items-end gap-2 border-t border-base-200 pt-3" do |form| %>
+      <div>
+        <%= form.label :code, "编码", class: "mb-1 block text-xs text-base-content/60" %>
+        <%= form.text_field :code, name: "subject[code]", class: "input input-sm w-24", placeholder: "如：PHY", required: true %>
+      </div>
+      <div class="min-w-32 flex-1">
+        <%= form.label :name, "科目名称", class: "mb-1 block text-xs text-base-content/60" %>
+        <%= form.text_field :name, name: "subject[name]", class: "input input-sm w-full", placeholder: "如：物理", required: true %>
+      </div>
+      <%= form.submit "添加科目", class: "btn btn-sm btn-outline btn-primary" %>
+    <% end %>
+  </div>
+</div>

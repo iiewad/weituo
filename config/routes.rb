@@ -41,6 +41,13 @@ Rails.application.routes.draw do
       end
     end
     resources :referrals, only: [ :index ]
+    resources :grade_subjects, only: [ :index ] do
+      collection do
+        put :sync
+      end
+    end
+    resources :grades, only: [ :create, :update, :destroy ]
+    resources :subjects, only: [ :create, :update, :destroy ]
     resources :users, only: [ :index, :create, :update ]
     resources :schools, only: [ :index, :update ] do
       resources :semesters do
