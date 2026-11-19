@@ -53,7 +53,13 @@
               ]
             ]
           when "personal_leave", "sick_leave"
-            [ [ [ "补课销假", "filled", "btn-success" ] ] ]
+            [
+              [ [ "补课销假", "filled", "btn-success" ] ],
+              [
+                [ "退课", "quit", "btn-ghost" ],
+                [ "转出", "transfer", "btn-ghost" ]
+              ]
+            ]
           else
             [ [ [ "重新加入", "rejoin", "btn-primary" ], [ "补课销假", "filled", "btn-success" ] ] ]
           end

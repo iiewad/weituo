@@ -96,6 +96,30 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "normal", attendance_for(later).status
   end
 
+  test "personal leave can still be marked quit" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_personal_leave!
+    attendance.mark_quit!
+
+    assert_equal "quit", attendance.status
+    assert_equal "out", klass_students(:ks_1).reload.status
+  end
+
+  test "sick leave can still be marked transfer" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_sick_leave!
+    attendance.mark_transfer!
+
+    assert_equal "transfer", attendance.status
+    assert_equal "transfer", klass_students(:ks_1).reload.status
+  end
+
   test "status meta maps every status to a label, name and semantic color" do
     expected = {
       "normal" => [ "√", "正常", "success" ],

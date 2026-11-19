@@ -76,6 +76,21 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
   end
 
+  test "show lets a student on leave still quit or transfer" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    course.attendances.create!(klass_student: klass_students(:ks_2), status: "personal_leave")
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
+    assert_includes card.text, "补课销假"
+    assert_includes card.text, "退课"
+    assert_includes card.text, "转出"
+  end
+
   test "statement keeps the filter selections after searching" do
     get statement_admin_semester_klasses_path(q: {
       semester_id_eq: semesters(:semester_previous).id,
