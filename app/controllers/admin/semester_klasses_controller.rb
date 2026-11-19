@@ -170,6 +170,14 @@ class Admin::SemesterKlassesController < AdminController
       klass_student_id: @klass_students.map(&:id)
     ).includes(:marked_by).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
+    @left_klass_students = @klass_students.reject { |klass_student| klass_student.status == "in" }
+    @leave_attendance_by_klass_student = Attendance
+      .joins(:course)
+      .where(klass_student_id: @left_klass_students.map(&:id), status: %w[quit transfer])
+      .includes(:course)
+      .order("courses.seq")
+      .group_by(&:klass_student_id)
+      .transform_values(&:first)
     @transfer_target_klasses = @sk.semester.semester_klasses
       .where(campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
       .where.not(id: @sk.id)

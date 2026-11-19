@@ -31,7 +31,11 @@ class Admin::AttendancesController < AdminController
 
     Attendance.transaction do
       @attendance.mark_transfer!
-      @attendance.update!(marked_by: Current.user)
+      # 记录目标班，撤销转出时可据此把学员从目标班移出
+      @attendance.update!(
+        marked_by: Current.user,
+        mark_at: (@attendance.mark_at || {}).merge("transfer_target_klass_id" => target.id)
+      )
       @student.join_klass(target, course_seq: join_course_seq_for(target))
     end
 

@@ -17,6 +17,7 @@ Rails.application.routes.draw do
       resources :klass_students do
         member do
           put :restore
+          put :reinstate
         end
       end
       resources :courses do

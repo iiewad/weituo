@@ -24,6 +24,26 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
+  test "页面底部可撤销退课并恢复在班" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_quit!
+
+    visit admin_semester_klass_path(sk)
+    find("summary", text: /转出 \/ 退课学员/).click
+    within(find("li", text: ks.student.identity_label)) do
+      accept_confirm(/撤销/) { click_button "撤销" }
+    end
+
+    assert_text "已撤销"
+    assert_equal "in", ks.reload.status
+    assert_equal "normal", attendance.reload.status
+  end
+
   test "转出抽屉隐藏学员已在的班级并支持筛选" do
     sign_in
     sk = semester_klasses(:sk_math_2)

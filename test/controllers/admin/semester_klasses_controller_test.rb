@@ -98,6 +98,22 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "label[data-transfer-drawer-target='option'][data-class-id='#{target.id}'][data-subject-id='#{target.subject_id}']"
   end
 
+  test "show lists quit and transferred students with a reinstate action" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_quit!
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "summary", text: /转出 \/ 退课学员 1 人/
+    assert_select "li", text: /第 1 课起/
+    assert_select "form[action='#{reinstate_admin_semester_klass_klass_student_path(sk, ks)}'] button", text: "撤销"
+  end
+
   test "show lets a student on leave still quit or transfer" do
     sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 1)

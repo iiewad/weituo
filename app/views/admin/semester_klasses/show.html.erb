@@ -105,6 +105,35 @@
 <% end %>
 </div>
 
+<% if @left_klass_students.any? %>
+  <div class="wt-surface mt-4 p-4">
+    <details>
+      <summary class="cursor-pointer text-sm font-semibold">
+        转出 / 退课学员 <%= @left_klass_students.size %> 人（可撤销）
+      </summary>
+      <ul class="mt-3 divide-y divide-base-200">
+        <% @left_klass_students.each do |klass_student| %>
+          <% leave = @leave_attendance_by_klass_student[klass_student.id] %>
+          <li class="flex flex-wrap items-center justify-between gap-2 py-2">
+            <div class="min-w-0">
+              <span class="text-sm font-medium"><%= klass_student.student.identity_label %></span>
+              <span class="badge badge-soft badge-neutral badge-xs ml-1">
+                <%= klass_student.status == "transfer" ? "转出" : "退课" %>
+              </span>
+              <% if leave %>
+                <span class="ml-2 text-xs text-base-content/40">第 <%= leave.course.seq %> 课起</span>
+              <% end %>
+            </div>
+            <%= button_to "撤销", reinstate_admin_semester_klass_klass_student_path(@sk, klass_student),
+                  method: :put, class: "btn btn-xs btn-ghost text-primary",
+                  data: { turbo_confirm: "确定撤销该学员的退课/转出记录，恢复为在班吗？" } %>
+          </li>
+        <% end %>
+      </ul>
+    </details>
+  </div>
+<% end %>
+
 <% if @archived_klass_students.any? %>
   <div class="wt-surface mt-4 p-4">
     <details>
