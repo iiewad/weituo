@@ -105,6 +105,22 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-klass-times-target='teacher'] option[value='#{teachers(:math_teacher_1).id}']"
   end
 
+  test "show hides the student actions inside the name column" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "thead th", text: "操作", count: 0
+    assert_select "tbody tr[data-controller='row-actions']"
+
+    action = Nokogiri::HTML(response.body).at_css("tbody tr th .student-row-actions")
+    assert_includes action["class"], "opacity-0"
+    assert_equal "actions", action["data-row-actions-target"]
+    assert_select "tbody tr th .student-row-actions form[action='#{admin_semester_klass_klass_student_path(sk, ks)}']"
+  end
+
   test "class form exposes the quick add student entry and modal" do
     get admin_semester_klasses_path
 

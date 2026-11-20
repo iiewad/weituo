@@ -7,6 +7,8 @@ class AttendanceDeleteTest < ApplicationSystemTestCase
 
     klass_student = klass_students(:ks_2)
 
+    find("tbody tr:first-child th").hover
+
     dismiss_confirm(/历史考勤会保留/) do
       find("button[title='移出班级']").click
     end

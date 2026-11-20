@@ -40,17 +40,31 @@
           <% @courses.each do |course| %>
             <th class="text-center whitespace-nowrap">第 <%= course.seq %> 课</th>
           <% end %>
-          <th class="text-right">操作</th>
         </tr>
       </thead>
       <tbody>
         <% @klass_students.each do |ks| %>
-          <tr class="hover:bg-base-200/40">
-            <th class="sticky left-0 z-10 whitespace-nowrap bg-base-100 font-medium">
-              <span class="block"><%= ks.student.name %></span>
-              <% if ks.student.identity_suffix.present? %>
-                <span class="block text-[11px] font-normal text-base-content/40"><%= ks.student.identity_suffix %></span>
-              <% end %>
+          <tr class="hover:bg-base-200/40" data-controller="row-actions"
+              data-action="mouseenter->row-actions#show mouseleave->row-actions#hide">
+            <th class="sticky left-0 z-10 bg-base-100 font-medium">
+              <div class="relative flex w-44 items-center">
+                <div class="min-w-0 flex-1 pr-7">
+                  <span class="block truncate"><%= ks.student.name %></span>
+                  <% if ks.student.identity_suffix.present? %>
+                    <span class="block truncate text-[11px] font-normal text-base-content/40"><%= ks.student.identity_suffix %></span>
+                  <% end %>
+                </div>
+                <div class="student-row-actions pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100"
+                     data-row-actions-target="actions">
+                  <%= button_to admin_semester_klass_klass_student_path(@sk, ks), method: :delete,
+                        data: { turbo_confirm: "确定将 #{ks.student.identity_label} 移出本班吗？
+
+移出后该学员不再出现在考勤表，历史考勤会保留，可在「已移出学员」中恢复。" },
+                        class: "btn btn-xs btn-square btn-ghost text-error", title: "移出班级", aria: { label: "移出班级" } do %>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <% end %>
+                </div>
+              </div>
             </th>
             <% @courses.each do |course| %>
               <td class="text-center">
@@ -61,15 +75,6 @@
                 <% end %>
               </td>
             <% end %>
-            <td class="text-right">
-              <%= button_to admin_semester_klass_klass_student_path(@sk, ks), method: :delete,
-                    data: { turbo_confirm: "确定将 #{ks.student.identity_label} 移出本班吗？
-
-移出后该学员不再出现在考勤表，历史考勤会保留，可在「已移出学员」中恢复。" },
-                    class: "btn btn-xs btn-square btn-ghost text-error", title: "移出班级", aria: { label: "移出班级" } do %>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              <% end %>
-            </td>
           </tr>
         <% end %>
       </tbody>
@@ -92,7 +97,6 @@
               </td>
             <% end %>
           <% end %>
-          <td></td>
         </tr>
       </tfoot>
     </table>
