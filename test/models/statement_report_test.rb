@@ -15,6 +15,8 @@ class StatementReportModelTest < ActiveSupport::TestCase
       assert_equal sk.new_students.size, row.new_count
       assert_equal sk.expand_students.size, row.expand_count
       assert_equal sk.reserve_students.size, row.reserve_count
+      assert_equal row.active_count - row.reserve_count, row.unreserved_count
+      assert_equal row.unreserved_students.size, row.unreserved_count
       assert_in_delta sk.new_rate, row.new_rate, 0.001
       assert_in_delta sk.expand_rate, row.expand_rate, 0.001
       assert_in_delta sk.reserve_rate, row.reserve_rate, 0.001

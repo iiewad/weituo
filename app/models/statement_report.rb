@@ -3,8 +3,8 @@ class StatementReport
   RosterEntry = Struct.new(:name, :tags, keyword_init: true)
 
   Row = Struct.new(
-    :semester_klass, :active_count, :new_count, :expand_count, :reserve_count,
-    :active_students, :new_students, :expand_students, :reserve_students,
+    :semester_klass, :active_count, :new_count, :expand_count, :reserve_count, :unreserved_count,
+    :active_students, :new_students, :expand_students, :reserve_students, :unreserved_students,
     keyword_init: true
   ) do
     def new_rate
@@ -17,6 +17,10 @@ class StatementReport
 
     def reserve_rate
       rate(reserve_count)
+    end
+
+    def unreserved_rate
+      rate(unreserved_count)
     end
 
     private
@@ -121,6 +125,7 @@ class StatementReport
       next_semester_id = @next_semester_ids[semester_klass.semester_id]
       next_subject_ids = next_semester_id ? @semester_subject_student_ids[[ next_semester_id, semester_klass.subject_id ]].uniq : []
       reserve_ids = active_ids & next_subject_ids
+      unreserved_ids = active_ids - reserve_ids
 
       Row.new(
         semester_klass:,
@@ -128,26 +133,31 @@ class StatementReport
         new_count: new_ids.size,
         expand_count: expand_ids.size,
         reserve_count: reserve_ids.size,
+        unreserved_count: unreserved_ids.size,
         active_students: roster_entries(active_ids, new_ids, expand_ids, reserve_ids),
         new_students: new_entries(new_ids),
         expand_students: expand_entries(expand_ids, previous_semester_id, semester_klass.subject_id),
-        reserve_students: reserve_entries(reserve_ids, next_semester_id, semester_klass.subject_id)
+        reserve_students: reserve_entries(reserve_ids, next_semester_id, semester_klass.subject_id),
+        unreserved_students: unreserved_entries(unreserved_ids, next_semester_id)
       )
     end
 
     # 在班名单附带该学员在本班的新增/拓科/预留标签，便于对照
     def roster_entries(ids, new_ids, expand_ids, reserve_ids)
-      ids.filter_map { |id|
+      entries = ids.filter_map { |id|
         student = @student_info[id]
         next unless student
 
         tags = []
         tags << "新增" if new_ids.include?(id)
         tags << "拓科" if expand_ids.include?(id)
-        tags << "预留" if reserve_ids.include?(id)
+        tags << (reserve_ids.include?(id) ? "预留" : "未预留")
 
         RosterEntry.new(name: student.identity_label, tags:)
-      }.sort_by(&:name)
+      }
+
+      # 未预留学员排在名单前面，便于一眼看到需要跟进的学员
+      entries.sort_by { |entry| [ entry.tags.include?("未预留") ? 0 : 1, entry.name ] }
     end
 
     def new_entries(ids)
@@ -183,6 +193,23 @@ class StatementReport
           "上学期（#{previous_semester&.name}）：#{labels.join("、")}"
         else
           "上学期没有其他科目记录"
+        end
+
+        Entry.new(name: student.identity_label, detail:)
+      }.sort_by(&:name)
+    end
+
+    def unreserved_entries(ids, next_semester_id)
+      next_semester = @semesters_by_id[next_semester_id]
+
+      ids.filter_map { |id|
+        student = @student_info[id]
+        next unless student
+
+        detail = if next_semester_id.blank?
+          "暂无下学期"
+        else
+          "下学期（#{next_semester&.name}）未报同科目"
         end
 
         Entry.new(name: student.identity_label, detail:)

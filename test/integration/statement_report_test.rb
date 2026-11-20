@@ -55,6 +55,15 @@ class StatementReportTest < ActionDispatch::IntegrationTest
     assert_select ".roster-chip", text: /#{students(:student_7_6).name}\s*新增/
     assert_select ".roster-chip", text: /#{students(:student_7_5).name}\s*拓科/
     assert_select ".roster-chip", text: /#{students(:student_7_3).name}\s*预留/
+    # 未预留的学员在名单里直接标出，并有对应的详情
+    assert_select ".roster-chip", text: /#{students(:student_7_5).name}\s*拓科\s*未预留/
+    assert_select ".roster-chip", text: /#{students(:student_7_2).name}\s*未预留/
+    assert_match "未预留", response.body
+    assert_match "下学期（#{next_semester.name}）未报同科目", response.body
+
+    # 未预留学员在名单中优先展示
+    row = StatementReport.new(SemesterKlass.where(id: current.id), campuse: campuses(:campuse_1)).rows.first
+    assert_includes row.active_students.first.tags, "未预留"
 
     get export_statement_admin_semester_klasses_path
     assert_response :success
