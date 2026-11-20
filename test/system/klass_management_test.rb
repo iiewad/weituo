@@ -11,6 +11,23 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
   end
 
+  test "从班级详情复制到下个学期" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    visit admin_semester_klass_path(sk)
+
+    find("label[for='drawer-copy']").click
+    within("form[action='#{copy_create_admin_semester_klasses_path}']") do
+      click_button "复制到 #{semesters(:semester_next).name}"
+    end
+
+    assert_text "复制成功"
+    target = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal sk.grade, target.grade
+    assert target.klass_students.exists?(student_id: students(:student_7_1).id)
+    assert_current_path admin_semester_klass_path(sk)
+  end
+
   test "预留下学期并新建目标班级" do
     sign_in
     sk = semester_klasses(:sk_math_2)

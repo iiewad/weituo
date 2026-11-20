@@ -147,8 +147,9 @@ class Admin::SemesterKlassesController < AdminController
       if target_semester == Current.semester
         redirect_to admin_semester_klass_path(@sk), notice: "复制成功，已生成 #{@sk.name}"
       else
-        redirect_to copy_admin_semester_klasses_path(target_semester_id: target_semester.id),
-          notice: "复制成功，已在 #{target_semester.name} 生成 #{@sk.name}"
+        source = campuse_semester_klasses.find_by(id: params[:return_klass_id]) if params[:return_klass_id].present?
+        destination = source ? admin_semester_klass_path(source) : copy_admin_semester_klasses_path(target_semester_id: target_semester.id)
+        redirect_to destination, notice: "复制成功，已在 #{target_semester.name} 生成 #{@sk.name}"
       end
     else
       redirect_to copy_admin_semester_klasses_path(target_semester_id: target_semester.id, q: params[:q]),
@@ -271,6 +272,14 @@ class Admin::SemesterKlassesController < AdminController
     end
     @reserve_teachers = @sk.campuse.teachers.where(subject_id: @sk.subject_id).order(:name).to_a
     @reserve_default_times = @next_semester ? reserve_default_times(@next_semester, @reserve_default_grade) : @sk.times.to_i
+    @target_semester = @next_semester
+    @active_counts = { @sk.id => @active_student_count }
+    @students_by_grade = if @next_semester
+      Student.where(campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
+        .includes(:grade).order(:name).group_by(&:grade_id)
+    else
+      {}
+    end
     @left_klass_students = @klass_students.reject { |klass_student| klass_student.status == "in" }
     @leave_attendance_by_klass_student = Attendance
       .joins(:course)

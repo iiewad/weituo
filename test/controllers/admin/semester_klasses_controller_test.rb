@@ -221,6 +221,40 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='new_times']"
   end
 
+  test "show offers the copy drawer targeting the next semester" do
+    sk = semester_klasses(:sk_math_2)
+    next_semester = semesters(:semester_next)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "input#drawer-copy"
+    assert_select "form[action='#{copy_create_admin_semester_klasses_path}'] input[name='target_semester_id'][value='#{next_semester.id}']"
+    assert_select "form[action='#{copy_create_admin_semester_klasses_path}'] input[name='return_klass_id'][value='#{sk.id}']"
+    assert_select "select[name='semester_klass[genre]'] option[selected][value='#{sk.genre}']"
+    assert_select "input[type='checkbox'][name='student_ids[]'][checked][value='#{students(:student_7_1).id}']"
+  end
+
+  test "copy_create returns to the source class when requested" do
+    source = semester_klasses(:sk_math_2)
+    next_semester = semesters(:semester_next)
+
+    assert_difference -> { SemesterKlass.count }, 1 do
+      post copy_create_admin_semester_klasses_path, params: {
+        target_semester_id: next_semester.id,
+        return_klass_id: source.id,
+        student_ids: [ students(:student_7_1).id ],
+        semester_klass: {
+          grade_id: grades(:grade_7).id,
+          teacher_id: teachers(:math_teacher_1).id,
+          genre: "JY", seq: 88, times: 2
+        }
+      }
+    end
+
+    assert_redirected_to admin_semester_klass_path(source)
+  end
+
   test "insert_students adds selected students from the chosen course" do
     sk = semester_klasses(:sk_math_1)
     student = students(:student_7_2)

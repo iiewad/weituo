@@ -5,6 +5,9 @@
       class: "space-y-4" do |f| %>
 <% active_count = @active_counts ? @active_counts.fetch(item.id, 0) : item.current_active_students.count %>
   <%= hidden_field_tag :target_semester_id, @target_semester.id %>
+  <% if local_assigns[:return_klass_id].present? %>
+    <%= hidden_field_tag :return_klass_id, return_klass_id %>
+  <% end %>
 
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold">复制班级</h3>
