@@ -25,6 +25,20 @@ class StudentTest < ActiveSupport::TestCase
     assert_nil sk.klass_students.find_by(student_id: student.id)
   end
 
+  test "join klass can allow a grade mismatch for reservations" do
+    student = students(:student_7_1)
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_8), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 3, times: 1
+    )
+
+    assert_nil student.join_klass(target)
+    assert student.join_klass(target, allow_grade_mismatch: true)
+    assert target.klass_students.exists?(student_id: student.id)
+    assert_equal grades(:grade_7), student.reload.grade
+  end
+
   test "update grade moves to the next level and stops at the top" do
     student = students(:student_7_1)
     student.update_grade

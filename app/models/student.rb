@@ -36,8 +36,9 @@ class Student < ApplicationRecord
     suffix.present? ? "#{name}（#{suffix}）" : name
   end
 
-  def join_klass(sk, course_seq: 1)
-    return if sk.grade_id != grade_id || sk.campuse_id != campuse_id
+  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false)
+    return if !allow_grade_mismatch && sk.grade_id != grade_id
+    return if sk.campuse_id != campuse_id
 
     course = sk.courses.find_by(seq: course_seq)
     return if course.blank?

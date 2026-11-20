@@ -27,7 +27,7 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_text "已预留 1 名学员"
     target = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
     assert_equal grades(:grade_8), target.grade
-    assert_equal grades(:grade_8), students(:student_7_1).reload.grade
+    assert_equal grades(:grade_7), students(:student_7_1).reload.grade
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 

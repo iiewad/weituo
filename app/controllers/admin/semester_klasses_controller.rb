@@ -214,18 +214,13 @@ class Admin::SemesterKlassesController < AdminController
     end
 
     reserved = 0
-    promoted = 0
     ActiveRecord::Base.transaction do
       students.each do |student|
         next if target.klass_students.exists?(student_id: student.id)
         next if target.grade.level < student.grade.level
 
-        if target.grade.level > student.grade.level
-          student.update!(grade_id: target.grade_id)
-          promoted += 1
-        end
-
-        student.join_klass(target, course_seq: 1)
+        # 预留只建立下学期报名关系，不修改学员当前年级
+        student.join_klass(target, course_seq: 1, allow_grade_mismatch: true)
         reserved += 1
       end
     end
@@ -235,9 +230,7 @@ class Admin::SemesterKlassesController < AdminController
       return
     end
 
-    notice = "已预留 #{reserved} 名学员到 #{target.name}"
-    notice += "，其中 #{promoted} 名已升入 #{target.grade.name}" if promoted.positive?
-    redirect_to admin_semester_klass_path(@sk), notice: notice
+    redirect_to admin_semester_klass_path(@sk), notice: "已预留 #{reserved} 名学员到 #{target.name}"
   end
 
   def show

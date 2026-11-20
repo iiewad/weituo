@@ -134,7 +134,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_semester_klass_path(sk)
   end
 
-  test "reserve can promote students to the next grade" do
+  test "reserve can target the next grade without changing the student grade" do
     sk = semester_klasses(:sk_math_2)
     student = students(:student_7_1)
     target = SemesterKlass.create!(
@@ -147,9 +147,9 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       target_semester_klass_id: target.id, student_ids: [ student.id ]
     }
 
-    assert_equal grades(:grade_8), student.reload.grade
+    assert_equal grades(:grade_7), student.reload.grade
     assert target.klass_students.exists?(student_id: student.id)
-    assert_match "已升入", flash[:notice]
+    assert_match "已预留 1 名", flash[:notice]
   end
 
   test "reserve requires selected students and does not create a target" do
