@@ -94,6 +94,133 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input#add_students_student_#{students(:student_7_2).id}"
   end
 
+  test "reserve enrolls selected students into an existing next semester class" do
+    sk = semester_klasses(:sk_math_2)
+    student = students(:student_7_1)
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "JY", seq: 1, times: 2
+    )
+
+    assert_difference -> { KlassStudent.count }, 1 do
+      post reserve_admin_semester_klass_path(sk), params: {
+        target_semester_klass_id: target.id, student_ids: [ student.id ]
+      }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已预留 1 名", flash[:notice]
+    assert target.klass_students.exists?(student_id: student.id)
+  end
+
+  test "reserve creates a new next semester class when requested" do
+    sk = semester_klasses(:sk_math_2)
+    student = students(:student_7_1)
+
+    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
+      post reserve_admin_semester_klass_path(sk), params: {
+        target_semester_klass_id: "", student_ids: [ student.id ],
+        new_grade_id: grades(:grade_7).id, new_genre: "JY",
+        new_teacher_id: teachers(:math_teacher_1).id, new_times: 8
+      }
+    end
+
+    created = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal grades(:grade_7), created.grade
+    assert_equal "JY", created.genre
+    assert_equal 8, created.times
+    assert created.klass_students.exists?(student_id: student.id)
+    assert_redirected_to admin_semester_klass_path(sk)
+  end
+
+  test "reserve can promote students to the next grade" do
+    sk = semester_klasses(:sk_math_2)
+    student = students(:student_7_1)
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_8), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "JY", seq: 1, times: 2
+    )
+
+    post reserve_admin_semester_klass_path(sk), params: {
+      target_semester_klass_id: target.id, student_ids: [ student.id ]
+    }
+
+    assert_equal grades(:grade_8), student.reload.grade
+    assert target.klass_students.exists?(student_id: student.id)
+    assert_match "已升入", flash[:notice]
+  end
+
+  test "reserve requires selected students and does not create a target" do
+    sk = semester_klasses(:sk_math_2)
+
+    assert_no_difference -> { SemesterKlass.count } do
+      post reserve_admin_semester_klass_path(sk), params: {
+        target_semester_klass_id: "", student_ids: [ "" ],
+        new_grade_id: grades(:grade_7).id, new_genre: "JY",
+        new_teacher_id: teachers(:math_teacher_1).id, new_times: 8
+      }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请选择要预留的学员", flash[:alert]
+  end
+
+  test "reserve requires a next semester" do
+    sk = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 7, times: 1
+    )
+    KlassStudent.create!(semester_klass: sk, student: students(:student_7_1), status: "in")
+
+    post reserve_admin_semester_klass_path(sk), params: { student_ids: [ students(:student_7_1).id ] }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "下学期尚未创建", flash[:alert]
+  end
+
+  test "reserve ignores a target from another subject" do
+    sk = semester_klasses(:sk_math_2)
+    student = students(:student_7_1)
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:eng), teacher: teachers(:eng_teacher_1),
+      genre: "TG", seq: 1, times: 1
+    )
+
+    post reserve_admin_semester_klass_path(sk), params: {
+      target_semester_klass_id: target.id, student_ids: [ student.id ]
+    }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请选择目标班级", flash[:alert]
+    assert_not target.klass_students.exists?(student_id: student.id)
+  end
+
+  test "show renders the reserve drawer with next semester targets" do
+    sk = semester_klasses(:sk_math_2)
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "JY", seq: 1, times: 2
+    )
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "input#drawer-reserve"
+    assert_select "form[action='#{reserve_admin_semester_klass_path(sk)}']"
+    assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{target.id}']"
+    assert_select "input[type='radio'][name='target_semester_klass_id'][value='']"
+    assert_select "input[type='checkbox'][name='student_ids[]']"
+    assert_select "select[name='new_grade_id']"
+    assert_select "select[name='new_genre']"
+    assert_select "select[name='new_teacher_id']"
+    assert_select "input[name='new_times']"
+  end
+
   test "insert_students adds selected students from the chosen course" do
     sk = semester_klasses(:sk_math_1)
     student = students(:student_7_2)

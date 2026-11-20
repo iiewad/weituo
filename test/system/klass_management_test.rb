@@ -11,6 +11,26 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
   end
 
+  test "预留下学期并新建目标班级" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    visit admin_semester_klass_path(sk)
+
+    find("label[for='drawer-reserve']").click
+
+    within("form[action='#{reserve_admin_semester_klass_path(sk)}']") do
+      select "精英班", from: "班型"
+      fill_in "课次", with: "8"
+      click_button "确认预留"
+    end
+
+    assert_text "已预留 1 名学员"
+    target = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal grades(:grade_8), target.grade
+    assert_equal grades(:grade_8), students(:student_7_1).reload.grade
+    assert target.klass_students.exists?(student_id: students(:student_7_1).id)
+  end
+
   test "开班搜索不到学员时可以快速添加并直接选中" do
     sign_in
     visit admin_semester_klasses_path

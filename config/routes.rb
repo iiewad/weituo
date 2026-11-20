@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       member do
         get :export_attendance
         post :insert_students
+        post :reserve
       end
       collection do
         get :statement
