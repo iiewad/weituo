@@ -91,7 +91,45 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#drawer-transfer"
     assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{semester_klasses(:sk_math_3).id}']"
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
-    assert_select "input#insert_#{course.id}_student_#{students(:student_7_2).id}"
+    assert_select "input#add_students_student_#{students(:student_7_2).id}"
+  end
+
+  test "insert_students adds selected students from the chosen course" do
+    sk = semester_klasses(:sk_math_1)
+    student = students(:student_7_2)
+
+    assert_difference -> { sk.klass_students.count }, 1 do
+      post insert_students_admin_semester_klass_path(sk),
+        params: { student_ids: [ student.id ], join_course_seq: 4 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    ks = sk.klass_students.find_by!(student_id: student.id)
+    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
+    assert_nil sk.courses.find_by!(seq: 4).attendances.find_by(klass_student_id: ks.id)
+  end
+
+  test "insert_students requires a selection" do
+    sk = semester_klasses(:sk_math_1)
+
+    assert_no_difference -> { sk.klass_students.count } do
+      post insert_students_admin_semester_klass_path(sk), params: { student_ids: [ "" ], join_course_seq: 1 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请先选择", flash[:alert]
+  end
+
+  test "insert_students skips students already in the class" do
+    sk = semester_klasses(:sk_math_1)
+
+    assert_no_difference -> { sk.klass_students.count } do
+      post insert_students_admin_semester_klass_path(sk),
+        params: { student_ids: [ students(:student_7_1).id ], join_course_seq: 1 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已在班级", flash[:alert]
   end
 
   test "class form only lists teachers from the current campus" do
@@ -105,7 +143,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-klass-times-target='teacher'] option[value='#{teachers(:math_teacher_1).id}']"
   end
 
-  test "show hides the student actions inside the name column" do
+  test "show keeps the student removal action inside the name column" do
     sk = semester_klasses(:sk_math_2)
     ks = klass_students(:ks_2)
 
@@ -113,12 +151,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "thead th", text: "操作", count: 0
-    assert_select "tbody tr[data-controller='row-actions']"
-
-    action = Nokogiri::HTML(response.body).at_css("tbody tr th .student-row-actions")
-    assert_includes action["class"], "opacity-0"
-    assert_equal "actions", action["data-row-actions-target"]
     assert_select "tbody tr th .student-row-actions form[action='#{admin_semester_klass_klass_student_path(sk, ks)}']"
+    assert_select ".student-row-actions.opacity-0", count: 0
   end
 
   test "class form exposes the quick add student entry and modal" do
@@ -152,9 +186,9 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klass_path(sk)
 
     assert_response :success
-    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button", text: "开课"
-    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, second)}'] button", text: "开课", count: 0
-    assert_select "span.badge", text: "待前序开课", minimum: 1
+    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button", text: "开第 1 课"
+    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, second)}'] button", count: 0
+    assert_select "thead th", text: /未开课/, minimum: 1
   end
 
   test "transfer drawer exposes enrolled class ids and filters" do

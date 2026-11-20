@@ -166,6 +166,29 @@ class Admin::SemesterKlassesController < AdminController
       disposition: "attachment"
   end
 
+  # 开班后的统一添加学员入口：选择入班课次后批量加入
+  def insert_students
+    @sk = campuse_semester_klasses.find(params[:id])
+    student_ids = Array(params[:student_ids]).reject(&:blank?)
+
+    if student_ids.empty?
+      redirect_to admin_semester_klass_path(@sk), alert: "请先选择要添加的学员"
+      return
+    end
+
+    join_seq = params[:join_course_seq].to_i.clamp(1, [ @sk.times.to_i, 1 ].max)
+    students = Student.where(id: student_ids, campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
+      .where.not(id: @sk.klass_students.select(:student_id)).to_a
+
+    if students.empty?
+      redirect_to admin_semester_klass_path(@sk), alert: "所选学员已在班级中，无需重复添加"
+      return
+    end
+
+    students.each { |student| student.join_klass(@sk, course_seq: join_seq) }
+    redirect_to admin_semester_klass_path(@sk), notice: "已添加 #{students.size} 名学员"
+  end
+
   def show
     @sk = Current.semester.semester_klasses
       .where(campuse_id: Current.campuse.id, grade_id: allowed_grade_ids)
@@ -179,8 +202,8 @@ class Admin::SemesterKlassesController < AdminController
     @klass_students = @sk.klass_students.includes(:student).to_a
     @archived_klass_students = @sk.archived_klass_students.includes(:student).order(archived_at: :desc).to_a
     @courses = @sk.courses.order(:seq).to_a
-    # 开课需按顺序：只有第一个未开课课次可以开课
-    @startable_course_ids = [ @courses.find { |course| !course.started? }&.id ].compact
+    # 开课需按顺序：工具栏只提供下一个未开课课次
+    @next_course = @courses.find { |course| !course.started? }
     @attendance_by_cell = Attendance.where(
       course_id: @courses.map(&:id),
       klass_student_id: @klass_students.map(&:id)

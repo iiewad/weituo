@@ -11,19 +11,6 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
   end
 
-  test "移出班级按钮在悬停学员行时显示" do
-    sign_in
-    visit admin_semester_klass_path(semester_klasses(:sk_math_2))
-
-    actions = ".student-row-actions"
-    find("h1").hover
-    assert_equal "0", page.evaluate_script("getComputedStyle(document.querySelector('#{actions}')).opacity")
-
-    find("tbody tr:first-child th").hover
-    sleep 0.3
-    assert_equal "1", page.evaluate_script("getComputedStyle(document.querySelector('#{actions}')).opacity")
-  end
-
   test "开班搜索不到学员时可以快速添加并直接选中" do
     sign_in
     visit admin_semester_klasses_path

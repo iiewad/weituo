@@ -6,6 +6,7 @@ Rails.application.routes.draw do
     resources :semester_klasses do
       member do
         get :export_attendance
+        post :insert_students
       end
       collection do
         get :statement
@@ -22,7 +23,6 @@ Rails.application.routes.draw do
       end
       resources :courses do
         member do
-          post :insert_students
           put :start, to: "courses#start"
         end
         resources :attendances do

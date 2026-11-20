@@ -25,20 +25,6 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert_not course.reload.started?
   end
 
-  test "insert students adds selected students from the chosen course" do
-    sk = semester_klasses(:sk_math_1)
-    course = sk.courses.find_by!(seq: 4)
-
-    assert_difference -> { sk.klass_students.count }, 1 do
-      post insert_students_admin_semester_klass_course_path(sk, course), params: { student_ids: [ students(:student_7_2).id ] }
-    end
-    assert_redirected_to admin_semester_klass_path(sk)
-
-    student = students(:student_7_2)
-    ks = sk.klass_students.find_by!(student_id: student.id)
-    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
-  end
-
   test "cannot start a class from another campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
     sk = SemesterKlass.create!(
@@ -51,29 +37,5 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     put start_admin_semester_klass_course_path(sk, course)
 
     assert_response :not_found
-  end
-
-  test "insert students requires a selection" do
-    sk = semester_klasses(:sk_math_1)
-    course = sk.courses.find_by!(seq: 4)
-
-    assert_no_difference -> { sk.klass_students.count } do
-      post insert_students_admin_semester_klass_course_path(sk, course), params: { student_ids: [ "" ] }
-    end
-
-    assert_redirected_to admin_semester_klass_path(sk)
-    assert_match "请先选择", flash[:alert]
-  end
-
-  test "insert students skips students already in the class" do
-    sk = semester_klasses(:sk_math_1)
-    course = sk.courses.find_by!(seq: 4)
-
-    assert_no_difference -> { sk.klass_students.count } do
-      post insert_students_admin_semester_klass_course_path(sk, course), params: { student_ids: [ students(:student_7_1).id ] }
-    end
-
-    assert_redirected_to admin_semester_klass_path(sk)
-    assert_match "已在班级", flash[:alert]
   end
 end
