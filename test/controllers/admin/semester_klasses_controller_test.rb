@@ -16,6 +16,21 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
+  test "index shows the reserve rate on class cards" do
+    sk = semester_klasses(:sk_math_2)
+    next_klass = SemesterKlass.create!(
+      semester: semesters(:semester_next), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+    students(:student_7_1).join_klass(next_klass)
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "a[href='#{admin_semester_klass_path(sk)}']", text: /预留率\s*100\.0%/
+  end
+
   test "statement renders summary cards and per-class rates" do
     get statement_admin_semester_klasses_path
 

@@ -42,6 +42,8 @@ class Admin::SemesterKlassesController < AdminController
     ).includes(:grade, :subject, :teacher, :courses).to_a
       .sort_by { |sk| [ sk.grade.level, sk.subject.name, sk.genre, sk.seq ] }
     @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
+    @reserve_rates = StatementReport.new(@sks, campuse: Current.campuse).rows
+      .to_h { |row| [ row.semester_klass.id, row.reserve_rate ] }
     @total_courses = @sks.sum { |sk| sk.times.to_i }
     @started_courses = @sks.sum { |sk| sk.courses.count(&:started?) }
     @grade_groups = @sks.group_by(&:grade).sort_by { |grade, _| grade.level }

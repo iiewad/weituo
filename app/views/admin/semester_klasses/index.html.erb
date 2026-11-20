@@ -45,6 +45,7 @@
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       <% sks.each do |sk| %>
         <% active = @active_counts.fetch(sk.id, 0) %>
+        <% reserve_pct = (@reserve_rates.fetch(sk.id, 0.0) * 100).round(1) %>
         <% started = sk.courses.count(&:started?) %>
         <% total = sk.times.to_i %>
         <%= link_to admin_semester_klass_path(sk), class: "wt-surface group block p-4 transition hover:border-primary/40" do %>
@@ -56,8 +57,9 @@
             <span class="badge badge-outline badge-secondary badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></span>
           </div>
 
-          <div class="mt-3 flex items-center justify-between text-xs text-base-content/60">
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-base-content/60">
             <span>在班 <span class="font-semibold text-base-content"><%= active %></span> 人</span>
+            <span>预留率 <span class="font-semibold text-primary"><%= reserve_pct %>%</span></span>
             <span>已开 <%= started %>/<%= total %> 课</span>
           </div>
           <div class="mt-2 h-1 w-full rounded-full bg-base-200">
