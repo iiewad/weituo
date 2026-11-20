@@ -268,6 +268,40 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal referrer, student.referrer
   end
 
+  test "quick_create returns the new student as json" do
+    assert_difference -> { Student.count }, 1 do
+      post quick_create_admin_students_path,
+        params: { student: { name: "快速学员", grade_id: grades(:grade_7).id } }, as: :json
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "快速学员", body["name"]
+    assert_equal grades(:grade_7).id, body["grade_id"]
+    assert_equal grades(:grade_7).name, body["grade_name"]
+    assert Student.exists?(id: body["id"], campuse: campuses(:campuse_1), grade: grades(:grade_7))
+  end
+
+  test "quick_create rejects a grade outside the current campus" do
+    assert_no_difference -> { Student.count } do
+      post quick_create_admin_students_path,
+        params: { student: { name: "越权学员", grade_id: 999_999 } }, as: :json
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes JSON.parse(response.body)["errors"].first, "年级"
+  end
+
+  test "quick_create requires a name" do
+    assert_no_difference -> { Student.count } do
+      post quick_create_admin_students_path,
+        params: { student: { name: "", grade_id: grades(:grade_7).id } }, as: :json
+    end
+
+    assert_response :unprocessable_entity
+    assert JSON.parse(response.body)["errors"].any?
+  end
+
   private
     def xlsx_upload(rows)
       package = Axlsx::Package.new

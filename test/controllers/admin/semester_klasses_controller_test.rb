@@ -90,6 +90,15 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-klass-times-target='teacher'] option[value='#{teachers(:math_teacher_1).id}']"
   end
 
+  test "class form exposes the quick add student entry and modal" do
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "[data-controller='quick-student-trigger'][data-quick-student-trigger-prefix-value='klass_new']"
+    assert_select "dialog#quick-student-modal[data-controller='quick-student']"
+    assert_select "dialog#quick-student-modal input#quick_student_name"
+  end
+
   test "class form exposes grade subject times for auto-fill" do
     get admin_semester_klasses_path
 
@@ -393,7 +402,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klasses_path
 
     assert_response :success
-    assert_select "[data-controller='student-multiselect'][data-student-multiselect-grade-selector-value='#klass_new_grade_id']"
+    assert_select "[data-controller='student-multiselect'][data-student-multiselect-grade-selector-value='#klass_new_semester_klass_grade_id']"
     assert_select "input[type='search'][data-student-multiselect-target='input']"
     assert_select "input[name='join_course_seq'][value='1']"
     assert_select "input#klass_new_student_#{students(:student_7_4).id}"

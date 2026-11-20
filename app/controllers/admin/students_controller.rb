@@ -41,6 +41,34 @@ class Admin::StudentsController < AdminController
     end
   end
 
+  # 开班时搜索不到学员的快速建档入口：只收姓名和年级，返回 JSON 供前端插入多选列表。
+  def quick_create
+    grade_id = params.dig(:student, :grade_id).to_i
+    unless Current.user.grades_by_campuse(Current.campuse.id).exists?(id: grade_id)
+      render json: { errors: [ "年级不在当前校区授权范围内" ] }, status: :unprocessable_entity
+      return
+    end
+
+    student = Student.new(
+      name: params.dig(:student, :name).to_s.strip,
+      grade_id: grade_id,
+      campuse_id: Current.campuse.id
+    )
+
+    if student.save
+      render json: {
+        id: student.id,
+        name: student.name,
+        identity_label: student.identity_label,
+        identity_suffix: student.identity_suffix,
+        grade_id: student.grade_id,
+        grade_name: student.grade&.name
+      }
+    else
+      render json: { errors: student.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   # 推荐人选择器的远程候选：只按姓名搜索当前校区学员（允许跨年级），不返回无查询条件的全量列表。
   def options
     query = params[:q].to_s.strip

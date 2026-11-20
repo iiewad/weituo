@@ -38,6 +38,7 @@ Rails.application.routes.draw do
       collection do
         post :promote
         post :import
+        post :quick_create
         get :template
         get :options
       end

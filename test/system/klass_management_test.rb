@@ -11,6 +11,40 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_selector "a.menu-active", text: semester_klasses(:sk_math_3).name
   end
 
+  test "开班搜索不到学员时可以快速添加并直接选中" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "七年级", from: "年级"
+      fill_in "搜索学员姓名", with: "不存在的学员"
+      assert_text "没有匹配的学员"
+      click_button "快速添加学员"
+    end
+
+    within("dialog#quick-student-modal") do
+      fill_in "姓名", with: "新学员"
+      select "七年级", from: "年级"
+      click_button "保存并加入"
+    end
+
+    assert_no_selector "dialog#quick-student-modal[open]"
+
+    within(drawer) do
+      assert_selector "[data-student-multiselect-target='selected']", text: "新学员"
+      select "张", from: "教师"
+      fill_in "课次", with: "3"
+      click_button "开班"
+    end
+
+    assert_text "班级创建成功"
+    created = SemesterKlass.order(:id).last
+    assert created.klass_students.exists?(student: Student.find_by!(name: "新学员"))
+  end
+
   test "切换年级和教师会持续更新课次默认值" do
     sign_in
     visit admin_semester_klasses_path

@@ -125,9 +125,10 @@
     <%= render "admin/shared/student_multiselect",
           options: candidates.map { |student| { student: student, checked: false, badge: nil } },
           id_prefix: "klass_#{item.id || "new"}",
-          grade_selector: "#klass_#{item.id || "new"}_grade_id",
+          grade_selector: "#klass_#{item.id || "new"}_semester_klass_grade_id",
           hint: "所选学员从入班课次开始加入，之前课次补记为缺课；默认第 1 课。",
-          empty_message: "没有可加入的学员，请先在学员管理中建档或检查年级。" %>
+          quick_add: true,
+          empty_message: "没有匹配的学员。" %>
   </div>
 
   <%= form.submit item.new_record? ? "开班" : "保存修改", class: "btn btn-primary w-full" %>

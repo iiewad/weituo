@@ -1,4 +1,4 @@
-<% if options.any? %>
+<% if options.any? || local_assigns[:quick_add] %>
   <div data-controller="student-multiselect"
        <% if local_assigns[:grade_selector].present? %>data-student-multiselect-grade-selector-value="<%= grade_selector %>"<% end %>
        data-action="change->student-multiselect#sync">
@@ -19,7 +19,7 @@
     </label>
 
     <div class="mt-2 hidden rounded-box border border-base-300 bg-base-100 p-1" data-student-multiselect-target="panel">
-      <div class="max-h-56 overflow-y-auto">
+      <div id="<%= id_prefix %>_student_options" class="max-h-56 overflow-y-auto">
         <% options.each do |option| %>
           <% student = option[:student] %>
           <label class="flex items-center gap-2 rounded-box px-2.5 py-1.5 text-xs hover:bg-base-200/60"
@@ -41,7 +41,16 @@
           </label>
         <% end %>
       </div>
-      <p class="hidden px-3 py-2 text-xs text-base-content/40" data-student-multiselect-target="empty">没有匹配的学员</p>
+      <p class="hidden px-3 py-2 text-xs text-base-content/40" data-student-multiselect-target="empty">
+        没有匹配的学员
+        <% if local_assigns[:quick_add] %>
+          <button type="button" class="ml-1 text-primary hover:underline"
+                  data-controller="quick-student-trigger"
+                  data-quick-student-trigger-prefix-value="<%= id_prefix %>"
+                  data-quick-student-trigger-grade-selector-value="<%= local_assigns[:grade_selector] %>"
+                  data-action="quick-student-trigger#open">快速添加学员</button>
+        <% end %>
+      </p>
     </div>
 
     <% if hint.present? %>
