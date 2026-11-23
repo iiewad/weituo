@@ -18,26 +18,18 @@ class Semester < ApplicationRecord
   end
   has_many :semester_klasses, dependent: :destroy
 
+  # 学期顺序以 seq 为准；日期只用于判断 current。
+  # 不用日期判断相邻学期，避免学期日期重叠或空档导致链条静默断裂。
   def related_next_semester
-    Semester.where(school_id: school_id).where(
-      "seq > ?", seq
-    ).where(
-      "start_date >= ?", end_date
-    ).order(seq: :asc).first
+    Semester.where(school_id: school_id).where("seq > ?", seq).order(seq: :asc).first
   end
 
   def related_previous_semester
-    Semester.where(school_id: school_id).where(seq: ...seq).where(
-      "end_date <= ?", start_date
-    ).order(seq: :desc).first
+    Semester.where(school_id: school_id).where("seq < ?", seq).order(seq: :desc).first
   end
 
   def related_history_semesters
-    Semester.where(school_id: school_id).where(
-      "seq < ?", seq
-    ).where(
-      "start_date < ?", start_date
-    ).order(seq: :desc)
+    Semester.where(school_id: school_id).where("seq < ?", seq).order(seq: :desc)
   end
 
   private
