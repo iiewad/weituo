@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruby -rjson -e 'd = JSON.parse(STDIN.read) rescue nil; exit 0 unless d.is_a?(Hash); tr = d[\"tool_response\"]; ti = d[\"tool_input\"]; f = (tr.is_a?(Hash) && tr[\"filePath\"]) || (ti.is_a?(Hash) && ti[\"file_path\"]); exit 0 unless f.is_a?(String) && f.end_with?(\".rb\") && File.exist?(f); system(\"bin/rubocop\", \"-a\", \"--force-exclusion\", f)' 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
