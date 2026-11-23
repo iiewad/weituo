@@ -50,9 +50,6 @@ class SemesterKlass < ApplicationRecord
     create_courses
   end
 
-  def self.ransackable_associations(auth_object = nil)
-    [ "courses", "grade", "klass_students", "semester", "students", "teacher" ]
-  end
   def self.ransackable_attributes(auth_object = nil)
     [ "campuse_id", "created_at", "genre", "grade_id", "id", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
   end

@@ -55,15 +55,6 @@ class KlassStudent < ApplicationRecord
     end
   end
 
-  def another_semester_klasses(semester_id)
-    SemesterKlass
-      .joins(:klass_students)
-      .where(
-        semester_id: semester_id,
-      campuse_id: semester_klass.campuse_id,
-    )
-  end
-
   private
     # 转出时在考勤 mark_at 里记录目标班；撤销时把该班报名移出，历史考勤保留
     def release_transfer_target(attendance)

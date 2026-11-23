@@ -48,11 +48,4 @@ class KlassStudentTest < ActiveSupport::TestCase
     assert_equal "normal", attendance.reload.status
     assert target.reload.archived_at.present?
   end
-
-  test "another semester klasses is scoped to the same campuse and semester" do
-    klasses = klass_students(:ks_1).another_semester_klasses(semesters(:semester_previous).id)
-
-    assert_includes klasses, semester_klasses(:sk_math_1)
-    assert_equal 1, klasses.count
-  end
 end
