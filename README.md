@@ -2,7 +2,7 @@
 
 培训机构教务管理后台，管理校区、学期、班级、课次、学员报名与考勤，并提供班级经营报表。
 
-技术栈：Rails 8.1 / Ruby 3.3.9 / MySQL / Hotwire（Turbo + Stimulus）/ Tailwind CSS v4 + daisyUI / importmap（无 JS 打包步骤）。后台作业、缓存、Action Cable 均基于生产数据库（solid_queue / solid_cache / solid_cable）。
+技术栈：Rails 8.1 / Ruby 3.3.14 / MySQL / Hotwire（Turbo + Stimulus）/ Tailwind CSS v4 + daisyUI / importmap（无 JS 打包步骤）。后台作业、缓存、Action Cable 均基于生产数据库（solid_queue / solid_cache / solid_cable）。
 
 给 AI 助手的完整架构与约定见 [AGENTS.md](AGENTS.md)；面向教务人员的日常操作说明见 [docs/user_guide.md](docs/user_guide.md)。
 

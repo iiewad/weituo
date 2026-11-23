@@ -4,7 +4,7 @@ This file provides guidance to the AI agent when working with code in this repos
 
 ## Stack
 
-- Rails 8.1 / Ruby 3.3.9, MySQL, Hotwire (Turbo + Stimulus), Tailwind CSS via tailwindcss-rails with daisyUI, importmap JS (no JS bundler build step).
+- Rails 8.1 / Ruby 3.3.14, MySQL, Hotwire (Turbo + Stimulus), Tailwind CSS via tailwindcss-rails with daisyUI, importmap JS (no JS bundler build step).
 - Search: ransack (`@q = Model.ransack(params[:q])`) — models must declare `ransackable_attributes` / `ransackable_associations` explicitly (see `Student`, `SemesterKlass`). Pagination: kaminari (`.page(params[:page])`). State machines: aasm.
 - Background jobs, cache and Action Cable are database-backed (solid_queue / solid_cache / solid_cable) against the production databases.
 
