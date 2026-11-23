@@ -770,6 +770,32 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 42, sk.seq
   end
 
+  test "update syncs courses when times changes" do
+    sk = semester_klasses(:sk_math_2)
+
+    assert_difference -> { sk.courses.count }, 2 do
+      put admin_semester_klass_path(sk), params: { semester_klass: {
+        genre: sk.genre, teacher_id: sk.teacher_id, times: 18, students_text: ""
+      } }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal (1..18).to_a, sk.courses.order(:seq).pluck(:seq)
+  end
+
+  test "update rejects a grade change once students are enrolled" do
+    sk = semester_klasses(:sk_math_2)
+
+    put admin_semester_klass_path(sk), params: { semester_klass: {
+      grade_id: grades(:grade_8).id, genre: sk.genre, teacher_id: sk.teacher_id,
+      times: sk.times, students_text: ""
+    } }
+
+    assert_redirected_to admin_semester_klasses_path
+    assert_match "不能修改年级", flash[:alert]
+    assert_equal grades(:grade_7), sk.reload.grade
+  end
+
   test "copy_create copies a class into the current semester" do
     assert_difference -> { SemesterKlass.count }, 1 do
       post copy_create_admin_semester_klasses_path, params: {

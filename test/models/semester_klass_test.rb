@@ -69,6 +69,49 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert_equal [ 1, 2, 3 ], sk.courses.order(:seq).pluck(:seq)
   end
 
+  test "increasing times adds the missing courses" do
+    sk = semester_klasses(:sk_math_1)
+    assert_equal 16, sk.courses.count
+
+    sk.update!(times: 20)
+
+    assert_equal (1..20).to_a, sk.courses.order(:seq).pluck(:seq)
+  end
+
+  test "decreasing times removes the extra unstarted courses" do
+    sk = semester_klasses(:sk_math_1)
+
+    sk.update!(times: 12)
+
+    assert_equal (1..12).to_a, sk.courses.order(:seq).pluck(:seq)
+  end
+
+  test "times cannot drop below the started courses" do
+    sk = semester_klasses(:sk_math_1)
+    sk.courses.find_by!(seq: 1).start!
+    sk.courses.find_by!(seq: 2).start!
+
+    assert_not sk.update(times: 1)
+    assert_includes sk.errors[:times], "已有 2 个课次开课，不能小于该值"
+    assert_equal 16, sk.reload.times
+    assert_equal 16, sk.courses.count
+  end
+
+  test "grade cannot change once the class has students" do
+    sk = semester_klasses(:sk_math_1)
+
+    assert_not sk.update(grade_id: grades(:grade_8).id)
+    assert_includes sk.errors[:grade_id], "班级已有学员，不能修改年级"
+    assert_equal grades(:grade_7), sk.reload.grade
+  end
+
+  test "grade can change while the class is empty" do
+    sk = semester_klasses(:sk_math_3)
+
+    assert sk.update(grade_id: grades(:grade_8).id)
+    assert_equal grades(:grade_8), sk.reload.grade
+  end
+
   test "ended when every course has a start date" do
     sk = semester_klasses(:sk_math_1)
     assert_not sk.ended?

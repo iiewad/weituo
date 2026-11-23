@@ -20,6 +20,8 @@ class SemesterKlass < ApplicationRecord
   validates :genre, inclusion: { in: %w[TG JY XZ XQ CC] }
   validate :campuse_and_semester_share_school
   validate :subject_matches_teacher
+  validate :grade_locked_when_students_exist, on: :update
+  validate :times_not_below_started_courses, on: :update
 
   GENRE_MAP = {
     "提高班" => "TG",
@@ -32,11 +34,20 @@ class SemesterKlass < ApplicationRecord
   GENRE_MAP_REVERSE = GENRE_MAP.invert
 
   after_create :create_courses
+  after_update :sync_courses
 
   def create_courses
     self.times.times do |i|
       courses.find_or_create_by(seq: i + 1, semester_klass: self)
     end
+  end
+
+  # 编辑课次时同步课程：补齐缺少的课次，删除超出课次的未开课课次
+  def sync_courses
+    return unless saved_change_to_times?
+
+    courses.where("seq > ?", times).where(start_date: nil).destroy_all
+    create_courses
   end
 
   def self.ransackable_associations(auth_object = nil)
@@ -194,5 +205,20 @@ class SemesterKlass < ApplicationRecord
       return if subject.blank? || teacher.blank? || subject_id == teacher.subject_id
 
       errors.add(:subject_id, "与教师科目不一致")
+    end
+
+    # 班级已有报名记录（含已移出）时不允许改年级，避免在班学员与班级年级不一致
+    def grade_locked_when_students_exist
+      return unless grade_id_changed? && all_klass_students.exists?
+
+      errors.add(:grade_id, "班级已有学员，不能修改年级")
+    end
+
+    # 已开课的课次不能删除，课次只能加不能减到已开课数量以下
+    def times_not_below_started_courses
+      return unless times_changed? && times.present?
+
+      started = courses.where.not(start_date: nil).count
+      errors.add(:times, "已有 #{started} 个课次开课，不能小于该值") if times.to_i < started
     end
 end

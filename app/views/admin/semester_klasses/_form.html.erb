@@ -12,6 +12,7 @@
   <%= form.hidden_field :semester_id, value: Current.semester.id %>
   <%= form.hidden_field :campuse_id, value: Current.campuse.id %>
   <% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
+  <% grade_locked = item.persisted? && item.all_klass_students.exists? %>
 
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold"><%= item.new_record? ? "开班" : "班级详情 · #{item.name}" %></h3>
@@ -50,8 +51,11 @@
         <%= form.select :grade_id,
               Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
               { include_blank: "选择年级", selected: item.grade_id },
-              { class: "select select-sm w-full", required: true,
+              { class: "select select-sm w-full", required: true, disabled: grade_locked,
                 data: { klass_times_target: "grade", action: "change->klass-times#apply" } } %>
+        <% if grade_locked %>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">班级已有学员，年级不可修改。</p>
+        <% end %>
       </div>
 
       <div>
@@ -83,7 +87,9 @@
         <%= form.label :times, "课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= form.number_field :times, value: item.times, min: 1, class: "input input-sm w-full",
               placeholder: "默认使用年级科目配置", data: { klass_times_target: "times" } %>
-        <p class="mt-1 text-[11px] leading-tight text-base-content/40">留空时按当前学期的年级科目课次设置。</p>
+        <p class="mt-1 text-[11px] leading-tight text-base-content/40">
+          留空时按当前学期的年级科目课次设置；修改后会自动补齐或删除未开课的课次，已开课的课次不能减少。
+        </p>
       </div>
     </div>
   </div>
