@@ -37,6 +37,7 @@ This file provides guidance to the AI agent when working with code in this repos
 
 ## Gotchas
 
+- Archived enrollments: `KlassStudent` has **no `default_scope`**. The `klass_students` associations (on `SemesterKlass` / `Student`) and the `active` scope exclude `archived_at` rows; use `all_klass_students`, `archived_klass_students`, or `.unscoped` when archived rows are needed (e.g. `Student#join_klass` restoring a removed enrollment). Add `.active` to direct `KlassStudent.where(...)` queries that should ignore removed students.
 - `Current.campuse`, `Current.school`, and `Current.semester` hold the logged-in user's currently selected campus/school/semester, set in `AdminController#set_current_context`. Admin controllers must scope queries by these — never by all of the user's campuses.
 - `Campuse` is the intentional model name (misspelled singular): table `campuses`, join model `UserCampuse` (`user_campuses`), routes `campuses`. Do not rename or "fix" it.
 - All UI copy is Chinese — keep new views, notices, and labels in Chinese.

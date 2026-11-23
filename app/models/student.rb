@@ -6,8 +6,8 @@ class Student < ApplicationRecord
   belongs_to :campuse
   belongs_to :grade, optional: true
   has_many :guardians, dependent: :destroy
-  has_many :klass_students
-  has_many :all_klass_students, -> { unscope(where: :archived_at) }, class_name: "KlassStudent", dependent: :destroy
+  has_many :klass_students, -> { active }
+  has_many :all_klass_students, class_name: "KlassStudent", dependent: :destroy
   has_one :received_referral, class_name: "StudentReferral", foreign_key: :referred_id, dependent: :destroy, inverse_of: :referred
   has_one :referrer, through: :received_referral
   has_many :given_referrals, class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy, inverse_of: :referrer

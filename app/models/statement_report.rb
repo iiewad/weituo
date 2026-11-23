@@ -91,7 +91,7 @@ class StatementReport
         .includes(:grade, :subject, :teacher)
         .index_by(&:id)
 
-      KlassStudent.joins(:semester_klass)
+      KlassStudent.active.joins(:semester_klass)
         .where(semester_klasses: { campuse_id: @campuse.id }, status: "in")
         .pluck(
           "semester_klasses.semester_id",

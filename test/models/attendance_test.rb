@@ -98,12 +98,12 @@ class AttendanceTest < ActiveSupport::TestCase
     later.start!
     attendance = attendance_for(course)
 
-    original = KlassStudent.method(:find_by!)
-    KlassStudent.define_singleton_method(:find_by!) { |*| raise "cascade boom" }
+    original = KlassStudent.method(:active)
+    KlassStudent.define_singleton_method(:active) { |*| raise "cascade boom" }
     begin
       assert_raises(RuntimeError) { attendance.mark_quit! }
     ensure
-      KlassStudent.define_singleton_method(:find_by!, original)
+      KlassStudent.define_singleton_method(:active, original)
     end
 
     assert_equal "normal", attendance.reload.status

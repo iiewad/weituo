@@ -199,7 +199,7 @@ class Admin::StudentsController < AdminController
 
     # 当前学期内的报名记录，用于「在班 / 有退课 / 未入班」筛选与计数
     def klass_students_in_current_semester
-      KlassStudent.joins(:semester_klass).where(
+      KlassStudent.active.joins(:semester_klass).where(
         semester_klasses: { semester_id: Current.semester.id }
       )
     end
@@ -221,6 +221,7 @@ class Admin::StudentsController < AdminController
     # 当前学期内、当前页学员的报名记录，按学员分组供抽屉内的「班级信息」模块使用
     def klass_students_by_student(student_ids)
       KlassStudent
+        .active
         .joins(:semester_klass)
         .where(semester_klasses: { semester_id: Current.semester.id }, student_id: student_ids)
         .includes(semester_klass: [ :grade, :subject, :teacher ])
@@ -230,6 +231,7 @@ class Admin::StudentsController < AdminController
     # 当前页学员的全部历史报名，按学期倒序，供详情抽屉追溯在班记录
     def klass_student_history(student_ids)
       KlassStudent
+        .active
         .where(student_id: student_ids)
         .includes(semester_klass: [ :semester, :grade, :subject, :teacher ])
         .group_by(&:student_id)

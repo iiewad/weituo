@@ -1,7 +1,7 @@
 class Attendance < ApplicationRecord
   include AASM
   belongs_to :course
-  belongs_to :klass_student, -> { unscope(where: :archived_at) }
+  belongs_to :klass_student
   belongs_to :marked_by, class_name: "User", optional: true
   # 转出目标班；撤销转出时据此把学员从目标班移出
   belongs_to :transfer_target_klass, class_name: "SemesterKlass", optional: true
@@ -44,7 +44,7 @@ class Attendance < ApplicationRecord
 
     event :mark_quit do
       after do
-        ks = KlassStudent.find_by!(
+        ks = KlassStudent.active.find_by!(
           semester_klass_id: course.semester_klass_id,
           student_id: klass_student.student_id
         )
@@ -60,7 +60,7 @@ class Attendance < ApplicationRecord
 
     event :mark_transfer do
       after do
-        ks = KlassStudent.find_by!(
+        ks = KlassStudent.active.find_by!(
           semester_klass_id: course.semester_klass_id,
           student_id: klass_student.student_id
         )

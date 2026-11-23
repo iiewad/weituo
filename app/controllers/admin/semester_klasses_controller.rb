@@ -41,7 +41,7 @@ class Admin::SemesterKlassesController < AdminController
       grade_id: allowed_grade_ids,
     ).includes(:grade, :subject, :teacher, :courses).to_a
       .sort_by { |sk| [ sk.grade.level, sk.subject.name, sk.genre, sk.seq ] }
-    @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
+    @active_counts = KlassStudent.active.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     @reserve_rates = StatementReport.new(@sks, campuse: Current.campuse).rows
       .to_h { |row| [ row.semester_klass.id, row.reserve_rate ] }
     @total_courses = @sks.sum { |sk| sk.times.to_i }
@@ -117,7 +117,7 @@ class Admin::SemesterKlassesController < AdminController
     ).where(
       "semesters.seq < ?", @target_semester.seq,
     )
-    @active_counts = KlassStudent.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
+    @active_counts = KlassStudent.active.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     set_teacher_groups
     @students_by_grade = Student.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
       .includes(:grade)
@@ -295,11 +295,12 @@ class Admin::SemesterKlassesController < AdminController
       .order(:genre, :seq)
       .to_a
     transfer_target_ids = @transfer_target_klasses.map(&:id)
-    @transfer_target_counts = KlassStudent.where(
+    @transfer_target_counts = KlassStudent.active.where(
       semester_klass_id: transfer_target_ids, status: "in"
     ).group(:semester_klass_id).count
     # 学员已加入的目标班：转出抽屉按学员动态隐藏，避免重复转入
     @enrolled_target_ids_by_student = KlassStudent
+      .active
       .where(semester_klass_id: transfer_target_ids)
       .pluck(:student_id, :semester_klass_id)
       .group_by(&:first)

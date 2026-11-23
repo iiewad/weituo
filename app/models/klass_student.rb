@@ -1,8 +1,8 @@
 class KlassStudent < ApplicationRecord
   include AASM
 
-  default_scope { where(archived_at: nil) }
-  scope :archived, -> { unscope(where: :archived_at).where.not(archived_at: nil) }
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
 
   belongs_to :semester_klass
   belongs_to :student

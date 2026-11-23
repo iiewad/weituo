@@ -29,6 +29,23 @@ class KlassStudentTest < ActiveSupport::TestCase
     assert_equal "normal", attendance.reload.status
   end
 
+  test "archived enrollments are excluded from active scopes and associations" do
+    ks = klass_students(:ks_2)
+    sk = ks.semester_klass
+    ks.archive!
+
+    assert_not_includes sk.klass_students, ks
+    assert_not_includes sk.students, ks.student
+    assert_includes sk.all_klass_students, ks
+    assert_includes sk.archived_klass_students, ks
+    assert_not_includes KlassStudent.active, ks
+    assert_includes KlassStudent.archived, ks
+
+    # 历史考勤仍能取到已移出的报名记录
+    attendance = sk.courses.find_by!(seq: 1).attendances.create!(klass_student: ks)
+    assert_equal ks, attendance.reload.klass_student
+  end
+
   test "reinstate removes the enrollment created by a transfer" do
     source = klass_students(:ks_1)
     target_sk = semester_klasses(:sk_eng_1)

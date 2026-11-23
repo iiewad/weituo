@@ -43,7 +43,7 @@ class Admin::AttendancesController < AdminController
       redirect_to admin_semester_klass_path(@sk), alert: "请选择要转入的班级"
       return
     end
-    if KlassStudent.exists?(semester_klass_id: target.id, student_id: @student.id)
+    if KlassStudent.active.exists?(semester_klass_id: target.id, student_id: @student.id)
       redirect_to admin_semester_klass_path(@sk), alert: "#{@student.identity_label} 已在 #{target.name} 中"
       return
     end
