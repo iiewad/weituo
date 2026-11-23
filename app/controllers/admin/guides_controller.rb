@@ -1,4 +1,14 @@
 class Admin::GuidesController < AdminController
+  # 新手引导：用户完成或关闭向导后记录时间，之后不再自动弹出
+  def complete
+    Current.user.update!(guide_completed_at: Time.current)
+
+    respond_to do |format|
+      format.json { head :ok }
+      format.html { redirect_back fallback_location: root_path, notice: "已关闭使用指引" }
+    end
+  end
+
   def show
     markdown = Redcarpet::Markdown.new(
       Redcarpet::Render::HTML.new(with_toc_data: false, hard_wrap: false),

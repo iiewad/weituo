@@ -4,8 +4,10 @@ one:
   id: 1
   name: user1
   password_digest: <%= password_digest %>
+  guide_completed_at: <%= 1.day.ago %>
 
 two:
   id: 2
   name: user2
   password_digest: <%= password_digest %>
+  guide_completed_at: <%= 1.day.ago %>

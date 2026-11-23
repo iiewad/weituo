@@ -3,6 +3,15 @@ require "test_helper"
 class Admin::GuidesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
+  test "complete records the guide as finished for the current user" do
+    users(:one).update!(guide_completed_at: nil)
+
+    post admin_complete_guide_path, as: :json
+
+    assert_response :success
+    assert_not_nil users(:one).reload.guide_completed_at
+  end
+
   test "show renders the guide content and table of contents" do
     get admin_guide_path
 

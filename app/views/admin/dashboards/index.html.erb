@@ -1,6 +1,9 @@
 <% content_for :page_title, "首页概览" %>
 <% grade_label = @grades.any? ? "授权年级 #{@grades.map(&:name).join(" / ")}" : "暂无授权年级" %>
 <% content_for :page_subtitle, [ @semester&.name, @campuse&.name, grade_label ].compact.join(" · ") %>
+<% content_for :page_actions do %>
+  <%= link_to "使用指引", root_path(guide: 1), class: "btn btn-xs btn-outline btn-primary" %>
+<% end %>
 
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
   <div class="wt-surface p-4">
@@ -92,6 +95,10 @@
         <span class="block font-medium">操作指南</span>
         <span class="mt-0.5 block text-[11px] text-base-content/40">使用帮助</span>
       <% end %>
+      <%= link_to root_path(guide: 1), class: "rounded-box border border-base-300 px-3 py-2.5 text-xs transition hover:border-primary/40 hover:bg-base-200/50" do %>
+        <span class="block font-medium">使用指引</span>
+        <span class="mt-0.5 block text-[11px] text-base-content/40">分步上手</span>
+      <% end %>
     </div>
   </div>
 </div>
@@ -154,3 +161,5 @@
     <% end %>
   </div>
 </div>
+
+<%= render "admin/shared/guide_wizard" if @guide_steps.any? %>

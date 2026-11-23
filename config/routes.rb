@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   root "admin/dashboards#index"
   namespace :admin do
     get "guide", to: "guides#show", as: :guide
+    post "guide/complete", to: "guides#complete", as: :complete_guide
 
     resources :semester_klasses do
       member do

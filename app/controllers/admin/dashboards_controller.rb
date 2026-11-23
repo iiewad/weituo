@@ -43,5 +43,64 @@ class Admin::DashboardsController < AdminController
     end
 
     @progress = @total_courses.zero? ? 0 : (@started_courses * 100 / @total_courses)
+
+    @guide_steps = guide_steps
+    @show_guide = Current.user.guide_completed_at.nil? || params[:guide].present?
   end
+
+  private
+    # 新手引导步骤：按当前数据判断完成状态，超级管理员多一步课程配置
+    def guide_steps
+      admin = Current.user.has_role_by_campuse_id(Current.campuse.id, "admin")
+      grade_subjects_ready = Current.semester.present? &&
+        Current.school.grade_subjects.where(semester_id: Current.semester.id).exists?
+
+      steps = [
+        {
+          title: "确认校区与学期",
+          description: "用顶栏确认当前校区和学期。还没有新学期时，先到学校管理里创建学期并填写起止日期与序号。",
+          done: Current.semester.present?,
+          link: admin ? admin_schools_path : nil,
+          link_text: "学校与学期"
+        },
+        {
+          title: "配置年级科目与课次",
+          description: "在年级科目管理中勾选本学期开设的年级 × 科目，并为每个组合设置默认课次；开班时会自动带出。",
+          done: grade_subjects_ready,
+          link: admin ? admin_grade_subjects_path : nil,
+          link_text: "年级科目管理",
+          admin_only: true
+        },
+        {
+          title: "准备教师与学员",
+          description: "在教师管理里维护授课教师（科目随教师），在学员管理里建档或批量导入；学员需要年级和日校。",
+          done: @teacher_count.positive? && @student_count.positive?,
+          link: admin_teachers_path,
+          link_text: "教师管理"
+        },
+        {
+          title: "开班",
+          description: "在班级管理里新建班级，或把上学期班级复制过来；课次会按年级科目配置自动生成。",
+          done: @klass_count.positive?,
+          link: admin_semester_klasses_path,
+          link_text: "班级管理"
+        },
+        {
+          title: "开课与考勤",
+          description: "进入班级详情按顺序开课；点击考勤格记录缺课、请假、退课或转出，搜不到学员时可快速建档。",
+          done: @started_courses.positive?,
+          link: admin_semester_klasses_path,
+          link_text: "去开课"
+        },
+        {
+          title: "看报表、做续报",
+          description: "在班级报表查看新增 / 拓科 / 预留率；用「预留」或「复制」把当前学员带到下学期。",
+          done: nil,
+          link: statement_admin_semester_klasses_path,
+          link_text: "班级报表"
+        }
+      ]
+
+      steps.reject { |step| step[:admin_only] && !admin }
+    end
 end

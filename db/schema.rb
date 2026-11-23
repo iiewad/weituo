@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_23_062135) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_23_072231) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -183,6 +183,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_23_062135) do
     t.string "name", null: false
     t.string "password_digest", null: false
     t.datetime "updated_at", null: false
+    t.datetime "guide_completed_at"
     t.index ["name"], name: "index_users_on_name", unique: true
   end
 
