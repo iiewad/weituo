@@ -268,6 +268,20 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal referrer, student.referrer
   end
 
+  test "import rolls back the whole batch and reports the failure" do
+    text = [
+      "正常导入,男,2000-01-01,7,1,2026-01-01,三中",
+      "#{"超长" * 200},男,2000-01-02,7,1,2026-01-01,三中"
+    ].join("\n")
+
+    assert_no_difference -> { Student.count } do
+      post import_admin_students_path, params: { students_text: text }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "已全部回滚", flash[:alert]
+  end
+
   test "quick_create returns the new student as json" do
     assert_difference -> { Student.count }, 1 do
       post quick_create_admin_students_path,

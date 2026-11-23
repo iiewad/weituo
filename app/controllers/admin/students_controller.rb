@@ -120,6 +120,8 @@ class Admin::StudentsController < AdminController
     else
       redirect_to admin_students_path, alert: message
     end
+  rescue ActiveRecord::ActiveRecordError
+    redirect_to admin_students_path, alert: "导入失败，本批数据已全部回滚，请检查数据后重试"
   end
 
   def promote

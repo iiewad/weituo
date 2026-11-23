@@ -1,13 +1,33 @@
 class Admin::AttendancesController < AdminController
+  # 可直接从考勤格切换的状态；转出必须走 #transfer 并选择目标班级
+  MARKABLE_STATUSES = %w[absent personal_leave sick_leave filled quit rejoin].freeze
+  STATUS_LABELS = Attendance::STATUS_META.transform_values { |meta| meta[:name] }
+    .merge("rejoin" => "重新加入").freeze
+
   def mark
     @sk = campuse_semester_klasses.find(params[:semester_klass_id])
     @course = @sk.courses.find(params[:course_id])
     @attendance = @course.attendances.find(params[:id])
-    # 状态迁移级联本就在 AASM 事务内；这里把操作人记录也纳入同一事务
-    Attendance.transaction do
-      mark_status(@attendance, params[:status])
-      @attendance.update!(marked_by: Current.user)
+    status = params[:status].to_s
+
+    unless MARKABLE_STATUSES.include?(status)
+      message = status == "transfer" ? "转出请在转出抽屉中选择目标班级" : "未知的考勤状态"
+      redirect_to admin_semester_klass_path(@sk), alert: message
+      return
     end
+
+    # 状态迁移级联本就在 AASM 事务内；这里把操作人记录也纳入同一事务
+    begin
+      Attendance.transaction do
+        @attendance.public_send("mark_#{status}!")
+        @attendance.update!(marked_by: Current.user)
+      end
+    rescue AASM::InvalidTransition
+      redirect_to admin_semester_klass_path(@sk),
+        alert: "当前考勤状态无法改为「#{STATUS_LABELS.fetch(status, status)}」"
+      return
+    end
+
     redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
   end
 
@@ -60,17 +80,5 @@ class Admin::AttendancesController < AdminController
     def join_course_seq_for(target)
       first_open = target.courses.where(start_date: nil).minimum(:seq) || target.times.to_i
       [ first_open, 1 ].max
-    end
-
-    def mark_status(attendance, status)
-      case status
-      when "absent" then attendance.mark_absent!
-      when "personal_leave" then attendance.mark_personal_leave!
-      when "sick_leave" then attendance.mark_sick_leave!
-      when "filled" then attendance.mark_filled!
-      when "quit" then attendance.mark_quit!
-      when "transfer" then attendance.mark_transfer!
-      when "rejoin" then attendance.mark_rejoin!
-      end
     end
 end

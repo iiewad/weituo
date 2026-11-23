@@ -23,11 +23,13 @@ class CourseTest < ActiveSupport::TestCase
 
   test "start is idempotent" do
     course = courses(:sk_1_course_1)
-    course.start!
+    assert course.start!
+    started_on = course.reload.start_date
 
     assert_no_difference -> { course.attendances.count } do
-      course.start!
+      assert_not course.start!
     end
+    assert_equal started_on, course.reload.start_date
   end
 
   test "cannot start a later course before earlier ones" do

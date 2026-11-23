@@ -92,7 +92,9 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
     first.start!
     attendance = first.attendances.find_by!(klass_student_id: ks.id)
 
-    put mark_admin_semester_klass_course_attendance_path(sk, first, attendance, status: "transfer")
+    put transfer_admin_semester_klass_course_attendance_path(
+      sk, first, attendance, target_semester_klass_id: semester_klasses(:sk_eng_1).id
+    )
     assert_equal "transfer", ks.reload.status
 
     put start_admin_semester_klass_course_path(sk, later)

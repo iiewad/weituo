@@ -3,7 +3,7 @@ require "test_helper"
 class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
-  %w[absent personal_leave sick_leave quit transfer].each do |status|
+  %w[absent personal_leave sick_leave quit].each do |status|
     test "mark #{status}" do
       attendance = prepared_attendance
 
@@ -73,7 +73,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "normal", attendance.reload.status
   end
 
-  test "mark ignores an unknown status" do
+  test "mark rejects an unknown status" do
     attendance = prepared_attendance
 
     assert_no_changes -> { attendance.reload.status } do
@@ -81,7 +81,31 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "未知的考勤状态", flash[:alert]
+    assert_nil attendance.reload.marked_by
+  end
+
+  test "mark rejects a bare transfer without a target class" do
+    attendance = prepared_attendance
+
+    mark(attendance, "transfer")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "转出请在转出抽屉中选择目标班级", flash[:alert]
     assert_equal "normal", attendance.reload.status
+    assert_nil attendance.reload.marked_by
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
+  test "mark reports an invalid transition instead of raising" do
+    attendance = prepared_attendance
+
+    mark(attendance, "rejoin")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "无法改为「重新加入」", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+    assert_nil attendance.reload.marked_by
   end
 
   test "transfer marks the source and enrolls the student in the target class" do

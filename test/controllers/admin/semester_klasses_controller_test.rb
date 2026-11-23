@@ -402,6 +402,24 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "转出"
   end
 
+  test "show disables transfer when the class has no target class" do
+    sk = SemesterKlass.create!(
+      semester: semesters(:semester_current), campuse: campuses(:campuse_1),
+      grade: grades(:grade_9), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+    ks = KlassStudent.create!(semester_klass: sk, student: students(:student_9_1), status: "in")
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    course.attendances.create!(klass_student: ks, status: "normal")
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "button[disabled][title*='暂无可转入的班级']", text: "转出"
+    assert_select "form[action*='status=transfer']", count: 0
+  end
+
   test "statement keeps the filter selections after searching" do
     get statement_admin_semester_klasses_path(q: {
       semester_id_eq: semesters(:semester_previous).id,

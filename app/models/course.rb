@@ -3,12 +3,14 @@ class Course < ApplicationRecord
   has_many :attendances, dependent: :destroy
 
   def start!(date = Date.today)
-    return false if started? || !previous_courses_started?
-
     transaction do
+      # 锁定课次行：并发开同一课次时串行化，避免重复插入考勤撞唯一索引
+      lock!
+      return false if started? || !previous_courses_started?
+
       update!(start_date: date)
       semester_klass.klass_students.find_each do |ks|
-        attendance = attendances.find_or_create_by(klass_student_id: ks.id)
+        attendance = attendances.find_or_create_by!(klass_student_id: ks.id)
         # 退课 / 转出学员继续留在班级，后续开课沿用其报名状态生成对应考勤
         case ks.status
         when "out"      then attendance.update!(status: "quit")
@@ -16,6 +18,7 @@ class Course < ApplicationRecord
         end
       end
     end
+
     true
   end
 

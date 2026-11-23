@@ -14,6 +14,20 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert course.reload.started?
   end
 
+  test "starting an already started course reports it instead of success" do
+    sk = semester_klasses(:sk_math_1)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+
+    assert_no_difference -> { course.attendances.count } do
+      put start_admin_semester_klass_course_path(sk, course)
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已开课，无需重复操作", flash[:alert]
+    assert_nil flash[:notice]
+  end
+
   test "cannot start a later course before earlier ones" do
     sk = semester_klasses(:sk_math_1)
     course = sk.courses.find_by!(seq: 2)

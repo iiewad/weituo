@@ -70,18 +70,25 @@
         <div class="<%= "mt-0.5 border-t border-base-300 pt-2.5" if group_index.positive? %>">
           <div class="grid <%= grid_cols %> gap-1.5">
             <% actions.each do |(label, status, color)| %>
-              <% if status == "transfer" && @transfer_target_klasses.present? %>
-                <button type="button"
-                        class="btn btn-xs w-full <%= color %>"
-                        data-action="transfer-drawer#open"
-                        data-transfer-url="<%= transfer_admin_semester_klass_course_attendance_path(@sk, course, attendance.id) %>"
-                        data-transfer-student="<%= student.identity_label %>"
-                        data-transfer-source="<%= @sk.name %>"
-                        data-transfer-course="第 <%= course.seq %> 课"
-                        data-transfer-class-ids="<%= @enrolled_target_ids_by_student[student.id]&.join(",") %>"
-                        data-transfer-subject-id="<%= @sk.subject_id %>">
-                  <%= label %>
-                </button>
+              <% if status == "transfer" %>
+                <% if @transfer_target_klasses.present? %>
+                  <button type="button"
+                          class="btn btn-xs w-full <%= color %>"
+                          data-action="transfer-drawer#open"
+                          data-transfer-url="<%= transfer_admin_semester_klass_course_attendance_path(@sk, course, attendance.id) %>"
+                          data-transfer-student="<%= student.identity_label %>"
+                          data-transfer-source="<%= @sk.name %>"
+                          data-transfer-course="第 <%= course.seq %> 课"
+                          data-transfer-class-ids="<%= @enrolled_target_ids_by_student[student.id]&.join(",") %>"
+                          data-transfer-subject-id="<%= @sk.subject_id %>">
+                    <%= label %>
+                  </button>
+                <% else %>
+                  <button type="button" class="btn btn-xs w-full <%= color %>" disabled
+                          title="暂无可转入的班级，仅离开班级请使用「退课」">
+                    <%= label %>
+                  </button>
+                <% end %>
               <% else %>
                 <%= button_to label,
                       mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status:),

@@ -92,47 +92,67 @@ class Student < ApplicationRecord
     created = 0
     skipped = 0
 
-    rows.each do |row|
-      next if row.all? { |value| value.to_s.strip.blank? }
-      next if IMPORT_HEADERS.include?(row.first.to_s.strip)
+    transaction do
+      rows.each do |row|
+        next if row.all? { |value| value.to_s.strip.blank? }
+        next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
-      name, gender, birthday, grade_level, layer, in_date, day_school_name,
-        guardian_name, guardian_phone, guardian_relationship = row.map { |value| value.to_s.strip }
-      grade = Grade.find_by(level: grade_level)
-      day_school = campuse.day_schools.find_by(name: day_school_name)
+        name, gender, birthday, grade_level, layer, in_date, day_school_name,
+          guardian_name, guardian_phone, guardian_relationship = row.map { |value| value.to_s.strip }
+        grade = Grade.find_by(level: grade_level)
+        day_school = campuse.day_schools.find_by(name: day_school_name)
 
-      if name.blank? || grade.blank? || day_school.blank? || (grade_ids && !grade_ids.include?(grade.id))
-        skipped += 1
-        next
-      end
-
-      gender = {
-        "男" => "male", "女" => "female",
-        "male" => "male", "female" => "female"
-      }[gender]
-
-      student = find_or_create_by(
-        name: name,
-        gender: gender,
-        birthday: birthday,
-        grade_id: grade.id,
-        layer: layer,
-        in_date: in_date,
-        day_school_id: day_school.id,
-        campuse_id: campuse_id
-      )
-
-      if guardian_name.present? && guardian_phone.present?
-        student.guardians.find_or_create_by(name: guardian_name, phone: guardian_phone) do |guardian|
-          guardian.relationship = guardian_relationship.presence
+        if name.blank? || grade.blank? || day_school.blank? || (grade_ids && !grade_ids.include?(grade.id))
+          skipped += 1
+          next
         end
-      end
 
-      student.previously_new_record? ? created += 1 : skipped += 1
+        gender = {
+          "男" => "male", "女" => "female",
+          "male" => "male", "female" => "female"
+        }[gender]
+
+        student = import_student(campuse_id, {
+          name: name,
+          gender: gender,
+          birthday: birthday,
+          grade_id: grade.id,
+          layer: layer,
+          in_date: in_date,
+          day_school_id: day_school.id
+        })
+
+        if student.new_record? && !student.save
+          skipped += 1
+          next
+        end
+
+        if guardian_name.present? && guardian_phone.present?
+          student.guardians.find_or_create_by(name: guardian_name, phone: guardian_phone) do |guardian|
+            guardian.relationship = guardian_relationship.presence
+          end
+        end
+
+        student.previously_new_record? ? created += 1 : skipped += 1
+      end
     end
 
     [ created, skipped ]
   end
+
+  # 导入去重键：校区 + 姓名 + 生日；生日缺失时退回 校区 + 姓名 + 年级。
+  # 年级、日校、入学日期等会变化的属性不参与比对，避免同一学员重复建档。
+  def self.import_student(campuse_id, attributes)
+    scope = where(campuse_id: campuse_id, name: attributes[:name])
+    scope = if attributes[:birthday].present?
+      scope.where(birthday: attributes[:birthday])
+    else
+      scope.where(birthday: nil, grade_id: attributes[:grade_id])
+    end
+
+    scope.order(:id).first || new(attributes.merge(campuse_id: campuse_id))
+  end
+  private_class_method :import_student
 
   # xlsx 里生日/入学日期可能是 Date 或未格式化的 Excel 序列号。
   def self.normalize_import_row(row)
