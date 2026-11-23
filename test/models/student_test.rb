@@ -64,7 +64,29 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal "七年级 · 序号 2", second.identity_detail
   end
 
-  test "name sequence is scoped by campus and recalculated after rename" do
+  test "renaming keeps the name sequence when it is free" do
+    campuse = campuses(:campuse_1)
+    student = Student.create!(name: "旧名", campuse:, grade: grades(:grade_7))
+
+    student.update!(name: "改名后")
+
+    assert_equal 1, student.name_seq
+  end
+
+  test "renaming bumps the sequence only when the target name already uses it" do
+    campuse = campuses(:campuse_1)
+    first = Student.create!(name: "同名", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "同名", campuse:, grade: grades(:grade_7))
+    renamed = Student.create!(name: "另一人", campuse:, grade: grades(:grade_7))
+
+    renamed.update!(name: "同名")
+
+    assert_equal 1, first.name_seq
+    assert_equal 2, second.name_seq
+    assert_equal 3, renamed.name_seq
+  end
+
+  test "name sequence is scoped by campus and bumps when a rename collides" do
     other_campuse = Campuse.create!(name: "第二校区", school: schools(:school_1))
     first = Student.create!(name: "跨校区同名", campuse: campuses(:campuse_1), grade: grades(:grade_7))
     second = Student.create!(name: "跨校区同名", campuse: other_campuse, grade: grades(:grade_7))

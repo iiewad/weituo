@@ -182,9 +182,16 @@ class Student < ApplicationRecord
       new_record? || will_save_change_to_name? || will_save_change_to_campuse_id?
     end
 
+    # 同名序号在同一校区内唯一。锁住校区行再比对，避免并发建档拿到相同序号。
+    # 改名 / 转校区时只要原序号没被占用就保留，保证「序号 N」这个身份标识稳定。
     def assign_name_seq
-      max = self.class.where(campuse_id: campuse_id, name: name).where.not(id: id).maximum(:name_seq).to_i
-      self.name_seq = max + 1
+      campuse.with_lock do
+        siblings = self.class.where(campuse_id: campuse_id, name: name).where.not(id: id).lock.to_a
+
+        next if name_seq.present? && siblings.none? { |sibling| sibling.name_seq == name_seq }
+
+        self.name_seq = siblings.map(&:name_seq).max.to_i + 1
+      end
     end
 
     def sync_referrer
