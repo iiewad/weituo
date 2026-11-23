@@ -3,8 +3,11 @@ class Admin::AttendancesController < AdminController
     @sk = campuse_semester_klasses.find(params[:semester_klass_id])
     @course = @sk.courses.find(params[:course_id])
     @attendance = @course.attendances.find(params[:id])
-    mark_status(@attendance, params[:status])
-    @attendance.update!(marked_by: Current.user)
+    # 状态迁移级联本就在 AASM 事务内；这里把操作人记录也纳入同一事务
+    Attendance.transaction do
+      mark_status(@attendance, params[:status])
+      @attendance.update!(marked_by: Current.user)
+    end
     redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
   end
 

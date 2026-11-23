@@ -96,6 +96,26 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "normal", attendance_for(later).status
   end
 
+  test "a cascade failure rolls back the quit status and enrollment" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    later.start!
+    attendance = attendance_for(course)
+
+    original = KlassStudent.method(:find_by!)
+    KlassStudent.define_singleton_method(:find_by!) { |*| raise "cascade boom" }
+    begin
+      assert_raises(RuntimeError) { attendance.mark_quit! }
+    ensure
+      KlassStudent.define_singleton_method(:find_by!, original)
+    end
+
+    assert_equal "normal", attendance.reload.status
+    assert_equal "normal", attendance_for(later).status
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
   test "personal leave can still be marked quit" do
     course = courses(:sk_1_course_1)
     course.start!
