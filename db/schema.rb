@@ -10,18 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_131250) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_23_062135) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
-    t.json "mark_at"
     t.integer "status", default: 1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "marked_by_id"
+    t.bigint "transfer_target_klass_id"
     t.index ["course_id", "klass_student_id"], name: "index_attendances_on_course_id_and_klass_student_id", unique: true
     t.index ["klass_student_id"], name: "index_attendances_on_klass_student_id"
     t.index ["marked_by_id"], name: "index_attendances_on_marked_by_id"
+    t.index ["transfer_target_klass_id"], name: "index_attendances_on_transfer_target_klass_id"
   end
 
   create_table "campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -187,6 +188,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_131250) do
 
   add_foreign_key "attendances", "courses"
   add_foreign_key "attendances", "klass_students"
+  add_foreign_key "attendances", "semester_klasses", column: "transfer_target_klass_id", on_delete: :nullify
   add_foreign_key "attendances", "users", column: "marked_by_id", on_delete: :nullify
   add_foreign_key "campuses", "schools"
   add_foreign_key "courses", "semester_klasses"

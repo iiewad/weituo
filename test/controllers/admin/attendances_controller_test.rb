@@ -144,6 +144,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
     assert_equal "transfer", attendance.reload.status
+    assert_equal target.id, attendance.transfer_target_klass_id
     assert_equal "transfer", klass_students(:ks_2).reload.status
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end

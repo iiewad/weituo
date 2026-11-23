@@ -56,12 +56,13 @@ class KlassStudent < ApplicationRecord
   end
 
   private
-    # 转出时在考勤 mark_at 里记录目标班；撤销时把该班报名移出，历史考勤保留
+    # 转出时在考勤上记录目标班；撤销时把该班报名移出，历史考勤保留
     def release_transfer_target(attendance)
-      target_id = attendance.mark_at&.dig("transfer_target_klass_id")
+      target_id = attendance.transfer_target_klass_id
       return if target_id.blank?
 
       target = KlassStudent.unscoped.find_by(semester_klass_id: target_id, student_id: student_id)
       target.archive! if target && target.archived_at.nil?
+      attendance.update_columns(transfer_target_klass_id: nil)
     end
 end

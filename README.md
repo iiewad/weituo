@@ -104,7 +104,7 @@ flowchart LR
 
 ### 4. 考勤状态流转
 
-状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出。每次打标会在 `mark_at` 里记对应时间戳。
+状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上。
 
 | 事件 | 允许从 | 到 | 额外副作用 |
 | --- | --- | --- | --- |

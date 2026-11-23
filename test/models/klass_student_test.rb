@@ -38,7 +38,7 @@ class KlassStudentTest < ActiveSupport::TestCase
     attendance = course.attendances.find_by!(klass_student_id: source.id)
     attendance.update!(
       status: "transfer",
-      mark_at: { "transfer_at" => Time.current.iso8601, "transfer_target_klass_id" => target_sk.id }
+      transfer_target_klass_id: target_sk.id
     )
     source.update!(status: :transfer)
 
@@ -46,6 +46,7 @@ class KlassStudentTest < ActiveSupport::TestCase
 
     assert_equal "in", source.reload.status
     assert_equal "normal", attendance.reload.status
+    assert_nil attendance.transfer_target_klass_id
     assert target.reload.archived_at.present?
   end
 end

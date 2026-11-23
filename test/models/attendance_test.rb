@@ -18,10 +18,8 @@ class AttendanceTest < ActiveSupport::TestCase
     attendance = course.attendances.find_by(klass_student_id: ks.id)
     attendance.mark_absent!
     assert_equal "absent", attendance.status
-    assert attendance.mark_at["absent_at"].present?
     attendance.mark_filled!
     assert_equal "filled", attendance.status
-    assert attendance.mark_at["filled_at"].present?
   end
 
   test "one attendance per klass student and course" do
@@ -41,12 +39,10 @@ class AttendanceTest < ActiveSupport::TestCase
 
     attendance.mark_personal_leave!
     assert_equal "personal_leave", attendance.status
-    assert attendance.mark_at["personal_leave_at"].present?
 
     attendance.mark_filled!
     attendance.mark_sick_leave!
     assert_equal "sick_leave", attendance.status
-    assert attendance.mark_at["sick_leave_at"].present?
   end
 
   test "mark quit only cascades to later started courses" do
@@ -91,7 +87,6 @@ class AttendanceTest < ActiveSupport::TestCase
     attendance.mark_rejoin!
 
     assert_equal "normal", attendance.status
-    assert attendance.mark_at["rejoin_at"].present?
     assert_equal "in", klass_students(:ks_1).reload.status
     assert_equal "normal", attendance_for(later).status
   end
@@ -125,7 +120,7 @@ class AttendanceTest < ActiveSupport::TestCase
     attendance = attendance_for(course)
     attendance.update!(
       status: "transfer",
-      mark_at: { "transfer_at" => Time.current.iso8601, "transfer_target_klass_id" => target_sk.id }
+      transfer_target_klass_id: target_sk.id
     )
     source.update!(status: :transfer)
 
