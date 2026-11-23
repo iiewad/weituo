@@ -43,16 +43,8 @@ class Attendance < ApplicationRecord
         self.rejoin_at = Time.zone.now.iso8601
       end
       after do
-        # 课程之前的维持退课或转出状态，课程之后的考勤状态改为正常
-        ks = KlassStudent.find_by!(
-          semester_klass_id: course.semester_klass_id,
-          student_id: klass_student.student_id
-        )
-        ks.update!(status: "in") unless ks.status == "in"
-        course.semester_klass.courses.where("seq >= ? AND start_date IS NOT NULL", course.seq).each do |c|
-          attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
-          attendance.update!(status: "normal")
-        end
+        # 与班级页「撤销」共用 KlassStudent#reinstate! 的语义：只撤销最近一段连续退/转
+        klass_student.reinstate!(attendance: self)
       end
       transitions from: [ :quit, :transfer ], to: :normal
     end

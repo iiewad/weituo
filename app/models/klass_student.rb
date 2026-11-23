@@ -32,21 +32,26 @@ class KlassStudent < ApplicationRecord
     update!(archived_at: nil, status: :in)
   end
 
-  # 撤销退课 / 转出：恢复当前离开期间的考勤，并把报名状态改回在班
-  def reinstate!
+  # 撤销退课 / 转出：恢复最近一段连续退/转的考勤，并把报名状态改回在班。
+  # attendance 用于从考勤入口撤销：该行此时已被状态机写回正常，不进 streak，
+  # 但仍需清理它记录的转出目标班。
+  def reinstate!(attendance: nil)
     transaction do
+      release_transfer_target(attendance) if attendance
+
       ordered = attendances.joins(:course).order("courses.seq").to_a
-      last_present = ordered.rindex { |attendance| !attendance.status.in?(%w[quit transfer]) }
+      last_present = ordered.rindex { |row| !row.status.in?(%w[quit transfer]) }
       streak = ordered[(last_present ? last_present + 1 : 0)..] || []
 
-      streak.each do |attendance|
-        next unless attendance.status.in?(%w[quit transfer])
+      streak.each do |row|
+        next unless row.status.in?(%w[quit transfer])
 
-        release_transfer_target(attendance)
-        attendance.update!(status: "normal")
+        release_transfer_target(row)
+        row.update!(status: "normal")
       end
 
-      update!(status: :in)
+      # 从考勤入口调用时，关联实例可能早于状态级联加载；reload 后写入，避免脏检查跳过更新
+      reload.update!(status: :in)
     end
   end
 

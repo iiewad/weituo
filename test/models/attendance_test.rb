@@ -116,6 +116,41 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "in", klass_students(:ks_1).reload.status
   end
 
+  test "mark rejoin releases the transfer target like the class page undo" do
+    source = klass_students(:ks_1)
+    target_sk = semester_klasses(:sk_eng_1)
+    target = KlassStudent.create!(semester_klass: target_sk, student: students(:student_7_1), status: "in")
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+    attendance.update!(
+      status: "transfer",
+      mark_at: { "transfer_at" => Time.current.iso8601, "transfer_target_klass_id" => target_sk.id }
+    )
+    source.update!(status: :transfer)
+
+    attendance.mark_rejoin!
+
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", source.reload.status
+    assert target.reload.archived_at.present?
+  end
+
+  test "mark rejoin only restores the trailing leave block" do
+    first = courses(:sk_1_course_1)
+    second = courses(:sk_1_course_2)
+    third = courses(:sk_1_course_3)
+    [ first, second, third ].each(&:start!)
+    attendance_for(first).mark_quit!
+
+    attendance_for(third).mark_rejoin!
+
+    assert_equal "normal", attendance_for(third).status
+    assert_equal "quit", attendance_for(first).status
+    assert_equal "quit", attendance_for(second).status
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
   test "personal leave can still be marked quit" do
     course = courses(:sk_1_course_1)
     course.start!
