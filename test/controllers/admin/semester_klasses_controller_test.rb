@@ -174,6 +174,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       genre: "TG", seq: 7, times: 1
     )
     KlassStudent.create!(semester_klass: sk, student: students(:student_7_1), status: "in")
+    # 班级属于下学期，先切到该学期再操作
+    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
 
     post reserve_admin_semester_klass_path(sk), params: { student_ids: [ students(:student_7_1).id ] }
 
@@ -256,7 +258,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "insert_students adds selected students from the chosen course" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
     student = students(:student_7_2)
 
     assert_difference -> { sk.klass_students.count }, 1 do
@@ -271,7 +273,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "insert_students requires a selection" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
 
     assert_no_difference -> { sk.klass_students.count } do
       post insert_students_admin_semester_klass_path(sk), params: { student_ids: [ "" ], join_course_seq: 1 }
@@ -282,7 +284,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "insert_students skips students already in the class" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
 
     assert_no_difference -> { sk.klass_students.count } do
       post insert_students_admin_semester_klass_path(sk),
@@ -776,7 +778,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "update" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
 
     put admin_semester_klass_path(sk), params: { semester_klass: {
       genre: "JY", seq: 42, times: 5,

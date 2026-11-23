@@ -15,8 +15,11 @@ class AdminController < ApplicationController
       @allowed_grade_ids ||= Current.user.grades_by_campuse(Current.campuse.id).ids
     end
 
+    # 当前校区、当前学期、授权年级内的班级；与页面展示范围保持一致，避免跨学期改数据
     def campuse_semester_klasses
-      Current.campuse.semester_klasses.where(grade_id: allowed_grade_ids)
+      scope = Current.campuse.semester_klasses.where(grade_id: allowed_grade_ids)
+      scope = scope.where(semester_id: Current.semester.id) if Current.semester
+      scope
     end
 
     def set_current_context

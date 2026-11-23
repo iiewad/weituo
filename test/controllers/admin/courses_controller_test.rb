@@ -4,7 +4,7 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_as users(:one) }
 
   test "start creates attendances for enrolled students" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 1)
 
     assert_difference -> { course.attendances.count }, 1 do
@@ -15,7 +15,7 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "starting an already started course reports it instead of success" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 1)
     course.start!
 
@@ -29,7 +29,7 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "cannot start a later course before earlier ones" do
-    sk = semester_klasses(:sk_math_1)
+    sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 2)
 
     put start_admin_semester_klass_course_path(sk, course)

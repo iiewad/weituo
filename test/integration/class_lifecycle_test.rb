@@ -65,10 +65,10 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
   end
 
   test "退课后学员保留在班级，后续开课沿用退课状态" do
-    sk = semester_klasses(:sk_math_1)
-    ks = klass_students(:ks_1)
-    first = courses(:sk_1_course_1)
-    later = courses(:sk_1_course_2)
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    first = courses(:sk_2_course_1)
+    later = courses(:sk_2_course_2)
     first.start!
     attendance = first.attendances.find_by!(klass_student_id: ks.id)
 
@@ -85,15 +85,15 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
   end
 
   test "转出后学员保留在班级，后续开课沿用转出状态" do
-    sk = semester_klasses(:sk_math_1)
-    ks = klass_students(:ks_1)
-    first = courses(:sk_1_course_1)
-    later = courses(:sk_1_course_2)
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    first = courses(:sk_2_course_1)
+    later = courses(:sk_2_course_2)
     first.start!
     attendance = first.attendances.find_by!(klass_student_id: ks.id)
 
     put transfer_admin_semester_klass_course_attendance_path(
-      sk, first, attendance, target_semester_klass_id: semester_klasses(:sk_eng_1).id
+      sk, first, attendance, target_semester_klass_id: semester_klasses(:sk_math_3).id
     )
     assert_equal "transfer", ks.reload.status
 

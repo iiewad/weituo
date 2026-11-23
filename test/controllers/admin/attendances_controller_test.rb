@@ -44,15 +44,40 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
   test "mark quit cascades to later started courses and the enrollment" do
     attendance = prepared_attendance
-    later = semester_klasses(:sk_math_1).courses.find_by!(seq: 2)
+    later = semester_klasses(:sk_math_2).courses.find_by!(seq: 2)
     later.start!
 
     mark(attendance, "quit")
 
-    assert_equal "out", klass_students(:ks_1).reload.status
-    assert_equal "quit", later.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
-    assert_nil semester_klasses(:sk_math_1).courses.find_by!(seq: 3)
-      .attendances.find_by(klass_student_id: klass_students(:ks_1).id)
+    assert_equal "out", klass_students(:ks_2).reload.status
+    assert_equal "quit", later.attendances.find_by!(klass_student_id: klass_students(:ks_2).id).status
+    assert_nil semester_klasses(:sk_math_2).courses.find_by!(seq: 3)
+      .attendances.find_by(klass_student_id: klass_students(:ks_2).id)
+  end
+
+  test "cannot mark attendance from a semester that is not current" do
+    sk = semester_klasses(:sk_math_1)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+    attendance = course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id)
+
+    put mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "absent")
+
+    assert_response :not_found
+    assert_equal "normal", attendance.reload.status
+  end
+
+  test "switching semester allows backfilling attendance for that semester" do
+    sk = semester_klasses(:sk_math_1)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+    attendance = course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id)
+
+    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_previous))
+    put mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "absent")
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal "absent", attendance.reload.status
   end
 
   test "cannot mark attendance from another campus" do
@@ -94,7 +119,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_match "转出请在转出抽屉中选择目标班级", flash[:alert]
     assert_equal "normal", attendance.reload.status
     assert_nil attendance.reload.marked_by
-    assert_equal "in", klass_students(:ks_1).reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
   end
 
   test "mark reports an invalid transition instead of raising" do
@@ -110,7 +135,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
   test "transfer marks the source and enrolls the student in the target class" do
     attendance = prepared_attendance
-    target = semester_klasses(:sk_eng_1)
+    target = semester_klasses(:sk_math_3)
 
     put transfer_admin_semester_klass_course_attendance_path(
       attendance.course.semester_klass, attendance.course, attendance,
@@ -119,7 +144,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
     assert_equal "transfer", attendance.reload.status
-    assert_equal "transfer", klass_students(:ks_1).reload.status
+    assert_equal "transfer", klass_students(:ks_2).reload.status
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
@@ -132,13 +157,13 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
     assert_equal "normal", attendance.reload.status
-    assert_equal "in", klass_students(:ks_1).reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
   end
 
   test "transfer rejects a class that already contains the student" do
     attendance = prepared_attendance
     target = SemesterKlass.create!(
-      semester: semesters(:semester_previous), campuse: campuses(:campuse_1),
+      semester: semesters(:semester_current), campuse: campuses(:campuse_1),
       grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
       genre: "JY", seq: 88, times: 1
     )
@@ -151,14 +176,14 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
     assert_equal "normal", attendance.reload.status
-    assert_equal "in", klass_students(:ks_1).reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
   end
 
   private
     def prepared_attendance
-      course = semester_klasses(:sk_math_1).courses.find_by!(seq: 1)
+      course = semester_klasses(:sk_math_2).courses.find_by!(seq: 1)
       course.start!
-      course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id)
+      course.attendances.find_by!(klass_student_id: klass_students(:ks_2).id)
     end
 
     def mark(attendance, status)
