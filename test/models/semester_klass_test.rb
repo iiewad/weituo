@@ -1,39 +1,18 @@
 require "test_helper"
 
 class SemesterKlassTest < ActiveSupport::TestCase
-  test "should add students by text" do
-    # 学员不存在不会被添加
+  test "join_klass fills absences before the entry course and attendances after it" do
     sk = semester_klasses(:sk_math_1)
-    text = "未录入学员"
-    sk.add_students_by_text(text)
-    assert_nil sk.students.find_by(name: "未录入学员")
-    # 年级不符合不会被添加
-    text = "8_学生1"
-    sk.add_students_by_text(text)
-    assert_nil sk.students.find_by(name: "8_学生1")
-    # 正常添加
-    text = "7_学生2"
-    sk.add_students_by_text(text)
-    assert_equal 1, sk.students.where(name: "7_学生2").count
-    # 正常添加, 已开课程考勤默认 normal
-    course = sk.courses.find_by(seq: 1)
-    course.start!
-    text = "7_学生3"
-    sk.add_students_by_text(text)
-    assert_equal 1, sk.students.where(name: "7_学生3").count
-    assert_equal "normal", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生3").id).id).status
-    # 插班情况
-    text = "7_学生4 4+"
-    sk.add_students_by_text(text)
-    assert_equal 1, sk.students.where(name: "7_学生4").count
-    # 插班课程之前的考勤应该标记为 absent
-    sk.courses.where("seq < ?", 4).each do |course|
-      assert_equal "absent", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生4").id).id).status
+    sk.courses.order(:seq).limit(4).each(&:start!)
+    student = students(:student_7_2)
+
+    student.join_klass(sk, course_seq: 4)
+
+    ks = sk.klass_students.find_by!(student_id: student.id)
+    sk.courses.where("seq < ?", 4).each do |row|
+      assert_equal "absent", row.attendances.find_by!(klass_student_id: ks.id).status
     end
-    # 插班课程之后的考勤应该标记为 normal
-    sk.courses.where("seq >= ? AND start_date IS NOT NULL", 4).each do |course|
-      assert_equal "normal", course.attendances.find_by(klass_student_id: sk.klass_students.find_by(student_id: sk.students.find_by(name: "7_学生4").id).id).status
-    end
+    assert_equal "normal", sk.courses.find_by!(seq: 4).attendances.find_by!(klass_student_id: ks.id).status
   end
 
   test "reserve rate" do
@@ -147,10 +126,6 @@ class SemesterKlassTest < ActiveSupport::TestCase
 
     assert_empty sk.current_active_students
     assert_equal [ "7_学生1" ], sk.inactive_students.pluck(:name)
-  end
-
-  test "students text lists enrolled names" do
-    assert_equal "7_学生1", semester_klasses(:sk_math_1).students_text
   end
 
   test "new rate treats all students as new when there is no history semester" do

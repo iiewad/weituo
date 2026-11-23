@@ -58,7 +58,7 @@ class Admin::SemesterKlassesController < AdminController
       return
     end
 
-    @sk = SemesterKlass.new(semester_klass_params.except(:students_text, :teacher_id))
+    @sk = SemesterKlass.new(semester_klass_params.except(:teacher_id))
     @sk.campuse_id = Current.campuse.id
     @sk.semester_id = Current.semester.id
     @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
@@ -89,7 +89,7 @@ class Admin::SemesterKlassesController < AdminController
 
     @sk = campuse_semester_klasses.find(params[:id])
     teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
-    attrs = semester_klass_params.except(:students_text, :teacher_id).merge(teacher_id: teacher.id, subject_id: teacher.subject_id)
+    attrs = semester_klass_params.except(:teacher_id).merge(teacher_id: teacher.id, subject_id: teacher.subject_id)
     attrs[:times] = @sk.times if attrs[:times].blank?
 
     if @sk.update(attrs)
@@ -132,7 +132,7 @@ class Admin::SemesterKlassesController < AdminController
     end
 
     target_semester = copy_target_semester
-    @sk = SemesterKlass.new(semester_klass_params.except(:students_text, :teacher_id))
+    @sk = SemesterKlass.new(semester_klass_params.except(:teacher_id))
     @sk.semester_id = target_semester.id
     @sk.campuse_id = Current.campuse.id
     @sk.teacher = Current.campuse.teachers.find(params[:semester_klass][:teacher_id])
@@ -400,15 +400,13 @@ class Admin::SemesterKlassesController < AdminController
   def apply_students(semester_klass)
     student_ids = Array(params[:student_ids]).reject(&:blank?)
 
-    if student_ids.any?
-      max_seq = [ semester_klass.times.to_i, 1 ].max
-      join_seq = [ [ params[:join_course_seq].to_i, 1 ].max, max_seq ].min
-      Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
-        .where.not(id: semester_klass.klass_students.select(:student_id))
-        .find_each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
-    elsif params.dig(:semester_klass, :students_text).present?
-      semester_klass.add_students_by_text(params[:semester_klass][:students_text])
-    end
+    return if student_ids.empty?
+
+    max_seq = [ semester_klass.times.to_i, 1 ].max
+    join_seq = [ [ params[:join_course_seq].to_i, 1 ].max, max_seq ].min
+    Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
+      .where.not(id: semester_klass.klass_students.select(:student_id))
+      .find_each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
   end
 
   # 目标学期只能选当前学期及其之后的学期；默认当前学期
@@ -456,6 +454,6 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def semester_klass_params
-    params.require(:semester_klass).permit(:genre, :seq, :times, :teacher_id, :grade_id, :students_text)
+    params.require(:semester_klass).permit(:genre, :seq, :times, :teacher_id, :grade_id)
   end
 end

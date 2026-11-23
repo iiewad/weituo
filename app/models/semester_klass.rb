@@ -76,27 +76,6 @@ class SemesterKlass < ApplicationRecord
     !courses.exists?(start_date: nil)
   end
 
-  def add_students_by_text(text)
-    text.split("\n").each do |line|
-      line.strip!
-      next if line.blank?
-      student = campuse.students.where(grade_id: grade_id).find_by(name: line.split(" ")[0])
-      next if student.blank?
-      if line.split(" ").length == 2
-        operator_str = line.split(" ")[1]
-        course_seq = operator_str[0]
-        operator = operator_str[1]
-        student.join_klass(self, course_seq: course_seq.to_i) if operator == "+"
-      elsif line.split(" ").length == 1
-        student.join_klass(self, course_seq: 1)
-      end
-    end
-  end
-
-  def students_text
-    students.map(&:name).join("\n")
-  end
-
   def self.ransackable_associations(auth_object = nil)
     [ "campuse", "courses", "grade", "klass_students", "semester", "students", "subject", "teacher" ]
   end

@@ -642,7 +642,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
         grade_id: grades(:grade_7).id,
         teacher_id: teachers(:math_teacher_1).id,
         campuse_id: campuses(:campuse_1).id,
-        genre: "JY", seq: 99, times: 3, students_text: ""
+        genre: "JY", seq: 99, times: 3
       } }
     end
     sk = SemesterKlass.last
@@ -663,7 +663,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
         campuse_id: other_campuse.id,
         grade_id: grades(:grade_7).id,
         teacher_id: teachers(:math_teacher_1).id,
-        genre: "JY", seq: 98, times: 1, students_text: ""
+        genre: "JY", seq: 98, times: 1
       } }
     end
 
@@ -691,7 +691,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       post admin_semester_klasses_path, params: { semester_klass: {
         grade_id: grades(:grade_7).id,
         teacher_id: teachers(:math_teacher_1).id,
-        genre: "JY", seq: 97, times: 1, students_text: ""
+        genre: "JY", seq: 97, times: 1
       } }
     end
 
@@ -720,7 +720,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       grade_id: grades(:grade_7).id,
       teacher_id: teachers(:math_teacher_1).id,
       campuse_id: campuses(:campuse_1).id,
-      genre: "JY", seq: 1, times: "", students_text: ""
+      genre: "JY", seq: 1, times: ""
     } }
 
     assert_equal 20, SemesterKlass.order(:id).last.times
@@ -733,7 +733,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       post admin_semester_klasses_path, params: { semester_klass: {
         semester_id: sk.semester_id, grade_id: sk.grade_id,
         teacher_id: sk.teacher_id, campuse_id: sk.campuse_id,
-        genre: sk.genre, seq: sk.seq, times: 3, students_text: ""
+        genre: sk.genre, seq: sk.seq, times: 3
       } }
     end
 
@@ -750,7 +750,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
       put admin_semester_klass_path(sk), params: {
         student_ids: [ students(:student_7_3).id ],
         join_course_seq: 1,
-        semester_klass: { genre: sk.genre, seq: sk.seq, times: sk.times, teacher_id: sk.teacher_id, students_text: "" }
+        semester_klass: { genre: sk.genre, seq: sk.seq, times: sk.times, teacher_id: sk.teacher_id }
       }
     end
 
@@ -762,7 +762,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     put admin_semester_klass_path(sk), params: { semester_klass: {
       genre: "JY", seq: 42, times: 5,
-      teacher_id: teachers(:math_teacher_1).id, students_text: ""
+      teacher_id: teachers(:math_teacher_1).id
     } }
 
     assert_redirected_to admin_semester_klass_path(sk)
@@ -775,7 +775,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_difference -> { sk.courses.count }, 2 do
       put admin_semester_klass_path(sk), params: { semester_klass: {
-        genre: sk.genre, teacher_id: sk.teacher_id, times: 18, students_text: ""
+        genre: sk.genre, teacher_id: sk.teacher_id, times: 18
       } }
     end
 
@@ -788,7 +788,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     put admin_semester_klass_path(sk), params: { semester_klass: {
       grade_id: grades(:grade_8).id, genre: sk.genre, teacher_id: sk.teacher_id,
-      times: sk.times, students_text: ""
+      times: sk.times
     } }
 
     assert_redirected_to admin_semester_klasses_path

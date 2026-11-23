@@ -6,13 +6,17 @@ class ClassLifecycleTest < ActionDispatch::IntegrationTest
   test "从开班到结课的完整链路" do
     # 1. 开班：自动排 3 次课并导入学员
     assert_difference -> { SemesterKlass.count }, 1 do
-      post admin_semester_klasses_path, params: { semester_klass: {
-        semester_id: semesters(:semester_current).id,
-        grade_id: grades(:grade_7).id,
-        teacher_id: teachers(:math_teacher_1).id,
-        campuse_id: campuses(:campuse_1).id,
-        genre: "JY", seq: 77, times: 3, students_text: "7_学生2"
-      } }
+      post admin_semester_klasses_path, params: {
+        student_ids: [ students(:student_7_2).id ],
+        join_course_seq: 1,
+        semester_klass: {
+          semester_id: semesters(:semester_current).id,
+          grade_id: grades(:grade_7).id,
+          teacher_id: teachers(:math_teacher_1).id,
+          campuse_id: campuses(:campuse_1).id,
+          genre: "JY", seq: 77, times: 3
+        }
+      }
     end
 
     sk = SemesterKlass.order(:id).last
