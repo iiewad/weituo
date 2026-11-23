@@ -73,7 +73,7 @@ class Admin::DashboardsController < AdminController
         },
         {
           title: "准备教师与学员",
-          description: "在教师管理里维护授课教师（科目随教师），在学员管理里建档或批量导入；学员需要年级和日校。",
+          description: "在教师管理里维护授课教师（科目随教师），在学员管理里建档或批量导入；学员需要年级和日校（日校由超级管理员在「日校管理」维护）。",
           done: @teacher_count.positive? && @student_count.positive?,
           link: admin_teachers_path,
           link_text: "教师管理"

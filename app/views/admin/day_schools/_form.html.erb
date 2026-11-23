@@ -1,0 +1,18 @@
+<%= form_with model: item,
+      url: item.new_record? ? admin_day_schools_path : admin_day_school_path(item),
+      method: item.new_record? ? :post : :put,
+      namespace: "day_school_#{item.id || 'new'}",
+      local: true,
+      class: "space-y-4" do |form| %>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold"><%= item.new_record? ? "新增日校" : "编辑日校" %></h3>
+    <p class="mt-1 text-xs text-base-content/50"><%= Current.campuse&.name %> · 日校名称在当前校区内不能重复。</p>
+
+    <div class="mt-3">
+      <%= form.label :name, "日校名称", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+      <%= form.text_field :name, class: "input input-sm w-full", placeholder: "例如：一中", required: true, autofocus: item.new_record? %>
+    </div>
+  </div>
+
+  <%= form.submit item.new_record? ? "添加日校" : "保存修改", class: "btn btn-primary w-full" %>
+<% end %>

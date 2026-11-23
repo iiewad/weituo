@@ -14,4 +14,21 @@ class DaySchoolTest < ActiveSupport::TestCase
       DaySchool.add_by_text(campuses(:campuse_1).id, "六中")
     end
   end
+
+  test "name is required and unique within a campus" do
+    campuse = campuses(:campuse_1)
+    existing = day_schools(:one)
+
+    duplicate = DaySchool.new(name: existing.name, campuse: campuse)
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:name], "在当前校区已存在"
+
+    assert_not DaySchool.new(name: "", campuse: campuse).valid?
+  end
+
+  test "the same name can be used by another campus" do
+    other_campuse = Campuse.create!(name: "第二校区", school: schools(:school_1))
+
+    assert DaySchool.new(name: day_schools(:one).name, campuse: other_campuse).valid?
+  end
 end

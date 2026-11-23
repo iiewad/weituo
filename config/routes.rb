@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       end
     end
     resources :teachers, only: [ :index, :create, :update ]
+    resources :day_schools, only: [ :index, :create, :update, :destroy ]
     resources :students, only: [ :index, :create, :update ] do
       collection do
         post :promote

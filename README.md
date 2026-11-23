@@ -184,6 +184,7 @@ stateDiagram-v2
 | `/admin/users` | 用户管理 |
 | `/admin/schools` | 学校管理（校区、学期；年级科目已独立） |
 | `/admin/grade_subjects` | 年级科目管理（按学期启用/取消组合并设置课次） |
+| `/admin/day_schools` | 日校管理（按校区维护日校名单） |
 | `/session/new` | 登录 |
 
 除登录、密码相关页面与 `/up` 健康检查外，所有页面都要求登录。
