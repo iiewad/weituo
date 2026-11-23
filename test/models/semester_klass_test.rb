@@ -15,23 +15,6 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert_equal "normal", sk.courses.find_by!(seq: 4).attendances.find_by!(klass_student_id: ks.id).status
   end
 
-  test "reserve rate" do
-    sk = semester_klasses(:sk_math_1)
-    (1..10).each do |i|
-      students("student_7_#{i}").join_klass(sk)
-    end
-    sk2 = semester_klasses(:sk_math_2)
-    (1..2).each do |i|
-      students("student_7_#{i}").join_klass(sk2)
-    end
-    sk3 = semester_klasses(:sk_math_3)
-    (5..6).each do |i|
-      students("student_7_#{i}").join_klass(sk3)
-    end
-
-    assert_equal 0.4, sk.reserve_rate
-  end
-
   test "creates times courses after create" do
     sk = SemesterKlass.create!(
       campuse: campuses(:campuse_1),
@@ -126,14 +109,6 @@ class SemesterKlassTest < ActiveSupport::TestCase
 
     assert_empty sk.current_active_students
     assert_equal [ "7_学生1" ], sk.inactive_students.pluck(:name)
-  end
-
-  test "new rate treats all students as new when there is no history semester" do
-    assert_equal 1.0, semester_klasses(:sk_math_1).new_rate
-  end
-
-  test "expand rate is zero when there is no previous semester" do
-    assert_equal 0.0, semester_klasses(:sk_math_1).expand_rate
   end
 
   test "validates unique class combination within a semester" do

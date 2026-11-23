@@ -36,10 +36,11 @@ class StatementReportTest < ActionDispatch::IntegrationTest
     )
     [ students(:student_7_3), students(:student_7_6) ].each { |student| student.join_klass(next_math) }
 
-    assert_equal 4, current.current_active_students.count
-    assert_equal 0.25, current.new_rate
-    assert_equal 0.25, current.expand_rate
-    assert_equal 0.5, current.reserve_rate
+    row = StatementReport.new(SemesterKlass.where(id: current.id), campuse: campuses(:campuse_1)).rows.first
+    assert_equal 4, row.active_count
+    assert_equal 0.25, row.new_rate
+    assert_equal 0.25, row.expand_rate
+    assert_equal 0.5, row.reserve_rate
 
     get statement_admin_semester_klasses_path
     assert_response :success

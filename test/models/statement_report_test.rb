@@ -5,21 +5,25 @@ class StatementReportModelTest < ActiveSupport::TestCase
     @campuse = campuses(:campuse_1)
   end
 
-  test "row counts and rates match the model calculations" do
+  test "row counts and rates are internally consistent" do
     report = StatementReport.new(SemesterKlass.where(campuse_id: @campuse.id), campuse: @campuse)
 
     report.rows.each do |row|
       sk = row.semester_klass
 
       assert_equal sk.current_active_students.count, row.active_count
-      assert_equal sk.new_students.size, row.new_count
-      assert_equal sk.expand_students.size, row.expand_count
       assert_equal sk.reserve_students.size, row.reserve_count
-      assert_equal row.active_count - row.reserve_count, row.unreserved_count
+      assert_equal row.reserve_count + row.unreserved_count, row.active_count
+      assert_equal row.new_students.size, row.new_count
+      assert_equal row.expand_students.size, row.expand_count
+      assert_equal row.reserve_students.size, row.reserve_count
       assert_equal row.unreserved_students.size, row.unreserved_count
-      assert_in_delta sk.new_rate, row.new_rate, 0.001
-      assert_in_delta sk.expand_rate, row.expand_rate, 0.001
-      assert_in_delta sk.reserve_rate, row.reserve_rate, 0.001
+
+      if row.active_count.positive?
+        assert_equal (row.new_count.to_f / row.active_count).round(2), row.new_rate
+        assert_equal (row.expand_count.to_f / row.active_count).round(2), row.expand_rate
+        assert_equal (row.reserve_count.to_f / row.active_count).round(2), row.reserve_rate
+      end
     end
   end
 

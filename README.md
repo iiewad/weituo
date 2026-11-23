@@ -155,8 +155,6 @@ stateDiagram-v2
 | 拓科率 `expand_rate` | 当前在班学员中，**上学期读过其他科目但未读过本科目**的占比 |
 | 预留率 `reserve_rate` | 当前在班学员中，**下学期同科目班级**仍就读的占比 |
 
-> 注：`SemesterKlass#reserve_students` 的注释写的是「上学期」，实现用的是 `related_next_semester`（下学期），以上表为准。
-
 页面顶部还有 4 个汇总卡：统计班级数、在班学员人次、平均新增率、平均预留率。
 
 ### 7. 复制班级
