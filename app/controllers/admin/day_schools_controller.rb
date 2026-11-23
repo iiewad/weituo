@@ -12,9 +12,15 @@ class Admin::DaySchoolsController < AdminController
     day_school = Current.campuse.day_schools.new(day_school_params)
 
     if day_school.save
-      redirect_to admin_day_schools_path, notice: "日校已添加"
+      respond_to do |format|
+        format.html { redirect_to admin_day_schools_path, notice: "日校已添加" }
+        format.json { render json: { id: day_school.id, name: day_school.name }, status: :created }
+      end
     else
-      redirect_to admin_day_schools_path, alert: "日校添加失败，#{day_school.errors.full_messages.join("；")}"
+      respond_to do |format|
+        format.html { redirect_to admin_day_schools_path, alert: "日校添加失败，#{day_school.errors.full_messages.join("；")}" }
+        format.json { render json: { errors: day_school.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 

@@ -282,6 +282,24 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_match "已全部回滚", flash[:alert]
   end
 
+  test "student form offers a quick day school entry for admins" do
+    get admin_students_path
+
+    assert_response :success
+    assert_select "[data-controller='quick-day-school-trigger'][data-quick-day-school-trigger-select-value='#student_new_student_day_school_id']"
+    assert_select "dialog#quick-day-school-modal"
+  end
+
+  test "managers do not see the quick day school entry" do
+    sign_in_as users(:two)
+
+    get admin_students_path
+
+    assert_response :success
+    assert_select "[data-controller='quick-day-school-trigger']", count: 0
+    assert_select "dialog#quick-day-school-modal", count: 0
+  end
+
   test "quick_create returns the new student as json" do
     assert_difference -> { Student.count }, 1 do
       post quick_create_admin_students_path,

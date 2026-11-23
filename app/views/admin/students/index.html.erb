@@ -211,3 +211,7 @@
     </nav>
   <% end %>
 </div>
+
+<% if Current.user.has_role_by_campuse_id(Current.campuse&.id, "admin") %>
+  <%= render "admin/shared/quick_day_school_modal" %>
+<% end %>

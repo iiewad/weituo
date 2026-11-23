@@ -23,7 +23,15 @@
       </div>
 
       <div>
-        <%= f.label :day_school_id, "日校", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <div class="mb-1 flex items-center justify-between gap-2">
+          <%= f.label :day_school_id, "日校", class: "block text-xs font-medium text-base-content/60" %>
+          <% if Current.user.has_role_by_campuse_id(Current.campuse&.id, "admin") %>
+            <button type="button" class="text-[11px] text-primary hover:underline"
+                    data-controller="quick-day-school-trigger"
+                    data-quick-day-school-trigger-select-value="#student_<%= item.id || "new" %>_student_day_school_id"
+                    data-action="quick-day-school-trigger#open">快速添加</button>
+          <% end %>
+        </div>
         <%= f.select :day_school_id, (@day_schools || DaySchool.where(campuse_id: Current.campuse.id).order(:name)).map { |day_school| [ day_school.name, day_school.id ] }, { prompt: "请选择日校" }, class: "select select-sm w-full" %>
       </div>
 

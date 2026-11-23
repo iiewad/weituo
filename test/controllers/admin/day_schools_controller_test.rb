@@ -31,6 +31,26 @@ class Admin::DaySchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_match "在当前校区已存在", flash[:alert]
   end
 
+  test "create returns the new day school as json for the quick picker" do
+    assert_difference -> { DaySchool.count }, 1 do
+      post admin_day_schools_path, params: { day_school: { name: "快捷日校" } }, as: :json
+    end
+
+    assert_response :created
+    body = JSON.parse(response.body)
+    assert_equal "快捷日校", body["name"]
+    assert DaySchool.exists?(id: body["id"], campuse: campuses(:campuse_1))
+  end
+
+  test "create returns errors as json for a duplicate name" do
+    assert_no_difference -> { DaySchool.count } do
+      post admin_day_schools_path, params: { day_school: { name: day_schools(:one).name } }, as: :json
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes JSON.parse(response.body)["errors"].first, "已存在"
+  end
+
   test "update renames the day school" do
     day_school = day_schools(:one)
 
