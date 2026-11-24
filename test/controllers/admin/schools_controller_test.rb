@@ -33,6 +33,35 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_equal schools(:school_1).id, Campuse.find_by!(name: "新校区").school_id
   end
 
+  test "a new campus is granted to the current admin so it shows in the switcher" do
+    assert_difference -> { UserCampuse.count }, 1 do
+      put admin_school_path(schools(:school_1)), params: {
+        school: { campuses_attributes: { "0" => { name: "新校区" } } }
+      }
+    end
+
+    campuse = Campuse.find_by!(name: "新校区")
+    user_campuse = users(:one).user_campuses.find_by!(campuse: campuse)
+    assert_equal "admin", user_campuse.role
+    assert_equal Grade.order(:level).ids, user_campuse.grade_ids.sort
+    assert_match "新校区", flash[:notice]
+
+    get admin_schools_path
+    assert_select "a[href*='/campuses/#{campuse.id}/switch_thread_campuse']", text: "新校区"
+  end
+
+  test "editing an existing campus does not add new grants" do
+    campuse = campuses(:campuse_1)
+
+    assert_no_difference -> { UserCampuse.count } do
+      put admin_school_path(schools(:school_1)), params: {
+        school: { campuses_attributes: { "0" => { id: campuse.id, name: "改名校区" } } }
+      }
+    end
+
+    assert_equal "改名校区", campuse.reload.name
+  end
+
   test "update adds a nested semester" do
     assert_difference -> { Semester.count }, 1 do
       put admin_school_path(schools(:school_1)), params: {
