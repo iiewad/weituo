@@ -93,6 +93,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
     assert_select "[data-controller='attendance-search'] input[data-attendance-search-target='input'][placeholder='搜索学员姓名']"
     assert_select "tr[data-attendance-search-target='row'][data-search-text*='#{students(:student_7_1).name}']"
+    assert_select "select#through_seq"
+    assert_select "input[type='submit'][value='批量开课']"
   end
 
   test "reserve enrolls selected students into an existing next semester class" do

@@ -28,6 +28,43 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert_nil flash[:notice]
   end
 
+  test "start_through opens all courses up to the chosen lesson" do
+    sk = semester_klasses(:sk_math_2)
+
+    assert_difference -> { Attendance.count }, 3 do
+      put start_through_admin_semester_klass_courses_path(sk), params: { through_seq: 3 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已开第 1–3 课", flash[:notice]
+    assert_equal 3, sk.courses.where.not(start_date: nil).count
+    assert sk.courses.find_by!(seq: 3).started?
+  end
+
+  test "start_through skips courses that are already open" do
+    sk = semester_klasses(:sk_math_2)
+    sk.courses.find_by!(seq: 1).start!
+
+    assert_difference -> { Attendance.count }, 2 do
+      put start_through_admin_semester_klass_courses_path(sk), params: { through_seq: 3 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal 3, sk.courses.where.not(start_date: nil).count
+  end
+
+  test "start_through rejects a lesson that is already open" do
+    sk = semester_klasses(:sk_math_2)
+    sk.courses.find_by!(seq: 1).start!
+
+    assert_no_difference -> { Attendance.count } do
+      put start_through_admin_semester_klass_courses_path(sk), params: { through_seq: 1 }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已开课或不存在", flash[:alert]
+  end
+
   test "cannot start a later course before earlier ones" do
     sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 2)

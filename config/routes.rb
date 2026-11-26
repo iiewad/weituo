@@ -26,6 +26,9 @@ Rails.application.routes.draw do
         member do
           put :start, to: "courses#start"
         end
+        collection do
+          put :start_through, to: "courses#start_through"
+        end
         resources :attendances do
           member do
             put :mark

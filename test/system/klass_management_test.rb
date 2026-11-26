@@ -150,6 +150,19 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_equal 3, created.courses.count
   end
 
+  test "可以选择课次批量开课" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    visit admin_semester_klass_path(sk)
+
+    select "第 3 课", from: "开课到"
+    click_button "批量开课"
+
+    assert_text "已开第 1–3 课"
+    assert_equal 3, sk.courses.where.not(start_date: nil).count
+    assert_text "开第 4 课"
+  end
+
   test "未开课的班级可以删除" do
     sign_in
     sk = semester_klasses(:sk_math_3)
