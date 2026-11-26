@@ -6,10 +6,8 @@
   <span><%= @sk.name %></span>
 <% end %>
 <% content_for :page_actions do %>
+  <%= render "admin/shared/drawer", item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "240", drawer_content: "admin/semester_klasses/form" %>
   <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
-  <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-add-students", button_name: "添加学员",
-        button_class: "btn btn-xs btn-outline btn-primary", drawer_width: "240",
-        drawer_content: "admin/semester_klasses/add_students_form" %>
   <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-reserve", button_name: "预留",
         button_class: "btn btn-xs btn-outline btn-primary", drawer_width: "260",
         drawer_content: "admin/semester_klasses/reserve_form" %>
@@ -122,7 +120,7 @@
       </tbody>
     </table>
     <% if @klass_students.empty? %>
-      <div class="p-10 text-center text-sm text-base-content/50">该班级暂无学员，可通过「添加学员」导入</div>
+      <div class="p-10 text-center text-sm text-base-content/50">该班级暂无学员，可在「班级详情」中添加</div>
     <% end %>
   </div>
 </div>

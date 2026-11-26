@@ -7,7 +7,6 @@ Rails.application.routes.draw do
     resources :semester_klasses do
       member do
         get :export_attendance
-        post :insert_students
         post :reserve
       end
       collection do

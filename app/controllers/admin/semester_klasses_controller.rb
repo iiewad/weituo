@@ -182,40 +182,6 @@ class Admin::SemesterKlassesController < AdminController
       disposition: "attachment"
   end
 
-  # 开班后的统一添加学员入口：选择入班课次后批量加入
-  def insert_students
-    @sk = campuse_semester_klasses.find(params[:id])
-
-    if params[:students_text].present?
-      added, created, skipped = join_students_from_text(@sk, params[:students_text], default_seq: params[:join_course_seq])
-      if added.zero?
-        redirect_to admin_semester_klass_path(@sk), alert: "名单为空，或学员都已在班"
-      else
-        redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("已添加 #{added} 名学员", added, created, skipped)
-      end
-      return
-    end
-
-    student_ids = Array(params[:student_ids]).reject(&:blank?)
-
-    if student_ids.empty?
-      redirect_to admin_semester_klass_path(@sk), alert: "请先选择要添加的学员"
-      return
-    end
-
-    join_seq = params[:join_course_seq].to_i.clamp(1, [ @sk.times.to_i, 1 ].max)
-    students = Student.where(id: student_ids, campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
-      .where.not(id: @sk.klass_students.select(:student_id)).to_a
-
-    if students.empty?
-      redirect_to admin_semester_klass_path(@sk), alert: "所选学员已在班级中，无需重复添加"
-      return
-    end
-
-    students.each { |student| student.join_klass(@sk, course_seq: join_seq) }
-    redirect_to admin_semester_klass_path(@sk), notice: "已添加 #{students.size} 名学员"
-  end
-
   # 预留下学期：把在班学员加入下学期同科目的目标班（班型/教师可不同）
   def reserve
     @sk = campuse_semester_klasses.find(params[:id])
@@ -333,10 +299,6 @@ class Admin::SemesterKlassesController < AdminController
       .transform_values { |pairs| pairs.map(&:last) }
     set_teacher_groups
     set_grade_subject_times_defaults
-    @insert_student_candidates = Student.where(
-      campuse_id: Current.campuse.id,
-      grade_id: @sk.grade_id
-    ).where.not(id: @sk.klass_students.select(:student_id)).includes(:grade).order(:name)
     @new_class_candidates = new_class_candidates
   end
 

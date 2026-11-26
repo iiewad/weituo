@@ -121,6 +121,35 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_text created.name
   end
 
+  test "班级页操作按钮排在同一行" do
+    sign_in
+    visit admin_semester_klass_path(semester_klasses(:sk_math_2))
+
+    tops = all("[data-page-actions] > *").map { |el| el.evaluate_script("this.getBoundingClientRect().top") }
+    assert_operator tops.max - tops.min, :<=, 4, "按钮未横排：#{tops.inspect}"
+  end
+
+  test "班级考勤页可以开班" do
+    sign_in
+    visit admin_semester_klass_path(semester_klasses(:sk_math_2))
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "提高班", from: "班型"
+      select "七年级", from: "年级"
+      select "张", from: "教师"
+      fill_in "课次", with: "3"
+      click_button "开班"
+    end
+
+    assert_text "班级创建成功"
+    created = SemesterKlass.order(:id).last
+    assert_current_path admin_semester_klass_path(created)
+    assert_equal 3, created.courses.count
+  end
+
   test "未开课的班级可以删除" do
     sign_in
     sk = semester_klasses(:sk_math_3)

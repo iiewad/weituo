@@ -7,7 +7,7 @@
   panel_style = "width: min(calc(var(--spacing) * #{width}), 92vw)"
   content_locals = { item: item }.merge(local_assigns[:drawer_locals] || {})
 %>
-<div class="drawer drawer-end">
+<div class="drawer drawer-end w-auto shrink-0">
   <input id="<%= drawer_id %>" type="checkbox" class="drawer-toggle" />
   <div class="drawer-content">
     <% if icon %>

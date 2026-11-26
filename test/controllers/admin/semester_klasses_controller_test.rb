@@ -91,7 +91,6 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#drawer-transfer"
     assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{semester_klasses(:sk_math_3).id}']"
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
-    assert_select "input#add_students_student_#{students(:student_7_2).id}"
   end
 
   test "reserve enrolls selected students into an existing next semester class" do
@@ -255,44 +254,6 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to admin_semester_klass_path(source)
-  end
-
-  test "insert_students adds selected students from the chosen course" do
-    sk = semester_klasses(:sk_math_2)
-    student = students(:student_7_2)
-
-    assert_difference -> { sk.klass_students.count }, 1 do
-      post insert_students_admin_semester_klass_path(sk),
-        params: { student_ids: [ student.id ], join_course_seq: 4 }
-    end
-
-    assert_redirected_to admin_semester_klass_path(sk)
-    ks = sk.klass_students.find_by!(student_id: student.id)
-    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
-    assert_nil sk.courses.find_by!(seq: 4).attendances.find_by(klass_student_id: ks.id)
-  end
-
-  test "insert_students requires a selection" do
-    sk = semester_klasses(:sk_math_2)
-
-    assert_no_difference -> { sk.klass_students.count } do
-      post insert_students_admin_semester_klass_path(sk), params: { student_ids: [ "" ], join_course_seq: 1 }
-    end
-
-    assert_redirected_to admin_semester_klass_path(sk)
-    assert_match "请先选择", flash[:alert]
-  end
-
-  test "insert_students skips students already in the class" do
-    sk = semester_klasses(:sk_math_2)
-
-    assert_no_difference -> { sk.klass_students.count } do
-      post insert_students_admin_semester_klass_path(sk),
-        params: { student_ids: [ students(:student_7_1).id ], join_course_seq: 1 }
-    end
-
-    assert_redirected_to admin_semester_klass_path(sk)
-    assert_match "已在班级", flash[:alert]
   end
 
   test "class form only lists teachers from the current campus" do
@@ -489,12 +450,24 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes strings, grade_8_klass.name
   end
 
+  test "show offers an open class entry next to the class actions" do
+    sk = semester_klasses(:sk_math_2)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "label[for='drawer-klass-new'].drawer-button", text: "开班"
+    assert_select "#drawer-klass-new"
+    assert_select "form[action='#{admin_semester_klasses_path}'][method='post'] select[name='semester_klass[phase]']"
+  end
+
   test "show offers a delete button until the class starts courses" do
     sk = semester_klasses(:sk_math_3)
 
     get admin_semester_klass_path(sk)
 
     assert_response :success
+    assert_select "a[href='#{export_attendance_admin_semester_klass_path(sk)}']", text: /导出考勤/
     assert_select "form[action='#{admin_semester_klass_path(sk)}'] input[name='_method'][value='delete']"
     assert_select "button[data-turbo-confirm*='确定删除班级']", text: "删除班级"
   end
@@ -849,12 +822,15 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { sk.klass_students.count }, 1 do
       put admin_semester_klass_path(sk), params: {
         student_ids: [ students(:student_7_3).id ],
-        join_course_seq: 1,
+        join_course_seq: 4,
         semester_klass: { genre: sk.genre, seq: sk.seq, times: sk.times, teacher_id: sk.teacher_id }
       }
     end
 
-    assert sk.klass_students.exists?(student_id: students(:student_7_3).id)
+    ks = sk.klass_students.find_by!(student_id: students(:student_7_3).id)
+    # 第 4 课入班：之前的课次补记缺课，第 4 课尚未开课不生成考勤
+    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
+    assert_nil sk.courses.find_by!(seq: 4).attendances.find_by(klass_student_id: ks.id)
   end
 
   test "update" do
@@ -929,13 +905,15 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_nil sk.courses.find_by!(seq: 1).attendances.find_by(klass_student_id: first.id)
   end
 
-  test "insert_students creates missing students from pasted text and skips those already in class" do
+  test "update creates missing students from pasted text and skips those already in class" do
     sk = semester_klasses(:sk_math_2)
 
     assert_difference -> { Student.count }, 1 do
       assert_difference -> { sk.klass_students.count }, 1 do
-        post insert_students_admin_semester_klass_path(sk), params: {
-          students_text: "粘贴新增,1\n#{students(:student_7_1).name},1", join_course_seq: 1
+        put admin_semester_klass_path(sk), params: {
+          students_text: "粘贴新增,1\n#{students(:student_7_1).name},1",
+          join_course_seq: 1,
+          semester_klass: { genre: sk.genre, seq: sk.seq, times: sk.times, teacher_id: sk.teacher_id }
         }
       end
     end
