@@ -21,7 +21,6 @@ class Admin::StudentsController < AdminController
 
     @filter_counts = filter_counts(scoped)
     student_ids = @students.map(&:id)
-    @klass_students_by_student = klass_students_by_student(student_ids)
     @history_by_student = klass_student_history(student_ids)
     @attendance_stats = attendance_stats_for(@history_by_student.values.flatten)
   end
@@ -240,16 +239,6 @@ class Admin::StudentsController < AdminController
       else
         scope
       end
-    end
-
-    # 当前学期内、当前页学员的报名记录，按学员分组供抽屉内的「班级信息」模块使用
-    def klass_students_by_student(student_ids)
-      KlassStudent
-        .active
-        .joins(:semester_klass)
-        .where(semester_klasses: { semester_id: Current.semester.id }, student_id: student_ids)
-        .includes(semester_klass: [ :grade, :subject, :teacher ])
-        .group_by(&:student_id)
     end
 
     # 当前页学员的全部历史报名，按学期倒序，供详情抽屉追溯在班记录

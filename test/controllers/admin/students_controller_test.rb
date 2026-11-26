@@ -49,14 +49,14 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "label.btn", text: "详情", minimum: 1
 
     drawer = Nokogiri::HTML(response.body).at_css("#drawer-student-detail-#{student.id}").parent
-    assert_includes drawer.text, "历史班级"
+    assert_includes drawer.text, "班级信息"
     assert_includes drawer.text, semester_klasses(:sk_math_1).name
     assert_includes drawer.text, semester_klasses(:sk_math_2).name
     assert_includes drawer.text, "在班"
     assert_includes drawer.text, "当前学期"
     assert_includes drawer.text, "考勤 1 次 · 出勤 1"
     assert_includes drawer.text, "家长要求每节课反馈"
-    assert_includes drawer.text, "9_学生1"
+    assert_includes drawer.to_html, "9_学生1"
   end
 
   %w[in_class not_in_class out_class].each do |filter|
@@ -330,9 +330,9 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     drawer = Nokogiri::HTML(response.body).at_css("#drawer-student-detail-#{student.id}").parent
-    assert_includes drawer.text, "幸福路 1 号"
-    assert_includes drawer.text, "母亲 · 医生"
-    assert_includes drawer.text, "未填写姓名"
+    assert_equal "幸福路 1 号", drawer.at_css("input[name='student[address]']")["value"]
+    assert_includes drawer.to_html, "母亲"
+    assert_includes drawer.to_html, "医生"
   end
 
   test "import rolls back the whole batch and reports the failure" do

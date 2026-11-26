@@ -131,13 +131,12 @@
                     button_name: "详情",
                     button_class: "btn btn-xs btn-ghost",
                     drawer_width: "260",
-                    drawer_content: "admin/students/detail",
+                    drawer_content: student.deleted? ? "admin/students/detail" : "admin/students/form",
                     drawer_locals: {
                       history: @history_by_student[student.id] || [],
                       attendance_stats: @attendance_stats
                     } %>
               <% unless student.deleted? %>
-                <%= render "admin/shared/drawer", item: student, drawer_id: "drawer-student-#{student.id}", button_name: "编辑", drawer_width: "240", drawer_content: "admin/students/form" %>
                 <%= button_to "删除", admin_student_path(student), method: :delete,
                       params: list_state,
                       class: "btn btn-xs btn-ghost text-base-content/50 hover:text-error",

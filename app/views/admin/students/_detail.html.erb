@@ -9,6 +9,7 @@
 %>
 
 <div class="space-y-4">
+  <% unless local_assigns[:embedded] %>
   <div class="wt-surface p-4">
     <div class="flex items-center gap-3">
       <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary"><%= item.name.to_s.first %></span>
@@ -83,10 +84,11 @@
       <p class="mt-2 text-xs text-base-content/40">未登记监护人</p>
     <% end %>
   </div>
+  <% end %>
 
   <div class="wt-surface p-4">
     <div class="flex items-center justify-between gap-2">
-      <h3 class="text-sm font-semibold">历史班级</h3>
+      <h3 class="text-sm font-semibold">班级信息</h3>
       <span class="text-xs text-base-content/50"><%= history.size %> 条记录</span>
     </div>
 
