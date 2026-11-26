@@ -71,6 +71,33 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert created.klass_students.exists?(student: Student.find_by!(name: "新学员"))
   end
 
+  test "开班可以粘贴名单导入学员" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "七年级", from: "年级"
+      choose "粘贴名单"
+      fill_in "粘贴名单（每行：姓名,入班课次）", with: "7_学生2,2\n7_学生3\n新粘同学,1\n新粘同学,1"
+      select "张", from: "教师"
+      fill_in "课次", with: "3"
+      click_button "开班"
+    end
+
+    assert_text "班级创建成功"
+    assert_text "新建 1 名学员"
+    assert_text "跳过 1 行"
+    created = SemesterKlass.order(:id).last
+    assert created.klass_students.exists?(student: students(:student_7_2))
+    assert created.klass_students.exists?(student: students(:student_7_3))
+    newcomer = Student.find_by!(name: "新粘同学")
+    assert_equal created.grade, newcomer.grade
+    assert created.klass_students.exists?(student: newcomer)
+  end
+
   test "切换年级和教师会持续更新课次默认值" do
     sign_in
     visit admin_semester_klasses_path

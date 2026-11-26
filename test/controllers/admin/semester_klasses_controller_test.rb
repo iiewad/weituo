@@ -816,6 +816,58 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal grades(:grade_7), sk.reload.grade
   end
 
+  test "create joins students from pasted text and creates missing ones" do
+    assert_difference -> { SemesterKlass.count }, 1 do
+      assert_difference -> { Student.count }, 1 do
+        post admin_semester_klasses_path, params: {
+          students_text: "7_学生2,2\n7_学生3\n粘贴新生",
+          join_course_seq: 1,
+          semester_klass: {
+            semester_id: semesters(:semester_current).id,
+            grade_id: grades(:grade_7).id,
+            teacher_id: teachers(:math_teacher_1).id,
+            campuse_id: campuses(:campuse_1).id,
+            genre: "JY", seq: 76, times: 3
+          }
+        }
+      end
+    end
+
+    sk = SemesterKlass.order(:id).last
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已加入 3 名学员", flash[:notice]
+    assert_match "新建 1 名学员", flash[:notice]
+
+    newcomer = Student.find_by!(name: "粘贴新生")
+    assert_equal grades(:grade_7), newcomer.grade
+    assert sk.klass_students.exists?(student: newcomer)
+
+    late = sk.klass_students.find_by!(student_id: students(:student_7_2).id)
+    first = sk.klass_students.find_by!(student_id: students(:student_7_3).id)
+    # 第 2 课入班：第 1 课补记缺课；默认第 1 课入班则不生成缺课
+    assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: late.id).status
+    assert_nil sk.courses.find_by!(seq: 1).attendances.find_by(klass_student_id: first.id)
+  end
+
+  test "insert_students creates missing students from pasted text and skips those already in class" do
+    sk = semester_klasses(:sk_math_2)
+
+    assert_difference -> { Student.count }, 1 do
+      assert_difference -> { sk.klass_students.count }, 1 do
+        post insert_students_admin_semester_klass_path(sk), params: {
+          students_text: "粘贴新增,1\n#{students(:student_7_1).name},1", join_course_seq: 1
+        }
+      end
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    newcomer = Student.find_by!(name: "粘贴新增")
+    assert_equal sk.grade, newcomer.grade
+    assert sk.klass_students.exists?(student: newcomer)
+    assert_match "新建 1 名", flash[:notice]
+    assert_match "跳过 1 行", flash[:notice]
+  end
+
   test "copy_create copies a class into the current semester" do
     assert_difference -> { SemesterKlass.count }, 1 do
       post copy_create_admin_semester_klasses_path, params: {

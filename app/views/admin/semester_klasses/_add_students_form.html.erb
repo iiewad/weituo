@@ -2,32 +2,58 @@
 <% default_seq = @next_course&.seq || @courses.last&.seq || 1 %>
 <%= form_with url: insert_students_admin_semester_klass_path(@sk), method: :post,
       namespace: "add_students", local: true, class: "space-y-4" do |form| %>
-  <div class="wt-surface p-4">
-    <h3 class="text-sm font-semibold">添加学员 · <%= @sk.name %></h3>
-    <p class="mt-1 text-xs text-base-content/50">
-      <%= @sk.grade.name %> · <%= @sk.subject.name %> · <%= @sk.teacher.name %> 老师
-    </p>
+  <div data-controller="student-add-mode" data-action="change->student-add-mode#apply" class="space-y-4">
+    <div class="wt-surface p-4">
+      <h3 class="text-sm font-semibold">添加学员 · <%= @sk.name %></h3>
+      <p class="mt-1 text-xs text-base-content/50">
+        <%= @sk.grade.name %> · <%= @sk.subject.name %> · <%= @sk.teacher.name %> 老师
+      </p>
 
-    <div class="mt-3">
-      <%= form.label :join_course_seq, "入班课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-      <%= form.select :join_course_seq, join_options, { selected: default_seq },
-            { class: "select select-sm w-full", required: true } %>
-      <p class="mt-1 text-[11px] leading-snug text-base-content/40">从该课次开始加入，之前课次补记为缺课。</p>
+      <div class="mt-3">
+        <%= form.label :join_course_seq, "入班课次", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :join_course_seq, join_options, { selected: default_seq },
+              { class: "select select-sm w-full", required: true } %>
+        <p class="mt-1 text-[11px] leading-snug text-base-content/40">从该课次开始加入，之前课次补记为缺课；粘贴名单未写课次时也使用此值。</p>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-base-content/70">
+        <label class="flex cursor-pointer items-center gap-1.5">
+          <input type="radio" name="student_add_mode_add" value="pick" class="radio radio-xs" checked>
+          <span>勾选学员</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-1.5">
+          <input type="radio" name="student_add_mode_add" value="text" class="radio radio-xs">
+          <span>粘贴名单</span>
+        </label>
+      </div>
     </div>
-  </div>
 
-  <div class="wt-surface p-4">
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="text-sm font-semibold">选择学员</h3>
-      <span class="text-xs text-base-content/50">共 <%= @insert_student_candidates.size %> 人可选</span>
+    <div class="wt-surface p-4" data-student-add-mode-target="picked">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-sm font-semibold">选择学员</h3>
+        <span class="text-xs text-base-content/50">共 <%= @insert_student_candidates.size %> 人可选</span>
+      </div>
+      <p class="mt-1 text-xs text-base-content/50">只列出本班同年级、尚未加入本班的学员。</p>
+
+      <%= render "admin/shared/student_multiselect",
+            options: @insert_student_candidates.map { |student| { student: student, checked: false, badge: nil } },
+            id_prefix: "add_students",
+            hint: "所选学员从入班课次开始加入，之前课次补记为缺课。",
+            empty_message: "没有可添加的学员，请先在学员管理中建档或检查年级。" %>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">只列出本班同年级、尚未加入本班的学员。</p>
 
-    <%= render "admin/shared/student_multiselect",
-          options: @insert_student_candidates.map { |student| { student: student, checked: false, badge: nil } },
-          id_prefix: "add_students",
-          hint: "所选学员从入班课次开始加入，之前课次补记为缺课。",
-          empty_message: "没有可添加的学员，请先在学员管理中建档或检查年级。" %>
+    <div class="wt-surface p-4 hidden" data-student-add-mode-target="text">
+      <h3 class="text-sm font-semibold">粘贴名单</h3>
+      <div class="mt-3">
+        <label for="add_students_text" class="mb-1 block text-xs font-medium text-base-content/60">每行：姓名,入班课次</label>
+        <textarea id="add_students_text" name="students_text" rows="8"
+                  class="textarea textarea-sm w-full font-mono text-xs leading-5"
+                  placeholder="张三,1&#10;李四,3"></textarea>
+        <p class="mt-1 text-[11px] leading-snug text-base-content/40">
+          每行一位学员，课次可省略；没有档案的姓名会按本班年级自动建档，已在班或重复的行会跳过。
+        </p>
+      </div>
+    </div>
   </div>
 
   <%= form.submit "添加学员", class: "btn btn-primary w-full", disabled: @insert_student_candidates.empty? %>

@@ -73,8 +73,8 @@ class Admin::SemesterKlassesController < AdminController
     )
 
     if @sk.save
-      apply_students(@sk)
-      redirect_to admin_semester_klass_path(@sk), notice: "班级创建成功"
+      added, created, skipped = apply_students(@sk)
+      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级创建成功", added, created, skipped)
     else
       redirect_to admin_semester_klasses_path, alert: "班级创建失败，#{@sk.errors.full_messages.join("；")}"
     end
@@ -93,8 +93,8 @@ class Admin::SemesterKlassesController < AdminController
     attrs[:times] = @sk.times if attrs[:times].blank?
 
     if @sk.update(attrs)
-      apply_students(@sk)
-      redirect_to admin_semester_klass_path(@sk), notice: "班级更新成功"
+      added, created, skipped = apply_students(@sk)
+      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级更新成功", added, created, skipped)
     else
       redirect_to admin_semester_klasses_path, alert: "班级更新失败，#{@sk.errors.full_messages.join("；")}"
     end
@@ -170,6 +170,17 @@ class Admin::SemesterKlassesController < AdminController
   # 开班后的统一添加学员入口：选择入班课次后批量加入
   def insert_students
     @sk = campuse_semester_klasses.find(params[:id])
+
+    if params[:students_text].present?
+      added, created, skipped = join_students_from_text(@sk, params[:students_text], default_seq: params[:join_course_seq])
+      if added.zero?
+        redirect_to admin_semester_klass_path(@sk), alert: "名单为空，或学员都已在班"
+      else
+        redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("已添加 #{added} 名学员", added, created, skipped)
+      end
+      return
+    end
+
     student_ids = Array(params[:student_ids]).reject(&:blank?)
 
     if student_ids.empty?
@@ -398,16 +409,83 @@ class Admin::SemesterKlassesController < AdminController
     ).includes(:grade).order(:name)
   end
 
+  # 开班 / 编辑班级时的学员来源：粘贴名单优先，否则按勾选的学员 id 加入
   def apply_students(semester_klass)
-    student_ids = Array(params[:student_ids]).reject(&:blank?)
+    if params[:students_text].present?
+      return join_students_from_text(semester_klass, params[:students_text], default_seq: params[:join_course_seq])
+    end
 
-    return if student_ids.empty?
+    student_ids = Array(params[:student_ids]).reject(&:blank?)
+    return [ 0, 0, 0 ] if student_ids.empty?
 
     max_seq = [ semester_klass.times.to_i, 1 ].max
     join_seq = [ [ params[:join_course_seq].to_i, 1 ].max, max_seq ].min
-    Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
-      .where.not(id: semester_klass.klass_students.select(:student_id))
-      .find_each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
+    joined = Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
+      .where.not(id: semester_klass.klass_students.select(:student_id)).to_a
+    joined.each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
+
+    [ joined.size, 0, 0 ]
+  end
+
+  # 粘贴名单：每行「姓名」或「姓名,入班课次」；课次留空用表单里的入班课次。
+  # 姓名在本班年级没有档案时直接建档后再入班；已在班的同名学员跳过。
+  def join_students_from_text(semester_klass, text, default_seq:)
+    max_seq = [ semester_klass.times.to_i, 1 ].max
+    fallback = default_seq.to_i.clamp(1, max_seq)
+    candidates = Student.where(campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
+    added = 0
+    created = 0
+    skipped = 0
+
+    text.to_s.split("\n").each do |line|
+      name, seq = parse_student_line(line)
+      next if name.blank?
+
+      student = candidates.where(name: name)
+        .where.not(id: semester_klass.klass_students.select(:student_id))
+        .order(:id).first
+
+      if student.blank?
+        # 同名学生都已在本班时跳过，否则按本班年级新建档案
+        if candidates.where(name: name).exists?
+          skipped += 1
+          next
+        end
+
+        student = Student.new(name: name, grade_id: semester_klass.grade_id, campuse_id: semester_klass.campuse_id)
+        begin
+          unless student.save
+            skipped += 1
+            next
+          end
+        rescue ActiveRecord::ActiveRecordError
+          skipped += 1
+          next
+        end
+        created += 1
+      end
+
+      student.join_klass(semester_klass, course_seq: [ seq || fallback, max_seq ].min)
+      added += 1
+    end
+
+    [ added, created, skipped ]
+  end
+
+  # 兼容「姓名,课次」「姓名 课次」两种写法
+  def parse_student_line(line)
+    parts = line.to_s.strip.split(/[,，\t]/).map(&:strip)
+    parts = parts.first.to_s.split(/\s+/) if parts.size < 2
+    seq = parts[1].to_i
+    [ parts[0].to_s, (seq.positive? ? seq : nil) ]
+  end
+
+  def klass_saved_notice(base, added, created, skipped)
+    parts = []
+    parts << "已加入 #{added} 名学员" if added.positive?
+    parts << "其中新建 #{created} 名学员" if created.positive?
+    parts << "跳过 #{skipped} 行（已在班或姓名无效）" if skipped.positive?
+    parts.empty? ? base : "#{base}，#{parts.join("，")}"
   end
 
   # 目标学期只能选当前学期及其之后的学期；默认当前学期
