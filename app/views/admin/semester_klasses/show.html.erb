@@ -40,7 +40,7 @@
   <span class="badge badge-ghost badge-sm">共 <%= @courses.size %> 课次</span>
   <span class="badge badge-ghost badge-sm">已开 <%= @courses.count(&:started?) %> 课</span>
   <span class="badge badge-ghost badge-sm">已预留 <%= @reserved_student_ids.size %> 人</span>
-  <span class="badge badge-outline badge-secondary badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
+  <span class="badge badge-outline <%= @sk.genre_badge_class %> badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
 <div data-controller="transfer-drawer">

@@ -113,6 +113,13 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert_equal "一期7数提1", semester_klasses(:sk_math_1).name
   end
 
+  test "each genre gets a distinct badge color" do
+    classes = SemesterKlass::GENRE_MAP.values.map { |genre| SemesterKlass.new(genre: genre).genre_badge_class }
+    assert_equal classes.uniq.size, classes.size
+    assert_equal "badge-primary", SemesterKlass.new(genre: "TG").genre_badge_class
+    assert_equal "badge-ghost", SemesterKlass.new(genre: "其他").genre_badge_class
+  end
+
   test "phase allows the same genre and seq twice in one semester" do
     sk = semester_klasses(:sk_math_3)
     duplicate = SemesterKlass.new(

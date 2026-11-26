@@ -531,6 +531,59 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ "一期7数提3", "一期7数精1", "二期7数精1" ], names.select { |name| name.match?(/\A(一期|二期)7数/) }
   end
 
+  test "index colors the genre badge by genre" do
+    sk = semester_klasses(:sk_math_2)
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2
+    )
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "a.wt-surface span.badge.badge-primary", text: "提高班", minimum: 1
+    assert_select "a.wt-surface span.badge.badge-secondary", text: "精英班", minimum: 1
+  end
+
+  test "index sorts class cards by phase, genre and seq" do
+    sk = semester_klasses(:sk_math_2)
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 1
+    )
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 2
+    )
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    names = Nokogiri::HTML(response.body).css("a.wt-surface p.text-base.font-semibold").map { |p| p.text.strip }
+    assert_equal [ "一期7数提2", "一期7数提3", "一期7数精1", "二期7数精1" ],
+      names.select { |name| name.match?(/\A(一期|二期)7数/) }
+  end
+
+  test "index filters class cards by phase and genre" do
+    sk = semester_klasses(:sk_math_2)
+    phase_two = SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 2
+    )
+
+    get admin_semester_klasses_path(q: { phase_eq: 2 })
+
+    assert_response :success
+    assert_select "select[name='q[phase_eq]'] option[selected][value='2']", text: "第二阶段"
+    names = Nokogiri::HTML(response.body).css("a.wt-surface p.text-base.font-semibold").map { |p| p.text.strip }
+    assert_equal [ phase_two.name ], names.select { |name| name.match?(/\A(一期|二期)7数/) }
+
+    get admin_semester_klasses_path(q: { genre_eq: "TG" })
+    names = Nokogiri::HTML(response.body).css("a.wt-surface p.text-base.font-semibold").map { |p| p.text.strip }
+    assert_not_includes names, phase_two.name
+    assert_includes names, sk.name
+  end
+
   test "class menu orders classes by phase, genre and seq" do
     sk = semester_klasses(:sk_math_2)
     SemesterKlass.create!(

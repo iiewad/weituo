@@ -9,6 +9,8 @@
   <%= link_to "复制班级", copy_admin_semester_klasses_path, class: "btn btn-xs btn-outline btn-primary" %>
 <% end %>
 
+<%= render "admin/semester_klasses/index_filter" %>
+
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
   <div class="wt-surface p-4">
     <p class="text-xs text-base-content/50">班级</p>
@@ -54,7 +56,7 @@
               <p class="text-base font-semibold"><%= sk.name %></p>
               <p class="mt-0.5 truncate text-xs text-base-content/50"><%= sk.subject.name %> · <%= sk.teacher.name %> 老师</p>
             </div>
-            <span class="badge badge-outline badge-secondary badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></span>
+            <span class="badge badge-outline <%= sk.genre_badge_class %> badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></span>
           </div>
 
           <div class="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs text-base-content/60">
@@ -81,8 +83,8 @@
     <span class="flex h-12 w-12 items-center justify-center rounded-full bg-base-200 text-base-content/40">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
     </span>
-    <p class="text-sm font-medium">当前学期还没有班级</p>
-    <p class="text-xs text-base-content/50">点击右上角「开班」创建，或从历史学期复制一个班级。</p>
+    <p class="text-sm font-medium"><%= params[:q].present? ? "没有符合条件的班级" : "当前学期还没有班级" %></p>
+    <p class="text-xs text-base-content/50"><%= params[:q].present? ? "试试调整筛选项，或点击「重置」查看全部。" : "点击右上角「开班」创建，或从历史学期复制一个班级。" %></p>
     <%= link_to "复制班级", copy_admin_semester_klasses_path, class: "btn btn-sm btn-outline btn-primary mt-1" %>
   </div>
 <% end %>

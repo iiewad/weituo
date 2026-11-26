@@ -10,7 +10,7 @@
         <h3 class="text-sm font-semibold">历史班级详情</h3>
         <p class="mt-1 text-xs text-base-content/50">确认来源班级的信息后再复制到当前学期。</p>
       </div>
-      <span class="badge badge-outline badge-secondary badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[item.genre] %></span>
+      <span class="badge badge-outline <%= item.genre_badge_class %> badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[item.genre] %></span>
     </div>
 
     <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3">

@@ -1,0 +1,46 @@
+<div class="wt-surface mb-4 p-3">
+  <%= search_form_with model: @q, url: admin_semester_klasses_path, method: :get, class: "flex flex-wrap items-end gap-2" do |f| %>
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">年级</label>
+      <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Current.campuse.id), :id, :name,
+            { include_blank: "全部年级", selected: params[:q].try(:[], :grade_id_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">科目</label>
+      <%= f.collection_select :subject_id_eq, Current.user.subjects_by_campuse(Current.campuse.id), :id, :name,
+            { include_blank: "全部科目", selected: params[:q].try(:[], :subject_id_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="w-full sm:w-40">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">教师</label>
+      <%= f.select :teacher_id_eq,
+            Current.campuse.teachers.includes(:subject).order(:name).map { |teacher| [ "#{teacher.name}（#{teacher.subject.name}）", teacher.id ] },
+            { include_blank: "全部教师", selected: params[:q].try(:[], :teacher_id_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">阶段</label>
+      <%= f.select :phase_eq, SemesterKlass::PHASE_MAP.map { |value, label| [ label, value ] },
+            { include_blank: "全部阶段", selected: params[:q].try(:[], :phase_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="w-full sm:w-32">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">班型</label>
+      <%= f.select :genre_eq, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+            { include_blank: "全部班型", selected: params[:q].try(:[], :genre_eq) },
+            class: "select select-sm w-full" %>
+    </div>
+
+    <div class="flex w-full items-center gap-1 sm:ml-auto sm:w-auto">
+      <%= f.submit "筛选", class: "btn btn-sm btn-primary" %>
+      <% if params[:q].present? %>
+        <%= link_to "重置", admin_semester_klasses_path, class: "btn btn-sm btn-ghost" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

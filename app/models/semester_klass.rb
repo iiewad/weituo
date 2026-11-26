@@ -39,6 +39,15 @@ class SemesterKlass < ApplicationRecord
   PHASE_MAP = { 1 => "第一阶段", 2 => "第二阶段" }.freeze
   PHASE_PREFIX = { 1 => "一期", 2 => "二期" }.freeze
 
+  # 班型徽章配色，保证不同班型在列表里可一眼区分
+  GENRE_BADGE = {
+    "TG" => "badge-primary",
+    "JY" => "badge-secondary",
+    "XZ" => "badge-warning",
+    "XQ" => "badge-neutral",
+    "CC" => "badge-error"
+  }.freeze
+
   after_create :create_courses
   after_update :sync_courses
 
@@ -86,6 +95,10 @@ class SemesterKlass < ApplicationRecord
 
   def name
     "#{PHASE_PREFIX.fetch(phase, PHASE_PREFIX[1])}#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
+  end
+
+  def genre_badge_class
+    GENRE_BADGE.fetch(genre, "badge-ghost")
   end
 
   # 列表展示顺序：阶段 → 班型（提高/精英/创新/兴趣/超常）→ 序号
