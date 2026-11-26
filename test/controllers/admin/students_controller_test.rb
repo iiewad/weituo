@@ -179,7 +179,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students and guardians from an xlsx file" do
     rows = [
-      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "家庭住址", "监护人姓名", "监护人电话", "关系", "职业" ],
+      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "家庭住址", "监护人1姓名", "监护人1电话", "监护人1关系", "监护人1职业" ],
       [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中", "", "家长甲", "13800000001", "父亲" ],
       [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中" ]
     ]
@@ -209,7 +209,8 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     workbook = Zip::File.open_buffer(StringIO.new(response.body))
     strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
     assert_includes strings, "姓名"
-    assert_includes strings, "监护人电话"
+    assert_includes strings, "监护人1姓名"
+    assert_includes strings, "监护人2电话"
     assert_includes strings, "职业"
     assert_includes strings, "家庭住址"
     assert_includes strings, "学员批量导入填写说明"

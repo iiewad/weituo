@@ -73,8 +73,10 @@ class Student < ApplicationRecord
 
   IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
 
-  # 按 CSV 行导入学员：姓名,性别,生日,年级level,层级,入学日期,日校[,家庭住址,监护人姓名,监护人电话,监护关系,监护人职业]
-  # 监护人字段可选；返回 [新增人数, 跳过行数]。
+  # 按 CSV 行导入学员：前 8 列为学员信息（姓名,性别,生日,年级level,层级,入学日期,日校,家庭住址），
+  # 之后每 4 列一位监护人（姓名,电话,关系,职业），可写多名；返回 [新增人数, 跳过行数]。
+  IMPORT_STUDENT_COLUMNS = 8
+  IMPORT_GUARDIAN_COLUMNS = 4
   def self.add_by_text(campuse_id, str, grade_ids: nil)
     rows = str.to_s.split("\n").map { |line| normalize_import_row(line.split(",", -1)) }
     import_rows(campuse_id, rows, grade_ids:)
@@ -97,9 +99,11 @@ class Student < ApplicationRecord
         next if row.all? { |value| value.to_s.strip.blank? }
         next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
-        name, gender, birthday, grade_level, layer, in_date, day_school_name,
-          address, guardian_name, guardian_phone, guardian_relationship,
-          guardian_occupation = row.map { |value| value.to_s.strip }
+        name, gender, birthday, grade_level, layer, in_date, day_school_name, address =
+          row.first(IMPORT_STUDENT_COLUMNS).map { |value| value.to_s.strip }
+        guardian_rows = row.drop(IMPORT_STUDENT_COLUMNS).each_slice(IMPORT_GUARDIAN_COLUMNS).map do |group|
+          group.map { |value| value.to_s.strip }
+        end
         grade = Grade.find_by(level: grade_level)
         day_school = campuse.day_schools.find_by(name: day_school_name)
 
@@ -129,8 +133,10 @@ class Student < ApplicationRecord
           next
         end
 
-        # 监护人姓名选填，电话必填；有电话就建档
-        if guardian_phone.present?
+        # 每位监护人 4 列，姓名选填、电话必填；有电话就建档，可导入多名监护人
+        guardian_rows.each do |guardian_name, guardian_phone, guardian_relationship, guardian_occupation|
+          next if guardian_phone.blank?
+
           student.guardians.find_or_create_by(name: guardian_name.presence, phone: guardian_phone) do |guardian|
             guardian.relationship = guardian_relationship.presence
             guardian.occupation = guardian_occupation.presence
