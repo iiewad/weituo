@@ -1,7 +1,6 @@
-<div class="relative inline-block"
-     data-controller="floating-card"
-     data-action="mouseenter->floating-card#open mouseleave->floating-card#scheduleClose focusin->floating-card#open focusout->floating-card#scheduleClose">
+<div class="relative inline-block" data-controller="floating-card">
   <div tabindex="0" role="button" data-floating-card-target="trigger"
+       data-action="click->floating-card#toggle keydown->floating-card#handleTriggerKey"
        class="badge badge-soft badge-<%= attendance&.badge_class || "ghost" %> badge-sm min-w-6 cursor-pointer justify-center font-semibold"
        title="<%= attendance&.status_name || "未录入" %>"
        aria-label="考勤状态：<%= attendance&.status_name || "未录入" %>">
@@ -9,7 +8,6 @@
   </div>
 
   <div data-floating-card-target="card"
-       data-action="mouseenter->floating-card#keepOpen mouseleave->floating-card#scheduleClose focusin->floating-card#keepOpen focusout->floating-card#scheduleClose"
        class="card fixed z-50 hidden w-64 flex-col gap-2.5 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">

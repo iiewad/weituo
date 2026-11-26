@@ -1,6 +1,28 @@
 require "application_system_test_case"
 
 class AttendanceCardTest < ApplicationSystemTestCase
+  test "考勤卡点击打开，再次点击或点击外部关闭" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
+
+    visit admin_semester_klass_path(sk)
+    trigger = find("[data-floating-card-target='trigger']")
+
+    assert_no_selector "[data-floating-card-target='card']", visible: true
+    trigger.click
+    assert_selector "[data-floating-card-target='card']", visible: true
+    trigger.click
+    assert_no_selector "[data-floating-card-target='card']", visible: true
+
+    trigger.click
+    assert_selector "[data-floating-card-target='card']", visible: true
+    find("h1").click
+    assert_no_selector "[data-floating-card-target='card']", visible: true
+  end
+
   test "考勤操作卡不被表格裁切并可切换状态" do
     sign_in
     sk = semester_klasses(:sk_math_2)
@@ -9,7 +31,7 @@ class AttendanceCardTest < ApplicationSystemTestCase
     attendance = course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
 
     visit admin_semester_klass_path(sk)
-    find("[data-floating-card-target='trigger']").hover
+    find("[data-floating-card-target='trigger']").click
 
     card = find("[data-floating-card-target='card']")
     assert card.visible?

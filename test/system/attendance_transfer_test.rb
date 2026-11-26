@@ -10,7 +10,7 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     target = semester_klasses(:sk_math_3)
 
     visit admin_semester_klass_path(sk)
-    find("[data-floating-card-target='trigger']").hover
+    find("[data-floating-card-target='trigger']").click
     find("button[data-action='transfer-drawer#open']", text: "转出").click
 
     assert find("#drawer-transfer", visible: :all).checked?, "转出抽屉应被打开"
@@ -60,7 +60,7 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     )
 
     visit admin_semester_klass_path(sk)
-    find("[data-floating-card-target='trigger']").hover
+    find("[data-floating-card-target='trigger']").click
     find("button[data-action='transfer-drawer#open']", text: "转出").click
 
     # 默认按当前班级科目（数学）筛选；学员已在的数学班不展示
