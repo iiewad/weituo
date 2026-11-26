@@ -57,21 +57,10 @@ class KlassManagementTest < ApplicationSystemTestCase
 
     within(drawer) do
       select "七年级", from: "年级"
-      fill_in "搜索学员姓名", with: "不存在的学员"
+      fill_in "搜索学员姓名", with: "新学员"
       assert_text "没有匹配的学员"
       click_button "快速添加学员"
-    end
-
-    within("dialog#quick-student-modal") do
-      fill_in "姓名", with: "新学员"
-      select "七年级", from: "年级"
-      click_button "保存并加入"
-    end
-
-    assert_no_selector "dialog#quick-student-modal[open]"
-
-    within(drawer) do
-      assert_selector "[data-student-multiselect-target='selected']", text: "新学员"
+      assert_selector "[data-student-multiselect-target='selected']", text: "新学员", wait: 5
       select "张", from: "教师"
       fill_in "课次", with: "3"
       click_button "开班"

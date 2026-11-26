@@ -318,13 +318,13 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select ".student-row-actions.opacity-0", count: 0
   end
 
-  test "class form exposes the quick add student entry and modal" do
+  test "class form quick adds students inline without a modal" do
     get admin_semester_klasses_path
 
     assert_response :success
-    assert_select "[data-controller='quick-student-trigger'][data-quick-student-trigger-prefix-value='klass_new']"
-    assert_select "dialog#quick-student-modal[data-controller='quick-student']"
-    assert_select "dialog#quick-student-modal input#quick_student_name"
+    assert_select "[data-controller='student-multiselect'][data-student-multiselect-quick-add-url-value='#{quick_create_admin_students_path}']"
+    assert_select "[data-student-multiselect-target='quickAdd']", text: "快速添加学员"
+    assert_select "dialog#quick-student-modal", count: 0
   end
 
   test "class form exposes grade subject times for auto-fill" do

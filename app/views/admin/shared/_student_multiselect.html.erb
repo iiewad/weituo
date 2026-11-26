@@ -1,6 +1,11 @@
 <% if options.any? || local_assigns[:quick_add] %>
   <div data-controller="student-multiselect"
        <% if local_assigns[:grade_selector].present? %>data-student-multiselect-grade-selector-value="<%= grade_selector %>"<% end %>
+       <% if local_assigns[:quick_add] %>
+         data-student-multiselect-quick-add-url-value="<%= quick_create_admin_students_path %>"
+         data-student-multiselect-options-id-value="<%= id_prefix %>_student_options"
+         data-student-multiselect-csrf-value="<%= form_authenticity_token %>"
+       <% end %>
        data-action="change->student-multiselect#sync">
     <div class="mt-2 flex items-center justify-between gap-2">
       <span class="text-xs text-base-content/50">
@@ -44,13 +49,14 @@
       <p class="hidden px-3 py-2 text-xs text-base-content/40" data-student-multiselect-target="empty">
         没有匹配的学员
         <% if local_assigns[:quick_add] %>
-          <button type="button" class="ml-1 text-primary hover:underline"
-                  data-controller="quick-student-trigger"
-                  data-quick-student-trigger-prefix-value="<%= id_prefix %>"
-                  data-quick-student-trigger-grade-selector-value="<%= local_assigns[:grade_selector] %>"
-                  data-action="quick-student-trigger#open">快速添加学员</button>
+          <button type="button" class="ml-1 text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+                  data-student-multiselect-target="quickAdd"
+                  data-action="student-multiselect#quickAdd">快速添加学员</button>
         <% end %>
       </p>
+      <% if local_assigns[:quick_add] %>
+        <p class="hidden px-3 pt-1 text-[11px] text-error" data-student-multiselect-target="quickAddError"></p>
+      <% end %>
     </div>
 
     <% if hint.present? %>
