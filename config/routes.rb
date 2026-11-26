@@ -48,6 +48,10 @@ Rails.application.routes.draw do
     end
     resources :day_schools, only: [ :index, :create, :update, :destroy ]
     resources :students, only: [ :index, :create, :update ] do
+      member do
+        delete :destroy
+        patch :restore
+      end
       collection do
         post :promote
         post :import

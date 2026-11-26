@@ -260,6 +260,16 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_semester_klass_path(source)
   end
 
+  test "deleted students are not offered in the class form" do
+    student = students(:student_7_2)
+    student.soft_delete!
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "#klass_new_student_#{student.id}", count: 0
+  end
+
   test "archived teachers are not offered for new classes" do
     teacher = teachers(:math_teacher_1)
     teacher.archive!

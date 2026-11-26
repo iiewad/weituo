@@ -3,12 +3,12 @@ class Admin::ReferralsController < AdminController
 
   def index
     @grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level)
-    student_ids = Student.where(campuse_id: Current.campuse.id, grade_id: @grades.ids).select(:id)
+    student_ids = Student.active.where(campuse_id: Current.campuse.id, grade_id: @grades.ids).select(:id)
     @referrals = StudentReferral.where(referrer_id: student_ids, referred_id: student_ids)
 
     @selected_grade = @grades.find_by(id: params[:grade_id])
     if @selected_grade
-      referrer_ids = Student.where(grade_id: @selected_grade.id).select(:id)
+      referrer_ids = Student.active.where(grade_id: @selected_grade.id).select(:id)
       @referrals = @referrals.where(referrer_id: referrer_ids)
     end
 

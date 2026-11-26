@@ -5,7 +5,7 @@ class Admin::DashboardsController < AdminController
     @grades = Current.user.grades_by_campuse(@campuse.id).order(:level)
     grade_ids = @grades.ids
 
-    @students_scope = Student.where(campuse_id: @campuse.id, grade_id: grade_ids)
+    @students_scope = Student.active.where(campuse_id: @campuse.id, grade_id: grade_ids)
     @student_count = @students_scope.count
     @new_students_this_month = @students_scope.where(in_date: Date.current.beginning_of_month..Date.current).count
     @teacher_count = Teacher.where(campuse_id: @campuse.id).count

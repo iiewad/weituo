@@ -135,7 +135,7 @@ class Admin::SemesterKlassesController < AdminController
     )
     @active_counts = KlassStudent.active.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     set_teacher_groups
-    @students_by_grade = Student.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
+    @students_by_grade = Student.active.where(campuse_id: Current.campuse.id, grade_id: @sks.map(&:grade_id).uniq)
       .includes(:grade)
       .order(:name)
       .group_by(&:grade_id)
@@ -386,7 +386,7 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def new_class_candidates
-    Student.where(
+    Student.active.where(
       campuse_id: Current.campuse.id,
       grade_id: Current.user.grades_by_campuse(Current.campuse.id).ids
     ).includes(:grade).order(:name)
@@ -415,7 +415,7 @@ class Admin::SemesterKlassesController < AdminController
   def join_students_from_text(semester_klass, text, default_seq:)
     max_seq = [ semester_klass.times.to_i, 1 ].max
     fallback = default_seq.to_i.clamp(1, max_seq)
-    candidates = Student.where(campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
+    candidates = Student.active.where(campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
     added = 0
     created = 0
     skipped = 0
@@ -429,8 +429,9 @@ class Admin::SemesterKlassesController < AdminController
         .order(:id).first
 
       if student.blank?
-        # 同名学生都已在本班时跳过，否则按本班年级新建档案
-        if candidates.where(name: name).exists?
+        # 同名学员都在班或档案已被删除时跳过，其余按本班年级新建
+        if candidates.where(name: name).exists? ||
+           Student.deleted.where(campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id, name: name).exists?
           skipped += 1
           next
         end

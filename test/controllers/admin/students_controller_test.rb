@@ -261,6 +261,37 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_match "请先勾选", flash[:alert]
   end
 
+  test "destroy soft deletes the student and the deleted filter lists it" do
+    student = students(:student_7_1)
+
+    delete admin_student_path(student)
+
+    assert_redirected_to admin_students_path
+    assert student.reload.deleted?
+
+    get admin_students_path
+    assert_select "tr#student-row-#{student.id}", count: 0
+
+    get admin_students_path(filter: "deleted")
+    assert_select "tr#student-row-#{student.id}"
+    assert_select "tr#student-row-#{student.id} span.badge", text: "已删除"
+
+    patch restore_admin_student_path(student)
+
+    assert_redirected_to admin_students_path(filter: "deleted")
+    assert_not student.reload.deleted?
+  end
+
+  test "options excludes deleted students" do
+    student = students(:student_7_1)
+    student.soft_delete!
+
+    get options_admin_students_path(q: student.name)
+
+    payload = JSON.parse(response.body)
+    assert_not_includes payload.map { |item| item["id"] }, student.id
+  end
+
   test "update" do
     student = students(:student_7_1)
     referrer = students(:student_9_2)

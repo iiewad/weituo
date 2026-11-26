@@ -2,6 +2,9 @@ class Student < ApplicationRecord
   paginates_per 30
   validates :name, presence: true
 
+  scope :active, -> { where(deleted_at: nil) }
+  scope :deleted, -> { where.not(deleted_at: nil) }
+
   belongs_to :day_school, optional: true
   belongs_to :campuse
   belongs_to :grade, optional: true
@@ -79,6 +82,18 @@ class Student < ApplicationRecord
         .find_or_initialize_by(klass_student_id: to_ks.id)
         .update!(status: source.status)
     end
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
   end
 
   def update_grade

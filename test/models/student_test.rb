@@ -17,6 +17,20 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal "normal", course.attendances.find_by!(klass_student_id: ks.id).status
   end
 
+  test "soft delete hides the student from the active scope and restore brings it back" do
+    student = students(:student_7_1)
+
+    assert_not student.deleted?
+    student.soft_delete!
+    assert student.reload.deleted?
+    assert_includes Student.deleted, student
+    assert_not_includes Student.active, student
+
+    student.restore!
+    assert_not student.reload.deleted?
+    assert_includes Student.active, student
+  end
+
   test "join klass rejects a different grade" do
     sk = semester_klasses(:sk_math_1)
     student = students(:student_8_1)

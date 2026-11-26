@@ -3,7 +3,7 @@ class Admin::DaySchoolsController < AdminController
 
   def index
     @day_schools = Current.campuse.day_schools.order(:name)
-    @student_counts = Student.where(campuse_id: Current.campuse.id)
+    @student_counts = Student.active.where(campuse_id: Current.campuse.id)
       .where.not(day_school_id: nil)
       .group(:day_school_id).count
   end
@@ -36,7 +36,7 @@ class Admin::DaySchoolsController < AdminController
 
   def destroy
     day_school = Current.campuse.day_schools.find(params[:id])
-    student_count = Student.where(day_school_id: day_school.id).count
+    student_count = Student.active.where(day_school_id: day_school.id).count
 
     if student_count.positive?
       redirect_to admin_day_schools_path, alert: "该日校下还有 #{student_count} 名学员，不能删除"

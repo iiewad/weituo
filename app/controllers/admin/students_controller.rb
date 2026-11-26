@@ -6,10 +6,11 @@ class Admin::StudentsController < AdminController
     @q = Student.ransack(params[:q])
     @grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level)
     @day_schools = DaySchool.where(campuse_id: Current.campuse.id).order(:name)
-    base = @q.result.where(
+    scoped = @q.result.where(
       campuse_id: Current.campuse.id,
       grade_id: @grades.ids
     )
+    base = params[:filter].to_s == "deleted" ? scoped.deleted : scoped.active
 
     @per_page = PER_PAGE_OPTIONS.include?(params[:per_page].to_i) ? params[:per_page].to_i : DEFAULT_PER_PAGE
     @per_page_options = PER_PAGE_OPTIONS
@@ -18,7 +19,7 @@ class Admin::StudentsController < AdminController
     @students = apply_filter(@students, params[:filter]) if params[:filter].present?
     @students = @students.page(params[:page]).per(@per_page)
 
-    @filter_counts = filter_counts(base)
+    @filter_counts = filter_counts(scoped)
     student_ids = @students.map(&:id)
     @klass_students_by_student = klass_students_by_student(student_ids)
     @history_by_student = klass_student_history(student_ids)
@@ -74,7 +75,7 @@ class Admin::StudentsController < AdminController
     query = params[:q].to_s.strip
     return render json: [] if query.blank?
 
-    scope = Student.where(campuse_id: Current.campuse.id).includes(:grade)
+    scope = Student.active.where(campuse_id: Current.campuse.id).includes(:grade)
     scope = scope.where.not(id: params[:exclude_id]) if params[:exclude_id].present?
     scope = scope.where("students.name LIKE ?", "%#{Student.sanitize_sql_like(query)}%")
 
@@ -180,7 +181,30 @@ class Admin::StudentsController < AdminController
     end
   end
 
+  # 软删除：隐藏学员但保留班级与考勤历史，可在「已删除」中恢复
+  def destroy
+    @student = Current.campuse.students.find(params[:id])
+    @student.soft_delete!
+    redirect_to admin_students_path(student_list_params),
+      notice: "#{@student.name} 已删除，可在「已删除」中恢复"
+  end
+
+  def restore
+    @student = Current.campuse.students.find(params[:id])
+    @student.restore!
+    redirect_to admin_students_path(student_list_params.merge(filter: "deleted")),
+      notice: "#{@student.name} 已恢复"
+  end
+
   private
+    # 删除 / 恢复后回到原来的筛选与搜索状态
+    def student_list_params
+      q = params[:q]
+      q = q.to_unsafe_h if q.respond_to?(:to_unsafe_h)
+      q = nil if q.blank?
+      { filter: params[:filter].presence, per_page: params[:per_page].presence, q: q }.compact
+    end
+
     def student_params
       params.require(:student).permit(
         :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :address, :remark, :referrer_id,
@@ -254,13 +278,15 @@ class Admin::StudentsController < AdminController
         end
     end
 
-    def filter_counts(base)
+    def filter_counts(scoped)
+      active = scoped.active
       ks = klass_students_in_current_semester
       {
-        all: base.count,
-        in_class: base.where(id: ks.where(status: "in").select(:student_id)).count,
-        out_class: base.where(id: ks.where(status: "out").select(:student_id)).count,
-        not_in_class: base.where.not(id: ks.where(status: %w[in out]).select(:student_id)).count
+        all: active.count,
+        in_class: active.where(id: ks.where(status: "in").select(:student_id)).count,
+        out_class: active.where(id: ks.where(status: "out").select(:student_id)).count,
+        not_in_class: active.where.not(id: ks.where(status: %w[in out]).select(:student_id)).count,
+        deleted: scoped.deleted.count
       }
     end
 end
