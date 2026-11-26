@@ -183,8 +183,8 @@ class Admin::StudentsController < AdminController
   private
     def student_params
       params.require(:student).permit(
-        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :remark, :referrer_id,
-        guardians_attributes: [ :id, :name, :phone, :relationship, :_destroy ]
+        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :address, :remark, :referrer_id,
+        guardians_attributes: [ :id, :name, :phone, :relationship, :occupation, :_destroy ]
       )
     end
 

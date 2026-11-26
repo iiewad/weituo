@@ -52,6 +52,10 @@
         </dd>
       </div>
       <div class="col-span-2">
+        <dt class="text-base-content/50">家庭住址</dt>
+        <dd class="mt-0.5 font-medium"><%= item.address.presence || "—" %></dd>
+      </div>
+      <div class="col-span-2">
         <dt class="text-base-content/50">备注</dt>
         <dd class="mt-0.5 whitespace-pre-line font-medium"><%= item.remark.presence || "—" %></dd>
       </div>
@@ -68,8 +72,8 @@
         <% item.guardians.each do |guardian| %>
           <li class="flex items-center justify-between gap-2 rounded-box bg-base-200/60 px-3 py-2 text-xs">
             <span>
-              <span class="font-medium"><%= guardian.name %></span>
-              <span class="ml-1 text-base-content/50"><%= guardian.relationship %></span>
+              <span class="font-medium"><%= guardian.name.presence || "未填写姓名" %></span>
+              <span class="ml-1 text-base-content/50"><%= [ guardian.relationship, guardian.occupation ].compact_blank.join(" · ") %></span>
             </span>
             <span class="text-base-content/60"><%= guardian.phone %></span>
           </li>

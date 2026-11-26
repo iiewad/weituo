@@ -152,7 +152,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students from pasted csv text" do
     text = [
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲",
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲",
       "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
       "坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
     ].join("\n")
@@ -179,8 +179,8 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students and guardians from an xlsx file" do
     rows = [
-      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "监护人姓名", "监护人电话", "关系" ],
-      [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中", "家长甲", "13800000001", "父亲" ],
+      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "家庭住址", "监护人姓名", "监护人电话", "关系", "职业" ],
+      [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中", "", "家长甲", "13800000001", "父亲" ],
       [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中" ]
     ]
 
@@ -210,6 +210,8 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
     assert_includes strings, "姓名"
     assert_includes strings, "监护人电话"
+    assert_includes strings, "职业"
+    assert_includes strings, "家庭住址"
     assert_includes strings, "学员批量导入填写说明"
 
     sheets = workbook.read("xl/workbook.xml").force_encoding("UTF-8")
@@ -266,6 +268,39 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "改名", student.reload.name
     assert_equal "已更新备注", student.remark
     assert_equal referrer, student.referrer
+  end
+
+  test "update saves the address and a guardian without a name" do
+    student = students(:student_7_1)
+
+    put admin_student_path(student), params: { student: {
+      name: student.name,
+      address: "幸福路 1 号",
+      guardians_attributes: {
+        "0" => { name: "", phone: "13900000000", relationship: "母亲", occupation: "医生" }
+      }
+    } }
+
+    assert_redirected_to admin_students_path
+    assert_equal "幸福路 1 号", student.reload.address
+
+    guardian = student.guardians.find_by!(phone: "13900000000")
+    assert guardian.name.blank?
+    assert_equal "医生", guardian.occupation
+  end
+
+  test "detail drawer shows the address and guardian occupation" do
+    student = students(:student_7_1)
+    student.update!(address: "幸福路 1 号")
+    student.guardians.create!(phone: "13900000000", relationship: "母亲", occupation: "医生")
+
+    get admin_students_path
+
+    assert_response :success
+    drawer = Nokogiri::HTML(response.body).at_css("#drawer-student-detail-#{student.id}").parent
+    assert_includes drawer.text, "幸福路 1 号"
+    assert_includes drawer.text, "母亲 · 医生"
+    assert_includes drawer.text, "未填写姓名"
   end
 
   test "import rolls back the whole batch and reports the failure" do

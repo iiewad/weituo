@@ -73,7 +73,7 @@ class Student < ApplicationRecord
 
   IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
 
-  # 按 CSV 行导入学员：姓名,性别,生日,年级level,层级,入学日期,日校[,监护人姓名,监护人电话,监护关系]
+  # 按 CSV 行导入学员：姓名,性别,生日,年级level,层级,入学日期,日校[,家庭住址,监护人姓名,监护人电话,监护关系,监护人职业]
   # 监护人字段可选；返回 [新增人数, 跳过行数]。
   def self.add_by_text(campuse_id, str, grade_ids: nil)
     rows = str.to_s.split("\n").map { |line| normalize_import_row(line.split(",", -1)) }
@@ -98,7 +98,8 @@ class Student < ApplicationRecord
         next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
         name, gender, birthday, grade_level, layer, in_date, day_school_name,
-          guardian_name, guardian_phone, guardian_relationship = row.map { |value| value.to_s.strip }
+          address, guardian_name, guardian_phone, guardian_relationship,
+          guardian_occupation = row.map { |value| value.to_s.strip }
         grade = Grade.find_by(level: grade_level)
         day_school = campuse.day_schools.find_by(name: day_school_name)
 
@@ -119,7 +120,8 @@ class Student < ApplicationRecord
           grade_id: grade.id,
           layer: layer,
           in_date: in_date,
-          day_school_id: day_school.id
+          day_school_id: day_school.id,
+          address: address.presence
         })
 
         if student.new_record? && !student.save
@@ -127,9 +129,11 @@ class Student < ApplicationRecord
           next
         end
 
-        if guardian_name.present? && guardian_phone.present?
-          student.guardians.find_or_create_by(name: guardian_name, phone: guardian_phone) do |guardian|
+        # 监护人姓名选填，电话必填；有电话就建档
+        if guardian_phone.present?
+          student.guardians.find_or_create_by(name: guardian_name.presence, phone: guardian_phone) do |guardian|
             guardian.relationship = guardian_relationship.presence
+            guardian.occupation = guardian_occupation.presence
           end
         end
 

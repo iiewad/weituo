@@ -9,12 +9,13 @@ class StudentsTest < ApplicationSystemTestCase
     drawer = find("#drawer-student-import", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      fill_in "学员数据", with: "批量学员,男,2013-05-01,7,3,2026-09-01,三中,批量家长,13800000000,父亲"
+      fill_in "学员数据", with: "批量学员,男,2013-05-01,7,3,2026-09-01,三中,幸福路 2 号,批量家长,13800000000,父亲"
       click_button "开始导入"
     end
 
     assert_text "新增 1 名学员"
     student = Student.find_by!(name: "批量学员")
+    assert_equal "幸福路 2 号", student.address
     assert_equal "批量家长", student.guardians.sole.name
     assert_equal "父亲", student.guardians.sole.relationship
   end

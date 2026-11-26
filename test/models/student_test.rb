@@ -122,11 +122,11 @@ class StudentTest < ActiveSupport::TestCase
 
   test "import by text maps genders and reports created and skipped rows" do
     text = [
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲",
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲",
       "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
       "坏日校,男,2000-01-01,7,1,2026-01-01,不存在",
       "未授权年级,男,2000-01-01,9,1,2026-01-01,三中",
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,家长甲,13800000001,父亲"
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲"
     ].join("\n")
 
     created, skipped = Student.add_by_text(
@@ -147,6 +147,27 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal "13800000001", guardian.phone
     assert_equal "父亲", guardian.relationship
     assert_empty Student.find_by!(name: "导入乙").guardians
+  end
+
+  test "import by text stores the address and a nameless guardian's occupation" do
+    text = [
+      "住址学员,男,2000-01-01,7,1,2026-01-01,三中,幸福路 1 号,,13900000000,,医生",
+      "无监护人学员,女,2000-02-02,7,1,2026-01-01,三中"
+    ].join("\n")
+
+    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+
+    assert_equal 2, created
+    assert_equal 0, skipped
+
+    student = Student.find_by!(name: "住址学员")
+    assert_equal "幸福路 1 号", student.address
+
+    guardian = student.guardians.sole
+    assert guardian.name.blank?
+    assert_equal "13900000000", guardian.phone
+    assert_equal "医生", guardian.occupation
+    assert_empty Student.find_by!(name: "无监护人学员").guardians
   end
 
   test "import dedupes by name and birthday even when other fields change" do
