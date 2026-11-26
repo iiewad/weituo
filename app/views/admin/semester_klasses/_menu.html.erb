@@ -1,6 +1,7 @@
 <%
   current_sk = local_assigns[:current_sk]
   grouped = sks.group_by(&:grade).sort_by { |grade, _| grade.level }
+  genre_order = SemesterKlass::GENRE_MAP.values
 %>
 <ul class="menu menu-sm w-full">
   <% grouped.each do |grade, grade_sks| %>
@@ -20,7 +21,7 @@
                   <span class="text-xs opacity-50"><%= subject_sks.size %></span>
                 </summary>
                 <ul>
-                  <% subject_sks.sort_by(&:seq).each do |sk| %>
+                  <% subject_sks.sort_by { |sk| [ sk.phase, genre_order.index(sk.genre) || genre_order.size, sk.seq ] }.each do |sk| %>
                     <% active = sk == current_sk %>
                     <li>
                       <%= link_to admin_semester_klass_path(sk),

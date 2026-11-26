@@ -13,6 +13,7 @@
   <%= form.hidden_field :campuse_id, value: Current.campuse.id %>
   <% existing_klass_students = item.persisted? ? item.klass_students.includes(:student).to_a : [] %>
   <% grade_locked = item.persisted? && item.all_klass_students.exists? %>
+  <% phase_locked = grade_locked %>
 
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold"><%= item.new_record? ? "开班" : "班级详情 · #{item.name}" %></h3>
@@ -71,6 +72,17 @@
         <%= form.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
               { selected: item.genre.presence || "TG" }, { class: "select select-sm w-full", required: true } %>
+      </div>
+
+      <div>
+        <%= form.label :phase, "阶段", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= form.select :phase, SemesterKlass::PHASE_MAP.map { |value, label| [ label, value ] },
+              { selected: item.phase || 1 }, { class: "select select-sm w-full", required: true, disabled: phase_locked } %>
+        <% if phase_locked %>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">班级已有学员，阶段不可修改。</p>
+        <% else %>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">同一学期两个阶段可重复使用班型与序号。</p>
+        <% end %>
       </div>
 
       <div>

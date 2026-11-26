@@ -98,6 +98,29 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert created.klass_students.exists?(student: newcomer)
   end
 
+  test "开班可以选择第二阶段" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      select "第二阶段", from: "阶段"
+      select "提高班", from: "班型"
+      select "七年级", from: "年级"
+      select "张", from: "教师"
+      fill_in "课次", with: "3"
+      click_button "开班"
+    end
+
+    assert_text "班级创建成功"
+    created = SemesterKlass.order(:id).last
+    assert_equal 2, created.phase
+    assert_equal "二期7数提1", created.name
+    assert_text created.name
+  end
+
   test "切换年级和教师会持续更新课次默认值" do
     sign_in
     visit admin_semester_klasses_path
@@ -138,7 +161,7 @@ class KlassManagementTest < ApplicationSystemTestCase
     end
 
     assert_text "班级创建成功"
-    assert_text "7数精1"
+    assert_text "一期7数精1"
     assert_equal 3, SemesterKlass.order(:id).last.courses.count
   end
 end

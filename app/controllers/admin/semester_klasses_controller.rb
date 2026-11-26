@@ -69,7 +69,8 @@ class Admin::SemesterKlassesController < AdminController
       semester_id: @sk.semester_id,
       grade_id: @sk.grade_id,
       subject_id: @sk.subject_id,
-      genre: @sk.genre
+      genre: @sk.genre,
+      phase: @sk.phase
     )
 
     if @sk.save
@@ -371,9 +372,10 @@ class Admin::SemesterKlassesController < AdminController
       subject: @sk.subject,
       teacher: teacher,
       genre: genre,
+      phase: @sk.phase,
       seq: SemesterKlass.next_seq(
         campuse_id: @sk.campuse_id, semester_id: next_semester.id,
-        grade_id: grade.id, subject_id: @sk.subject_id, genre: genre
+        grade_id: grade.id, subject_id: @sk.subject_id, genre: genre, phase: @sk.phase
       ),
       times: times
     )
@@ -533,6 +535,6 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def semester_klass_params
-    params.require(:semester_klass).permit(:genre, :seq, :times, :teacher_id, :grade_id)
+    params.require(:semester_klass).permit(:genre, :seq, :times, :teacher_id, :grade_id, :phase)
   end
 end

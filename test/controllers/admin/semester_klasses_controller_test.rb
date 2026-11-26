@@ -333,6 +333,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[data-controller='klass-times']"
     assert_select "select[data-klass-times-target='grade'][data-action='change->klass-times#apply']"
+    assert_select "select[name='semester_klass[phase]'] option[selected][value='1']", text: "第一阶段"
     assert_select "select[data-klass-times-target='teacher'][data-action='change->klass-times#apply']"
     assert_select "input[data-klass-times-target='times']"
 
@@ -486,6 +487,20 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
     assert_includes strings, "年级：七年级"
     assert_not_includes strings, grade_8_klass.name
+  end
+
+  test "class menu orders classes by phase, genre and seq" do
+    sk = semester_klasses(:sk_math_2)
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 2
+    )
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    names = Nokogiri::HTML(response.body).css("ul.menu a > span:first-child").map { |span| span.text.strip }
+    assert_equal [ "一期7数提2", "一期7数提3", "二期7数精1" ], names.select { |name| name.match?(/\A(一期|二期)7数/) }
   end
 
   test "show renders the class menu with the current class active" do
@@ -759,7 +774,24 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     created = SemesterKlass.order(:id).last
     assert_equal 5, created.seq
-    assert_equal "7数提5", created.name
+    assert_equal "一期7数提5", created.name
+    assert_redirected_to admin_semester_klass_path(created)
+  end
+
+  test "create allows the same class combination in the other phase" do
+    source = semester_klasses(:sk_math_2)
+
+    assert_difference -> { SemesterKlass.count }, 1 do
+      post admin_semester_klasses_path, params: { semester_klass: {
+        semester_id: source.semester_id, grade_id: source.grade_id,
+        teacher_id: source.teacher_id, campuse_id: source.campuse_id,
+        genre: source.genre, times: 3, phase: 2
+      } }
+    end
+
+    created = SemesterKlass.order(:id).last
+    assert_equal 2, created.phase
+    assert_equal "二期7数提1", created.name
     assert_redirected_to admin_semester_klass_path(created)
   end
 

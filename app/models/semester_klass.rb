@@ -10,17 +10,19 @@ class SemesterKlass < ApplicationRecord
   has_many :archived_klass_students, -> { archived }, class_name: "KlassStudent"
   has_many :students, through: :klass_students
 
-  # 确保一个学期内，科目+班型+序号的组合是唯一的
+  # 确保同一学期、同一阶段内，科目+班型+序号的组合是唯一的
   validates :semester_id, uniqueness: {
-    scope: [ :campuse_id, :grade_id, :subject_id, :genre, :seq ],
+    scope: [ :campuse_id, :grade_id, :subject_id, :genre, :seq, :phase ],
     message: "班级信息已存在，不可重复"
   }
   validates :seq, presence: true, numericality: { only_integer: true }
   validates :times, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :genre, inclusion: { in: %w[TG JY XZ XQ CC] }
+  validates :phase, inclusion: { in: [ 1, 2 ] }
   validate :campuse_and_semester_share_school
   validate :subject_matches_teacher
   validate :grade_locked_when_students_exist, on: :update
+  validate :phase_locked_when_students_exist, on: :update
   validate :times_not_below_started_courses, on: :update
 
   GENRE_MAP = {
@@ -32,6 +34,10 @@ class SemesterKlass < ApplicationRecord
   }
 
   GENRE_MAP_REVERSE = GENRE_MAP.invert
+
+  # 学期分两个阶段：同一阶段内班型 + 序号唯一，两个阶段之间允许重复
+  PHASE_MAP = { 1 => "第一阶段", 2 => "第二阶段" }.freeze
+  PHASE_PREFIX = { 1 => "一期", 2 => "二期" }.freeze
 
   after_create :create_courses
   after_update :sync_courses
@@ -51,17 +57,18 @@ class SemesterKlass < ApplicationRecord
   end
 
   def self.ransackable_attributes(auth_object = nil)
-    [ "campuse_id", "created_at", "genre", "grade_id", "id", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
+    [ "campuse_id", "created_at", "genre", "grade_id", "id", "phase", "semester_id", "seq", "subject_id", "teacher_id", "times", "updated_at" ]
   end
 
-  # 同一学期、校区、年级、科目、班型下自动取下一个序号，跳过含 4 的序号
-  def self.next_seq(campuse_id:, semester_id:, grade_id:, subject_id:, genre:)
+  # 同一学期、阶段、校区、年级、科目、班型下自动取下一个序号，跳过含 4 的序号
+  def self.next_seq(campuse_id:, semester_id:, grade_id:, subject_id:, genre:, phase: 1)
     candidate = where(
       campuse_id: campuse_id,
       semester_id: semester_id,
       grade_id: grade_id,
       subject_id: subject_id,
-      genre: genre
+      genre: genre,
+      phase: phase
     ).maximum(:seq).to_i + 1
 
     candidate += 1 while candidate.to_s.include?("4")
@@ -78,7 +85,7 @@ class SemesterKlass < ApplicationRecord
   end
 
   def name
-    "#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
+    "#{PHASE_PREFIX.fetch(phase, PHASE_PREFIX[1])}#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
   end
 
   def inactive_students
@@ -122,6 +129,13 @@ class SemesterKlass < ApplicationRecord
       return unless grade_id_changed? && all_klass_students.exists?
 
       errors.add(:grade_id, "班级已有学员，不能修改年级")
+    end
+
+    # 阶段决定班名与同阶段唯一性，有学员后不允许改，避免身份与报表口径变化
+    def phase_locked_when_students_exist
+      return unless phase_changed? && all_klass_students.exists?
+
+      errors.add(:phase, "班级已有学员，不能修改阶段")
     end
 
     # 已开课的课次不能删除，课次只能加不能减到已开课数量以下

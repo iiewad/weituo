@@ -49,7 +49,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 | 教师 | `Teacher` | 属于校区，带科目 |
 | 学员、监护人 | `Student` / `Guardian` | 属于校区，可带年级、日校、家庭住址；监护人可带关系与职业 |
 | 推荐关系 | `StudentReferral` / `student_referrals` | 学员之间的推荐入学关系，被推荐学员唯一 |
-| 班级 | `SemesterKlass` / `semester_klasses` | 学期 + 校区 + 年级 + 科目 + 班型 + 序号 |
+| 班级 | `SemesterKlass` / `semester_klasses` | 学期 + 阶段（一阶段 / 二阶段）+ 校区 + 年级 + 科目 + 班型 + 序号 |
 | 课次 | `Course` / `courses` | 班级下按 `seq` 排列的一节课，有 `start_date` 表示已开课 |
 | 报名 | `KlassStudent` / `klass_students` | 学员与班级的关系，状态 `in` / `out` / `transfer` |
 | 考勤 | `Attendance` / `attendances` | 每个「课次 × 报名」一条记录 |
@@ -75,11 +75,11 @@ flowchart LR
 
 入口：`班级管理 → 开班`，或 `POST /admin/semester_klasses`。
 
-- 必填：学期、年级、教师、校区、班型（`TG` 提高 / `JY` 精英 / `XZ` 创新 / `XQ` 兴趣 / `CC` 超常）、序号、`times`（课次数）
+- 必填：学期、阶段（一阶段 / 二阶段）、年级、教师、校区、班型（`TG` 提高 / `JY` 精英 / `XZ` 创新 / `XQ` 兴趣 / `CC` 超常）、序号、`times`（课次数）
 - **科目由教师带出**，不由表单单独指定
-- 唯一性：`学期 + 校区 + 年级 + 科目 + 班型 + 序号` 不可重复
+- 唯一性：`学期 + 阶段 + 校区 + 年级 + 科目 + 班型 + 序号` 不可重复；同一学期的一阶段、二阶段可以重复使用班型与序号
 - 创建后 `after_create` 自动生成 `times` 门课次（`seq` 从 1 开始，均无 `start_date`）
-- 班级名规则：`年级 level + 科目首字 + 班型中文首字 + 序号`，例如 `7数提1`
+- 班级名规则：`期次 + 年级 level + 科目首字 + 班型中文首字 + 序号`，例如 `一期7数提1`、`二期7数提1`；自动序号按阶段独立计算
 
 ### 2. 学员报名与批量导入
 

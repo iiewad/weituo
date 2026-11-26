@@ -96,8 +96,63 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert_equal 5, SemesterKlass.next_seq(**attrs)
   end
 
-  test "name is built from grade, subject, genre and seq" do
-    assert_equal "7数提1", semester_klasses(:sk_math_1).name
+  test "name is built from phase, grade, subject, genre and seq" do
+    assert_equal "一期7数提1", semester_klasses(:sk_math_1).name
+  end
+
+  test "phase allows the same genre and seq twice in one semester" do
+    sk = semester_klasses(:sk_math_3)
+    duplicate = SemesterKlass.new(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: sk.genre, seq: sk.seq, times: 4, phase: 2
+    )
+
+    assert duplicate.valid?, duplicate.errors.full_messages.to_sentence
+    assert duplicate.save
+    assert_equal "二期#{sk.name.delete_prefix("一期")}", duplicate.name
+  end
+
+  test "same phase still rejects a duplicate combination" do
+    sk = semester_klasses(:sk_math_3)
+    duplicate = SemesterKlass.new(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: sk.genre, seq: sk.seq, times: 4, phase: 1
+    )
+
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:semester_id], "班级信息已存在，不可重复"
+  end
+
+  test "next seq is scoped by phase" do
+    sk = semester_klasses(:sk_math_3)
+    attrs = {
+      campuse_id: sk.campuse_id, semester_id: sk.semester_id,
+      grade_id: sk.grade_id, subject_id: sk.subject_id, genre: sk.genre
+    }
+
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: sk.genre, seq: 7, times: 1, phase: 2
+    )
+
+    # 一期已有 1、2、3；下一个是 4，含 4 跳到 5
+    assert_equal 5, SemesterKlass.next_seq(**attrs, phase: 1)
+    assert_equal 8, SemesterKlass.next_seq(**attrs, phase: 2)
+  end
+
+  test "phase cannot change once the class has students" do
+    sk = semester_klasses(:sk_math_1)
+
+    assert_not sk.update(phase: 2)
+    assert_includes sk.errors[:phase], "班级已有学员，不能修改阶段"
+    assert_equal 1, sk.reload.phase
+  end
+
+  test "phase can change while the class is empty" do
+    sk = semester_klasses(:sk_math_3)
+
+    assert sk.update(phase: 2)
+    assert_equal "二期7数提3", sk.reload.name
   end
 
   test "active and inactive students" do
