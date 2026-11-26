@@ -69,13 +69,13 @@ class StatementReport
 
       @semesters.each do |semester|
         @history_semester_ids[semester.id] = @semesters.select { |other|
-          other.seq < semester.seq && other.start_date < semester.start_date
+          other.seq < semester.seq
         }.map(&:id)
         @previous_semester_ids[semester.id] = @semesters.select { |other|
-          other.seq < semester.seq && other.end_date <= semester.start_date
+          other.seq < semester.seq
         }.max_by(&:seq)&.id
         @next_semester_ids[semester.id] = @semesters.select { |other|
-          other.seq > semester.seq && other.start_date >= semester.end_date
+          other.seq > semester.seq
         }.min_by(&:seq)&.id
       end
     end

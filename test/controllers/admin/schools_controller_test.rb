@@ -66,11 +66,21 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { Semester.count }, 1 do
       put admin_school_path(schools(:school_1)), params: {
         school: { semesters_attributes: { "0" => {
-          name: "新学期", start_date: Date.current, end_date: Date.current + 3.months, seq: 9
+          name: "新学期", seq: 9
         } } }
       }
     end
     assert_redirected_to admin_schools_path
+  end
+
+  test "update sets the chosen current semester" do
+    school = schools(:school_1)
+
+    put admin_school_path(school), params: { school: { current_semester_id: semesters(:semester_next).id } }
+
+    assert_redirected_to admin_schools_path
+    assert_equal semesters(:semester_next), school.reload.current_semester
+    assert_not semesters(:semester_current).reload.current?
   end
 
   test "update with a blank name fails without raising" do

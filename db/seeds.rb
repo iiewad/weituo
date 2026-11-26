@@ -57,13 +57,10 @@ oldest_start = (previous_start - 5.months).beginning_of_month
 future_start = current_end + 1.day
 future_end = (future_start + 2.months) - 1.day
 
-semesters = [
-  [ oldest_start, oldest_end ],
-  [ previous_start, previous_end ],
-  [ current_start, current_end ],
-  [ future_start, future_end ]
-].each_with_index.map do |(start_date, end_date), index|
-  school.semesters.create!(name: term_name(start_date), seq: index + 1, start_date:, end_date:)
+# 日期只用来生成演示用的学期名称与课次日期，不再写入学期表
+term_starts = [ oldest_start, previous_start, current_start, future_start ]
+semesters = term_starts.each_with_index.map do |start_date, index|
+  school.semesters.create!(name: term_name(start_date), seq: index + 1, current: index == 2)
 end
 current_semester = semesters[2]
 
@@ -135,7 +132,7 @@ campuses.each_with_index do |campuse, campus_index|
         phone: format("138%08d", campus_index * 10_000 + grade.level * 1_000 + index),
         grade:,
         layer: (index % 5) + 1,
-        in_date: semesters.first.start_date - (index % 40).days,
+        in_date: term_starts.first - (index % 40).days,
         day_school: day_schools[campuse.id][index % day_schools[campuse.id].size],
         remark: (index % 7).zero? ? "家长要求每节课后反馈学习情况" : nil
       )
@@ -273,11 +270,11 @@ classes.each do |sk, semester_index|
   case semester_index
   when 0, 1
     courses.each_with_index do |course, index|
-      course.update_column(:start_date, sk.semester.start_date + ((index + 1) * 7).days)
+      course.update_column(:start_date, term_starts[semester_index] + ((index + 1) * 7).days)
     end
   when 2
     courses.each_with_index do |course, index|
-      date = sk.semester.start_date + ((index + 1) * 7).days
+      date = term_starts[semester_index] + ((index + 1) * 7).days
       course.update_column(:start_date, date) if date <= Date.today
     end
   end

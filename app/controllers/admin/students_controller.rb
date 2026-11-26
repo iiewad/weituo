@@ -249,8 +249,9 @@ class Admin::StudentsController < AdminController
         .includes(semester_klass: [ :semester, :grade, :subject, :teacher ])
         .group_by(&:student_id)
         .transform_values do |records|
+          current_seq = Semester.current(Current.school.id)&.seq
           records
-            .select { |ks| ks.semester_klass.semester.start_date <= Date.today }
+            .select { |ks| current_seq.nil? || ks.semester_klass.semester.seq <= current_seq }
             .sort_by { |ks| [ -ks.semester_klass.semester.seq.to_i, ks.semester_klass.seq.to_i ] }
         end
     end

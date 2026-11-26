@@ -63,15 +63,20 @@
       <div class="overflow-x-auto">
         <table class="table table-sm">
           <thead>
-            <tr><th class="w-10"></th><th>学期名称</th><th>开始日期</th><th>结束日期</th><th>序号</th><th class="text-right">操作</th></tr>
+            <tr><th class="w-10"></th><th>学期名称</th><th class="text-center">当前学期</th><th>序号</th><th class="text-right">操作</th></tr>
           </thead>
           <tbody data-semesters-target="tbody">
             <%= form.fields_for :semesters, item.semesters do |semester_form| %>
               <tr id="semester-<%= semester_form.object.id %>">
                 <td><%= semester_form.hidden_field :id %><%= semester_form.hidden_field :_destroy, value: "false" %></td>
                 <td><%= semester_form.text_field :name, class: "input input-sm", placeholder: "学期名称", required: true %></td>
-                <td><%= semester_form.date_field :start_date, class: "input input-sm", required: true %></td>
-                <td><%= semester_form.date_field :end_date, class: "input input-sm", required: true %></td>
+                <td class="text-center">
+                  <%= radio_button_tag "school[current_semester_id]", semester_form.object.id,
+                        semester_form.object.current?,
+                        id: "semester_current_#{semester_form.object.id}",
+                        class: "radio radio-xs radio-primary",
+                        aria: { label: "设为当前学期" } %>
+                </td>
                 <td><%= semester_form.number_field :seq, class: "input input-sm w-20", required: true %></td>
                 <td class="text-right">
                   <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-square btn-ghost text-error" title="删除" aria-label="删除学期">
@@ -83,6 +88,9 @@
           </tbody>
         </table>
       </div>
+      <p class="mt-2 text-[11px] leading-snug text-base-content/40">
+        「当前学期」用于顶栏默认学期与报表口径；删除当前学期后会自动把序号最小的学期设为当前。
+      </p>
       <button type="button" data-action="semesters#addRow" class="btn btn-sm btn-outline btn-primary mt-3">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
         添加学期
@@ -92,8 +100,7 @@
           <tr id="semester-new">
             <td><%= semester_form.hidden_field :id %><%= semester_form.hidden_field :_destroy %></td>
             <td><%= semester_form.text_field :name, class: "input input-sm", placeholder: "学期名称", required: true %></td>
-            <td><%= semester_form.date_field :start_date, class: "input input-sm", required: true %></td>
-            <td><%= semester_form.date_field :end_date, class: "input input-sm", required: true %></td>
+            <td class="text-center"><span class="text-[11px] text-base-content/30">保存后可选</span></td>
             <td><%= semester_form.number_field :seq, class: "input input-sm w-20", required: true %></td>
             <td class="text-right">
               <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-square btn-ghost text-error" title="删除" aria-label="删除学期">

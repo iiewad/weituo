@@ -1,13 +1,12 @@
 class Semester < ApplicationRecord
   belongs_to :school
 
-  validates :name, :start_date, :end_date, :seq, presence: true
+  validates :name, :seq, presence: true
   validates :seq, uniqueness: { scope: :school_id }
-  validate :end_date_after_start_date
+
+  # 当前学期由 semesters.current 标记决定（每个学校唯一），不再根据日期推断
   def self.current(school_id)
-    where(
-      "school_id = ? AND start_date <= ? AND end_date >= ?", school_id, Date.today, Date.today
-    ).order(:start_date).last
+    where(school_id: school_id, current: true).first
   end
 
   def self.history(school_id)
@@ -18,8 +17,7 @@ class Semester < ApplicationRecord
   end
   has_many :semester_klasses, dependent: :destroy
 
-  # 学期顺序以 seq 为准；日期只用于判断 current。
-  # 不用日期判断相邻学期，避免学期日期重叠或空档导致链条静默断裂。
+  # 学期顺序统一以 seq 为准
   def related_next_semester
     Semester.where(school_id: school_id).where("seq > ?", seq).order(seq: :asc).first
   end
@@ -31,11 +29,4 @@ class Semester < ApplicationRecord
   def related_history_semesters
     Semester.where(school_id: school_id).where("seq < ?", seq).order(seq: :desc)
   end
-
-  private
-    def end_date_after_start_date
-      return if start_date.blank? || end_date.blank? || end_date >= start_date
-
-      errors.add(:end_date, "不能早于开始日期")
-    end
 end

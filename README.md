@@ -33,7 +33,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 
 用户通过 `UserCampuse` 关联到校区，一个用户可有多个校区授权，每个授权带一份 JSON `grade_ids`。`Current.user.grades_by_campuse` / `subjects_by_campuse` 决定筛选与表单里可选的年级、科目。
 
-**当前上下文**：登录后 `AdminController#set_current_context` 把当前校区、学校、学期写入 `Current` 并记在 session 里；顶栏可切换校区/学期。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取覆盖今天的学期，取不到则回退到 `seq` 最大的学期。
+**当前上下文**：登录后 `AdminController#set_current_context` 把当前校区、学校、学期写入 `Current` 并记在 session 里；顶栏可切换校区/学期。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取学校标记的「当前学期」（`semesters.current`），没有标记则回退到 `seq` 最大的学期。
 
 账号以用户名 + 密码登录（`users` 表无邮箱字段），不提供自助邮件重置密码；需要重置时由管理员在「用户管理」中修改。
 
@@ -43,7 +43,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 | --- | --- | --- |
 | 学校 | `School` / `schools` | 顶层组织 |
 | 校区 | `Campuse` / `campuses` | 模型名是刻意的单数拼写，勿改 |
-| 学期 | `Semester` / `semesters` | 按 `seq` 排序，带 `start_date` / `end_date` |
+| 学期 | `Semester` / `semesters` | 按 `seq` 排序；`current` 标记当前学期（每校唯一） |
 | 年级、科目 | `Grade` / `Subject` / `GradeSubject` | 学校可开设的年级科目组合 |
 | 日校 | `DaySchool` | 学员就读的全日制学校 |
 | 教师 | `Teacher` | 属于校区，带科目 |

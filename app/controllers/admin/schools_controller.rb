@@ -43,9 +43,9 @@ class Admin::SchoolsController < AdminController
     def school_params
       params
         .require(:school)
-        .permit(:name,
+        .permit(:name, :current_semester_id,
           campuses_attributes: [ :id, :name, :_destroy ],
-          semesters_attributes: [ :id, :name, :start_date, :end_date, :seq, :_destroy ],
+          semesters_attributes: [ :id, :name, :seq, :_destroy ],
         )
     end
 end

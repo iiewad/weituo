@@ -19,7 +19,7 @@ class GradeSubjectTest < ActiveSupport::TestCase
   test "rejects a semester from another school" do
     other_school = School.create!(name: "其他学校")
     other_semester = other_school.semesters.create!(
-      name: "其他学期", start_date: Date.current, end_date: Date.current + 1.month, seq: 1
+      name: "其他学期", seq: 1
     )
     grade_subject = GradeSubject.new(
       school: schools(:school_1), semester: other_semester,

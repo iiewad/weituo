@@ -817,7 +817,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   test "create always uses the current campus and semester" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
     other_semester = School.find(schools(:school_1).id).semesters.create!(
-      name: "其他学期", start_date: Date.current + 1.year, end_date: Date.current + 1.year + 1.month, seq: 88
+      name: "其他学期", seq: 88
     )
 
     assert_difference -> { SemesterKlass.count }, 1 do

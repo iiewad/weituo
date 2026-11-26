@@ -1,30 +1,22 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
-# This model initially had no columns defined. If you add columns to the
-# model remove the "{}" from the fixture names and add the columns immediately
-# below each fixture, per the syntax in the comments below
-#
-
 semester_previous:
   id: 1
   school_id: 1
   name: 'current previous'
-  start_date: <%= Date.today.beginning_of_month - 1.month %>
-  end_date: <%= Date.today.beginning_of_month - 1.day %>
   seq: 1
+  current: false
 
 semester_current:
   id: 2
   school_id: 1
   name: 'current'
-  start_date: <%= Date.today.beginning_of_month %>
-  end_date: <%= Date.today.end_of_month %>
   seq: 2
+  current: true
 
 semester_next:
   id: 3
   school_id: 1
   name: 'current next'
-  start_date: <%= Date.today.beginning_of_month + 1.month %>
-  end_date: <%= Date.today.beginning_of_month + 1.month - 1.day %>
   seq: 3
+  current: false

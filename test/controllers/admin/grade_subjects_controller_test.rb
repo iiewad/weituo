@@ -71,7 +71,7 @@ class Admin::GradeSubjectsControllerTest < ActionDispatch::IntegrationTest
   test "sync only changes the current school and semester" do
     other_school = School.create!(name: "其他学校")
     other_semester = other_school.semesters.create!(
-      name: "其他学期", start_date: Date.current, end_date: Date.current + 1.month, seq: 1
+      name: "其他学期", seq: 1
     )
     other = other_school.grade_subjects.create!(
       semester: other_semester, grade: grades(:grade_7), subject: subjects(:eng), times: 12

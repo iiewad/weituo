@@ -5,9 +5,7 @@
   campus_count = @schools.sum { |s| s.campuses.size }
   semester_count = @schools.sum { |s| s.semesters.size }
   grade_subject_count = @schools.sum { |s| s.grade_subjects.size }
-  current_semester_schools = @schools.count do |s|
-    s.semesters.any? { |sem| sem.start_date && sem.end_date && sem.start_date <= Date.current && sem.end_date >= Date.current }
-  end
+  current_semester_schools = @schools.count { |s| s.semesters.any?(&:current?) }
 %>
 
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -50,9 +48,7 @@
     <tbody>
       <% @schools.each.with_index(1) do |school, index| %>
         <%
-          current_semester = school.semesters.detect do |sem|
-            sem.start_date && sem.end_date && sem.start_date <= Date.current && sem.end_date >= Date.current
-          end
+          current_semester = school.semesters.detect(&:current?)
         %>
         <tr class="hover:bg-base-200/40">
           <td class="text-base-content/40"><%= index %></td>
