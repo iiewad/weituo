@@ -5,6 +5,9 @@ class Teacher < ApplicationRecord
   validates :name, presence: true
   validate :subject_offered_by_school
 
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
+
   def self.ransackable_attributes(auth_object = nil)
     [ "name", "phone", "subject_id", "campuse_id" ]
   end
@@ -25,6 +28,18 @@ class Teacher < ApplicationRecord
 
   def name_with_subject
     "#{subject.name} #{name}"
+  end
+
+  def archived?
+    archived_at.present?
+  end
+
+  def archive!
+    update!(archived_at: Time.current)
+  end
+
+  def restore!
+    update!(archived_at: nil)
   end
 
   private

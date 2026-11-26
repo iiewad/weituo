@@ -263,7 +263,7 @@ class Admin::SemesterKlassesController < AdminController
     else
       []
     end
-    @reserve_teachers = @sk.campuse.teachers.where(subject_id: @sk.subject_id).order(:name).to_a
+    @reserve_teachers = @sk.campuse.teachers.active.where(subject_id: @sk.subject_id).order(:name).to_a
     @reserve_default_times = @next_semester ? reserve_default_times(@next_semester, @reserve_default_grade) : @sk.times.to_i
     @target_semester = @next_semester
     @active_counts = { @sk.id => @active_student_count }
@@ -306,11 +306,14 @@ class Admin::SemesterKlassesController < AdminController
   private
   # 开班 / 复制时只列出当前校区的教师，科目按教师所属科目分组
   def set_teacher_groups
-    @teacher_groups = Current.campuse.teachers.includes(:subject)
-      .order(:subject_id, :name)
-      .group_by(&:subject)
+    teachers = Current.campuse.teachers.active.includes(:subject).order(:subject_id, :name).to_a
+    # 已存档教师仍要能显示在所属班级的编辑表单里，避免保存时被替换
+    if @sk&.teacher_id.present? && teachers.none? { |teacher| teacher.id == @sk.teacher_id }
+      teachers << @sk.teacher
+    end
+    @teacher_groups = teachers.group_by(&:subject)
       .sort_by { |subject, _| subject.id }
-      .map { |subject, teachers| [ subject.name, teachers.map { |teacher| [ teacher.name, teacher.id ] } ] }
+      .map { |subject, list| [ subject.name, list.map { |teacher| [ teacher.name, teacher.id ] } ] }
   end
 
   def reserve_grade_ids
@@ -335,7 +338,7 @@ class Admin::SemesterKlassesController < AdminController
     grade = Grade.find_by(id: params[:new_grade_id])
     return nil if grade.blank? || !reserve_grade_ids.include?(grade.id)
 
-    teacher = @sk.campuse.teachers.find_by(id: params[:new_teacher_id], subject_id: @sk.subject_id)
+    teacher = @sk.campuse.teachers.active.find_by(id: params[:new_teacher_id], subject_id: @sk.subject_id)
     genre = params[:new_genre].presence
     return nil if teacher.blank? || !SemesterKlass::GENRE_MAP.value?(genre)
 
@@ -377,8 +380,9 @@ class Admin::SemesterKlassesController < AdminController
     grade_subjects = Current.school.grade_subjects.where(semester_id: Current.semester.id)
     @grade_subject_times = grade_subjects.pluck(:grade_id, :subject_id, :times)
       .to_h { |grade_id, subject_id, times| [ "#{grade_id}-#{subject_id}", times ] }
-    @teacher_subjects = Current.campuse.teachers.pluck(:id, :subject_id)
+    @teacher_subjects = Current.campuse.teachers.active.pluck(:id, :subject_id)
       .to_h { |teacher_id, subject_id| [ teacher_id.to_s, subject_id ] }
+    @teacher_subjects[@sk.teacher_id.to_s] = @sk.subject_id if @sk&.teacher_id
   end
 
   def new_class_candidates

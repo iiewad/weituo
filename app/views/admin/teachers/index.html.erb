@@ -26,13 +26,26 @@
           <td>
             <div class="flex items-center gap-2.5">
               <span class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/10 text-xs font-semibold text-secondary"><%= teacher.name.to_s.first %></span>
-              <span class="font-medium"><%= teacher.name %></span>
+              <span class="font-medium <%= "text-base-content/50" if teacher.archived? %>"><%= teacher.name %></span>
+              <% if teacher.archived? %>
+                <span class="badge badge-ghost badge-xs">已存档</span>
+              <% end %>
             </div>
           </td>
           <td class="text-base-content/70"><%= teacher.phone.presence || "—" %></td>
           <td><span class="badge badge-outline badge-primary badge-sm"><%= teacher.subject&.name || "—" %></span></td>
           <td class="text-right">
-            <%= render "admin/shared/drawer", item: teacher, drawer_id: "drawer-teacher-#{teacher.id}", button_name: "编辑", drawer_width: "180", drawer_content: "admin/teachers/form" %>
+            <div class="flex items-center justify-end gap-1">
+              <%= render "admin/shared/drawer", item: teacher, drawer_id: "drawer-teacher-#{teacher.id}", button_name: "编辑", drawer_width: "180", drawer_content: "admin/teachers/form" %>
+              <% if teacher.archived? %>
+                <%= button_to "恢复", restore_admin_teacher_path(teacher), method: :patch,
+                      params: { status: @status }, class: "btn btn-xs btn-ghost text-primary" %>
+              <% else %>
+                <%= button_to "存档", archive_admin_teacher_path(teacher), method: :patch,
+                      params: { status: @status }, class: "btn btn-xs btn-ghost text-base-content/50",
+                      data: { turbo_confirm: "确定将 #{teacher.name} 存档吗？存档后不会出现在开班 / 复制班级的教师选项里，历史班级和考勤不受影响。" } %>
+              <% end %>
+            </div>
           </td>
         </tr>
       <% end %>

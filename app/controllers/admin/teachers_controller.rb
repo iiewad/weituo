@@ -2,10 +2,27 @@ class Admin::TeachersController < AdminController
   def index
     @q = Teacher.ransack(params[:q])
     @subjects = Subject.order(:id)
-    @teachers = @q.result
-      .includes(:subject, :campuse)
-      .where(campuse_id: Current.campuse.id)
-      .page(params[:page])
+    @status = params[:status].presence_in(%w[active archived all]) || "active"
+    scope = @q.result.includes(:subject, :campuse).where(campuse_id: Current.campuse.id)
+    scope = case @status
+    when "archived" then scope.archived
+    when "all" then scope
+    else scope.active
+    end
+    @teachers = scope.page(params[:page])
+  end
+
+  # 存档：教师离职后从开班 / 复制班级的教师选项里隐藏，历史班级和考勤保留
+  def archive
+    @teacher = Current.campuse.teachers.active.find(params[:id])
+    @teacher.archive!
+    redirect_to admin_teachers_path(status: params[:status].presence), notice: "#{@teacher.name} 已存档"
+  end
+
+  def restore
+    @teacher = Current.campuse.teachers.find(params[:id])
+    @teacher.restore!
+    redirect_to admin_teachers_path(status: params[:status].presence), notice: "#{@teacher.name} 已恢复"
   end
 
   def create

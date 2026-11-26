@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_26_070855) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_26_105845) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -163,6 +163,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_26_070855) do
     t.string "name", null: false
     t.string "phone"
     t.bigint "subject_id", null: false
+    t.datetime "archived_at"
     t.index ["campuse_id"], name: "index_teachers_on_campuse_id"
     t.index ["subject_id"], name: "index_teachers_on_subject_id"
   end

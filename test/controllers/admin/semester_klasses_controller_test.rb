@@ -260,6 +260,25 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_semester_klass_path(source)
   end
 
+  test "archived teachers are not offered for new classes" do
+    teacher = teachers(:math_teacher_1)
+    teacher.archive!
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "select[name='semester_klass[teacher_id]'] option[value='#{teacher.id}']", count: 0
+  end
+
+  test "archived current teacher stays selectable when editing the class" do
+    sk = semester_klasses(:sk_math_2)
+    sk.teacher.archive!
+
+    get admin_semester_klass_path(sk)
+
+    assert_select "select[name='semester_klass[teacher_id]'] option[value='#{sk.teacher_id}'][selected]", minimum: 1
+  end
+
   test "class form only lists teachers from the current campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
     other_teacher = Teacher.create!(name: "外校老师", campuse: other_campuse, subject: subjects(:math))

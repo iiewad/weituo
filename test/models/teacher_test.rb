@@ -17,6 +17,20 @@ class TeacherTest < ActiveSupport::TestCase
     assert_includes Teacher.ransackable_associations, "subject"
   end
 
+  test "archive hides the teacher from the active scope and restore brings it back" do
+    teacher = teachers(:math_teacher_1)
+
+    assert_not teacher.archived?
+    teacher.archive!
+    assert teacher.reload.archived?
+    assert_includes Teacher.archived, teacher
+    assert_not_includes Teacher.active, teacher
+
+    teacher.restore!
+    assert_not teacher.reload.archived?
+    assert_includes Teacher.active, teacher
+  end
+
   test "add by text imports only known subjects" do
     text = "数学,新老师,13800000000\n不存在的科目,坏老师,138"
 

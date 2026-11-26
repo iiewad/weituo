@@ -56,6 +56,38 @@ class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
     assert_select "tbody tr", count: 2
   end
 
+  test "archive hides the teacher from the default list" do
+    teacher = teachers(:math_teacher_1)
+
+    patch archive_admin_teacher_path(teacher)
+
+    assert_redirected_to admin_teachers_path
+    assert teacher.reload.archived?
+
+    get admin_teachers_path
+    assert_select "tbody tr span.font-medium", text: teacher.name, count: 0
+    assert_select "select#teacher_status option[selected][value='active']"
+  end
+
+  test "archived teachers are listed under the archived filter and can be restored" do
+    teacher = teachers(:math_teacher_1)
+    teacher.archive!
+
+    get admin_teachers_path(status: "archived")
+
+    assert_response :success
+    assert_select "tbody tr", text: /#{teacher.name}/
+    assert_select "span.badge", text: "已存档"
+
+    patch restore_admin_teacher_path(teacher), params: { status: "archived" }
+
+    assert_redirected_to admin_teachers_path(status: "archived")
+    assert_not teacher.reload.archived?
+
+    get admin_teachers_path
+    assert_select "tbody tr", text: /#{teacher.name}/
+  end
+
   test "create" do
     assert_difference -> { Teacher.count }, 1 do
       post admin_teachers_path, params: { teacher: { name: "新老师", phone: "123", subject_id: subjects(:math).id } }
