@@ -1,0 +1,17 @@
+<%= form_with url: update_reserve_setting_admin_semester_klasses_path, method: :patch, local: true, class: "space-y-4" do |form| %>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold">预留设置 · <%= Current.campuse.name %></h3>
+    <p class="mt-1 text-xs text-base-content/50">在班学员报名下学期同科目班级后，需在该班实际上课达到以下次数，才计入「预留」。</p>
+
+    <div class="mt-3">
+      <%= form.label :reserve_min_attendances, "最少上课次数", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+      <%= form.number_field :reserve_min_attendances, value: @reserve_min_attendances, min: 0, step: 1,
+            class: "input input-sm w-full", required: true %>
+      <p class="mt-1 text-[11px] leading-snug text-base-content/40">
+        只统计「正常 / 补课」出勤，默认 4 次；下学期还没有开课时，预留率会是 0。
+      </p>
+    </div>
+  </div>
+
+  <%= form.submit "保存设置", class: "btn btn-primary w-full" %>
+<% end %>

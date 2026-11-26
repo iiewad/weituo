@@ -12,15 +12,34 @@ class Admin::SemesterKlassesController < AdminController
 
   def statement
     @q = SemesterKlass.ransack(params[:q])
-    report = StatementReport.new(statement_scope, campuse: Current.campuse)
+    @reserve_min_attendances = Current.campuse.reserve_min_attendances
+    report = StatementReport.new(statement_scope, campuse: Current.campuse,
+      reserve_min_attendances: @reserve_min_attendances)
     @rows = report.rows
     @summary = report.summary
     @semesters = Semester.where(school_id: Current.school.id)
   end
 
+  # 班级报表：调整本校区「预留」的最少上课次数
+  def update_reserve_setting
+    value = Integer(params[:reserve_min_attendances].to_s, exception: false)
+    if value.nil? || value.negative?
+      redirect_to statement_admin_semester_klasses_path, alert: "请输入不小于 0 的整数"
+      return
+    end
+
+    if Current.campuse.update(reserve_min_attendances: value)
+      redirect_to statement_admin_semester_klasses_path,
+        notice: "预留设置已更新：下学期同科目班至少上 #{value} 次"
+    else
+      redirect_to statement_admin_semester_klasses_path, alert: "预留设置更新失败"
+    end
+  end
+
   def export_statement
     @q = SemesterKlass.ransack(params[:q])
-    report = StatementReport.new(statement_scope, campuse: Current.campuse)
+    report = StatementReport.new(statement_scope, campuse: Current.campuse,
+      reserve_min_attendances: Current.campuse.reserve_min_attendances)
 
     send_data StatementSheet.new(
       rows: report.rows,
@@ -513,7 +532,9 @@ class Admin::SemesterKlassesController < AdminController
       parts << "班型：#{SemesterKlass::GENRE_MAP_REVERSE[filters[:genre_eq]] || filters[:genre_eq]}"
     end
 
-    parts.presence&.join(" · ") || "全部班级"
+    parts << "全部班级" if parts.empty?
+    parts << "预留：下学期同科目班至少上 #{Current.campuse.reserve_min_attendances} 次"
+    parts.join(" · ")
   end
 
   def semester_klass_params

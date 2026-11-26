@@ -3,6 +3,8 @@ require "test_helper"
 class StatementReportModelTest < ActiveSupport::TestCase
   setup do
     @campuse = campuses(:campuse_1)
+    # 这些用例只校验结构一致性，默认把门槛设为 0，避免出勤数据干扰
+    @campuse.update!(reserve_min_attendances: 0)
   end
 
   test "row counts and rates are internally consistent" do
@@ -43,6 +45,32 @@ class StatementReportModelTest < ActiveSupport::TestCase
 
     assert_equal SemesterKlass.where(campuse_id: @campuse.id).count, rows.size
     assert_operator queries, :<=, 10, "报表应只做固定次数的查询，实际发出 #{queries} 次"
+  end
+
+  test "reserve requires enough attendance in the next semester subject class" do
+    @campuse.update!(reserve_min_attendances: 2)
+    current = semester_klasses(:sk_math_2)
+    next_class = SemesterKlass.create!(
+      campuse: @campuse, subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      semester: semesters(:semester_next), grade: grades(:grade_7), genre: "TG", seq: 9, times: 3
+    )
+    attendee = students(:student_7_1)
+    short = students(:student_7_2)
+    [ attendee, short ].each { |student| student.join_klass(current) }
+    [ attendee, short ].each { |student| student.join_klass(next_class) }
+
+    next_class.courses.order(:seq).limit(2).each(&:start!)
+    # 第二位学员只保留 1 次出勤，达不到 2 次门槛
+    short_ks = next_class.klass_students.find_by!(student_id: short.id)
+    next_class.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: short_ks.id).destroy!
+
+    row = StatementReport.new(SemesterKlass.where(id: current.id), campuse: @campuse).rows.first
+
+    assert_equal 2, row.active_count
+    assert_equal 1, row.reserve_count
+    assert_equal 1, row.unreserved_count
+    assert_equal [ attendee.identity_label ], row.reserve_students.map(&:name)
+    assert_includes row.unreserved_students.map(&:detail).join(" "), "已上 1 次，未达 2 次"
   end
 
   test "summary aggregates counts and average rates" do

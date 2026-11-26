@@ -17,6 +17,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index shows the reserve rate on class cards" do
+    campuses(:campuse_1).update!(reserve_min_attendances: 0)
     sk = semester_klasses(:sk_math_2)
     next_klass = SemesterKlass.create!(
       semester: semesters(:semester_next), campuse: campuses(:campuse_1),
@@ -42,6 +43,24 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "tbody tr", count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
     assert_select "h3", text: /学员构成/, count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
     assert_select "a[href*='export_statement']", text: /导出报表/
+    assert_select "label[for='drawer-reserve-setting']", text: "预留设置"
+    assert_select "form[action='#{update_reserve_setting_admin_semester_klasses_path}'] input[name='reserve_min_attendances']"
+  end
+
+  test "update_reserve_setting updates the campus threshold" do
+    patch update_reserve_setting_admin_semester_klasses_path, params: { reserve_min_attendances: 6 }
+
+    assert_redirected_to statement_admin_semester_klasses_path
+    assert_equal 6, campuses(:campuse_1).reload.reserve_min_attendances
+    assert_match "6 次", flash[:notice]
+  end
+
+  test "update_reserve_setting rejects a negative value" do
+    patch update_reserve_setting_admin_semester_klasses_path, params: { reserve_min_attendances: -1 }
+
+    assert_redirected_to statement_admin_semester_klasses_path
+    assert_equal 4, campuses(:campuse_1).reserve_min_attendances
+    assert_match "不小于 0", flash[:alert]
   end
 
   test "show queries do not scale with students and courses" do

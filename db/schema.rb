@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_26_151209) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_26_153941) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -28,6 +28,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_26_151209) do
   create_table "campuses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "school_id", null: false
+    t.integer "reserve_min_attendances", default: 4, null: false
     t.index ["school_id"], name: "index_campuses_on_school_id"
   end
 

@@ -29,9 +29,10 @@ class StatementReport
       end
   end
 
-  def initialize(semester_klasses, campuse:)
+  def initialize(semester_klasses, campuse:, reserve_min_attendances: nil)
     @semester_klasses = semester_klasses.to_a
     @campuse = campuse
+    @reserve_min_attendances = (reserve_min_attendances || campuse.reserve_min_attendances).to_i
     @semesters = Semester.where(school_id: campuse.school_id).to_a
     @semesters_by_id = @semesters.index_by(&:id)
     build_semester_index
@@ -109,6 +110,22 @@ class StatementReport
       @student_info = Student.where(id: @active_student_ids.values.flatten.uniq)
         .includes(:day_school)
         .index_by(&:id)
+
+      # 下学期同科目班的实际出勤次数，用于「至少上课 N 次才计入预留」
+      class_ids = @student_semester_subject_classes.values.flatten.uniq
+      @study_counts = Attendance
+        .joins(:klass_student)
+        .where(status: %w[normal filled], klass_students: { semester_klass_id: class_ids })
+        .group("klass_students.semester_klass_id", "klass_students.student_id")
+        .count
+    end
+
+    def study_count(student_id, semester_id, subject_id)
+      return 0 if semester_id.blank?
+
+      @student_semester_subject_classes[[ semester_id, subject_id, student_id ]]
+        .uniq
+        .sum { |class_id| @study_counts[[ class_id, student_id ]].to_i }
     end
 
     def build_row(semester_klass)
@@ -124,7 +141,9 @@ class StatementReport
 
       next_semester_id = @next_semester_ids[semester_klass.semester_id]
       next_subject_ids = next_semester_id ? @semester_subject_student_ids[[ next_semester_id, semester_klass.subject_id ]].uniq : []
-      reserve_ids = active_ids & next_subject_ids
+      reserve_ids = (active_ids & next_subject_ids).select do |student_id|
+        study_count(student_id, next_semester_id, semester_klass.subject_id) >= @reserve_min_attendances
+      end
       unreserved_ids = active_ids - reserve_ids
 
       Row.new(
@@ -138,7 +157,7 @@ class StatementReport
         new_students: new_entries(new_ids),
         expand_students: expand_entries(expand_ids, previous_semester_id, semester_klass.subject_id),
         reserve_students: reserve_entries(reserve_ids, next_semester_id, semester_klass.subject_id),
-        unreserved_students: unreserved_entries(unreserved_ids, next_semester_id)
+        unreserved_students: unreserved_entries(unreserved_ids, next_semester_id, semester_klass.subject_id)
       )
     end
 
@@ -199,15 +218,18 @@ class StatementReport
       }.sort_by(&:name)
     end
 
-    def unreserved_entries(ids, next_semester_id)
+    def unreserved_entries(ids, next_semester_id, subject_id)
       next_semester = @semesters_by_id[next_semester_id]
 
       ids.filter_map { |id|
         student = @student_info[id]
         next unless student
 
+        enrolled_next = @student_semester_subject_classes[[ next_semester_id, subject_id, id ]].present?
         detail = if next_semester_id.blank?
           "暂无下学期"
+        elsif enrolled_next
+          "下学期同科目班已上 #{study_count(id, next_semester_id, subject_id)} 次，未达 #{@reserve_min_attendances} 次"
         else
           "下学期（#{next_semester&.name}）未报同科目"
         end
@@ -230,7 +252,7 @@ class StatementReport
         }.uniq
 
         detail = if labels.any?
-          "下学期（#{next_semester&.name}）：#{labels.join("、")}"
+          "下学期（#{next_semester&.name}）：#{labels.join("、")} · 已上 #{study_count(id, next_semester_id, subject_id)} 次"
         else
           "下学期暂无同科目班级"
         end

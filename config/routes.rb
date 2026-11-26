@@ -15,6 +15,7 @@ Rails.application.routes.draw do
         post :copy_create
         get :export_attendances
         get :export_statement
+        patch :update_reserve_setting
       end
       resources :klass_students do
         member do

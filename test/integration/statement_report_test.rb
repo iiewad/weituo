@@ -3,7 +3,11 @@ require "stringio"
 require "zip"
 
 class StatementReportTest < ActionDispatch::IntegrationTest
-  setup { sign_in_as users(:one) }
+  setup do
+    sign_in_as users(:one)
+    # 本用例只校验新增/拓科/预留的口径串联，把出勤门槛设为 0
+    campuses(:campuse_1).update!(reserve_min_attendances: 0)
+  end
 
   test "跨学期数据计算新增率、拓科率与预留率" do
     current = semester_klasses(:sk_math_2)
