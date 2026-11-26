@@ -46,7 +46,11 @@ Rails.application.routes.draw do
         post :import
       end
     end
-    resources :day_schools, only: [ :index, :create, :update, :destroy ]
+    resources :day_schools, only: [ :index, :create, :update, :destroy ] do
+      collection do
+        post :import
+      end
+    end
     resources :students, only: [ :index, :create, :update ] do
       member do
         delete :destroy

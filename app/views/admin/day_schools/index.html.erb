@@ -3,6 +3,9 @@
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: DaySchool.new, drawer_id: "drawer-day-school-new",
         button_name: "新增日校", drawer_width: "120", drawer_content: "admin/day_schools/form" %>
+  <%= render "admin/shared/drawer", item: DaySchool.new, drawer_id: "drawer-day-school-import",
+        button_name: "导入", button_class: "btn btn-xs btn-outline btn-primary",
+        drawer_width: "160", drawer_content: "admin/day_schools/import_form" %>
 <% end %>
 
 <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-base-content/60">

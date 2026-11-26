@@ -15,6 +15,19 @@ class DaySchoolTest < ActiveSupport::TestCase
     end
   end
 
+  test "add by text returns counts and skips headers and duplicates" do
+    text = [ "日校名称", "七中,备注", "七中", " " ].join("\n")
+
+    created = skipped = nil
+    assert_difference -> { DaySchool.count }, 1 do
+      created, skipped = DaySchool.add_by_text(campuses(:campuse_1).id, text)
+    end
+
+    assert_equal 1, created
+    assert_equal 1, skipped
+    assert DaySchool.exists?(name: "七中", campuse: campuses(:campuse_1))
+  end
+
   test "name is required and unique within a campus" do
     campuse = campuses(:campuse_1)
     existing = day_schools(:one)

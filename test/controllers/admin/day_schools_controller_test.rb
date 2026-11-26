@@ -51,6 +51,31 @@ class Admin::DaySchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_includes JSON.parse(response.body)["errors"].first, "已存在"
   end
 
+  test "import creates day schools from pasted text" do
+    assert_difference -> { DaySchool.count }, 2 do
+      post import_admin_day_schools_path, params: { day_schools_text: "八中\n九中,备注" }
+    end
+
+    assert_redirected_to admin_day_schools_path
+    assert_match "新增 2 个日校", flash[:notice]
+    assert DaySchool.exists?(name: "八中", campuse: campuses(:campuse_1))
+    assert DaySchool.exists?(name: "九中", campuse: campuses(:campuse_1))
+  end
+
+  test "import skips existing names" do
+    post import_admin_day_schools_path, params: { day_schools_text: day_schools(:one).name }
+
+    assert_redirected_to admin_day_schools_path
+    assert_match "没有新增日校", flash[:alert]
+  end
+
+  test "import requires pasted text" do
+    post import_admin_day_schools_path, params: { day_schools_text: "  " }
+
+    assert_redirected_to admin_day_schools_path
+    assert_match "请粘贴", flash[:alert]
+  end
+
   test "update renames the day school" do
     day_school = day_schools(:one)
 

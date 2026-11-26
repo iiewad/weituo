@@ -22,6 +22,23 @@ class DaySchoolsTest < ApplicationSystemTestCase
     assert DaySchool.exists?(name: "快捷日校", campuse: campuses(:campuse_1))
   end
 
+  test "超管可以粘贴名单导入日校" do
+    sign_in
+    visit admin_day_schools_path
+
+    find("label[for='drawer-day-school-import']").click
+    drawer = find("#drawer-day-school-import", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      fill_in "日校名单", with: "导入日校甲\n导入日校乙,备注"
+      click_button "开始导入"
+    end
+
+    assert_text "新增 2 个日校"
+    assert DaySchool.exists?(name: "导入日校甲", campuse: campuses(:campuse_1))
+    assert DaySchool.exists?(name: "导入日校乙", campuse: campuses(:campuse_1))
+  end
+
   test "超管可以新增并删除日校" do
     sign_in
     visit admin_day_schools_path

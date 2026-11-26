@@ -24,6 +24,24 @@ class Admin::DaySchoolsController < AdminController
     end
   end
 
+  # 粘贴名单导入日校：每行一个名称
+  def import
+    text = params[:day_schools_text].to_s
+    if text.strip.blank?
+      redirect_to admin_day_schools_path, alert: "请粘贴日校名单"
+      return
+    end
+
+    created, skipped = DaySchool.add_by_text(Current.campuse.id, text)
+    if created.zero?
+      redirect_to admin_day_schools_path, alert: "没有新增日校，请检查名称是否为空或已存在"
+    else
+      parts = [ "新增 #{created} 个日校" ]
+      parts << "跳过 #{skipped} 行（名称为空或已存在）" if skipped.positive?
+      redirect_to admin_day_schools_path, notice: parts.join("，")
+    end
+  end
+
   def update
     day_school = Current.campuse.day_schools.find(params[:id])
 
