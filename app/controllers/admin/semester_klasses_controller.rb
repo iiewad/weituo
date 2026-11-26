@@ -101,6 +101,20 @@ class Admin::SemesterKlassesController < AdminController
     end
   end
 
+  # 删除班级：已开课的班级保留考勤历史，不允许删除
+  def destroy
+    @sk = campuse_semester_klasses.find(params[:id])
+
+    if @sk.courses.where.not(start_date: nil).exists?
+      redirect_to admin_semester_klass_path(@sk), alert: "班级已有开课记录，不能删除"
+      return
+    end
+
+    name = @sk.name
+    @sk.destroy
+    redirect_to admin_semester_klasses_path, notice: "已删除班级 #{name}"
+  end
+
   def copy
     @target_semester = copy_target_semester
     @target_semesters = copy_target_semesters

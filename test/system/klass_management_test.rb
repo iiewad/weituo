@@ -121,6 +121,18 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_text created.name
   end
 
+  test "未开课的班级可以删除" do
+    sign_in
+    sk = semester_klasses(:sk_math_3)
+    visit admin_semester_klass_path(sk)
+
+    accept_confirm(/确定删除班级/) { click_button "删除班级" }
+
+    assert_text "已删除班级 #{sk.name}"
+    assert_current_path admin_semester_klasses_path
+    assert_not SemesterKlass.exists?(sk.id)
+  end
+
   test "切换年级和教师会持续更新课次默认值" do
     sign_in
     visit admin_semester_klasses_path

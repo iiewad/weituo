@@ -489,6 +489,54 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes strings, grade_8_klass.name
   end
 
+  test "show offers a delete button until the class starts courses" do
+    sk = semester_klasses(:sk_math_3)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "form[action='#{admin_semester_klass_path(sk)}'] input[name='_method'][value='delete']"
+    assert_select "button[data-turbo-confirm*='确定删除班级']", text: "删除班级"
+  end
+
+  test "show disables delete once a course has started" do
+    sk = semester_klasses(:sk_math_2)
+    sk.courses.find_by!(seq: 1).start!
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "span.btn-disabled[title*='不能删除']", text: "删除班级"
+    assert_select "form[action='#{admin_semester_klass_path(sk)}'] input[name='_method'][value='delete']", count: 0
+  end
+
+  test "destroy removes an unstarted class together with its enrollments" do
+    sk = semester_klasses(:sk_math_2)
+    assert sk.all_klass_students.exists?
+
+    assert_difference -> { SemesterKlass.count }, -1 do
+      assert_difference -> { KlassStudent.unscoped.count }, -1 do
+        delete admin_semester_klass_path(sk)
+      end
+    end
+
+    assert_redirected_to admin_semester_klasses_path
+    assert_match "已删除班级", flash[:notice]
+    assert_equal 0, Course.where(semester_klass_id: sk.id).count
+  end
+
+  test "destroy refuses a class that already has started courses" do
+    sk = semester_klasses(:sk_math_2)
+    sk.courses.find_by!(seq: 1).start!
+
+    assert_no_difference -> { SemesterKlass.count } do
+      delete admin_semester_klass_path(sk)
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "不能删除", flash[:alert]
+  end
+
   test "class menu orders classes by phase, genre and seq" do
     sk = semester_klasses(:sk_math_2)
     SemesterKlass.create!(
