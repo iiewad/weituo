@@ -510,6 +510,27 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_match "不能删除", flash[:alert]
   end
 
+  test "transfer drawer orders target classes by phase, genre and seq" do
+    sk = semester_klasses(:sk_math_2)
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 1
+    )
+    SemesterKlass.create!(
+      semester: sk.semester, campuse: sk.campuse, grade: sk.grade, subject: sk.subject,
+      teacher: sk.teacher, genre: "JY", seq: 1, times: 2, phase: 2
+    )
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    names = Nokogiri::HTML(response.body)
+      .css("label[data-transfer-drawer-target='option'] > span > span:first-child")
+      .map { |span| span.text.strip }
+    # 一期：提高班在前、精英班在后；二期整体排在一期之后
+    assert_equal [ "一期7数提3", "一期7数精1", "二期7数精1" ], names.select { |name| name.match?(/\A(一期|二期)7数/) }
+  end
+
   test "class menu orders classes by phase, genre and seq" do
     sk = semester_klasses(:sk_math_2)
     SemesterKlass.create!(

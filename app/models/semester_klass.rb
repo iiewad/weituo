@@ -88,6 +88,11 @@ class SemesterKlass < ApplicationRecord
     "#{PHASE_PREFIX.fetch(phase, PHASE_PREFIX[1])}#{grade.level}#{subject.name[0]}#{GENRE_MAP_REVERSE[genre][0]}#{seq}"
   end
 
+  # 列表展示顺序：阶段 → 班型（提高/精英/创新/兴趣/超常）→ 序号
+  def display_order_key
+    [ phase, GENRE_MAP.values.index(genre) || GENRE_MAP.size, seq ]
+  end
+
   def inactive_students
     students.where(klass_students: { status: "out" })
   end

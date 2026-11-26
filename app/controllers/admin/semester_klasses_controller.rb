@@ -284,8 +284,8 @@ class Admin::SemesterKlassesController < AdminController
       .where(campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
       .where.not(id: @sk.id)
       .includes(:subject, :teacher)
-      .order(:genre, :seq)
       .to_a
+      .sort_by(&:display_order_key)
     transfer_target_ids = @transfer_target_klasses.map(&:id)
     @transfer_target_counts = KlassStudent.active.where(
       semester_klass_id: transfer_target_ids, status: "in"
