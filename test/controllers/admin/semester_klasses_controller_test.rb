@@ -91,6 +91,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#drawer-transfer"
     assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{semester_klasses(:sk_math_3).id}']"
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
+    assert_select "[data-controller='attendance-search'] input[data-attendance-search-target='input'][placeholder='搜索学员姓名']"
+    assert_select "tr[data-attendance-search-target='row'][data-search-text*='#{students(:student_7_1).name}']"
   end
 
   test "reserve enrolls selected students into an existing next semester class" do
