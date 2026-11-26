@@ -36,7 +36,8 @@ class Student < ApplicationRecord
     suffix.present? ? "#{name}（#{suffix}）" : name
   end
 
-  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false)
+  # mark_previous_absent: 入班课次之前的课次是否补记缺课；转出到目标班时传 false
+  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true)
     return if !allow_grade_mismatch && sk.grade_id != grade_id
     return if sk.campuse_id != campuse_id
 
@@ -50,12 +51,33 @@ class Student < ApplicationRecord
       ks.restore!
     end
 
-    sk.courses.where("seq < ?", course_seq).each do |course|
-      attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
-      attendance.update!(status: "absent")
+    if mark_previous_absent
+      sk.courses.where("seq < ?", course_seq).each do |course|
+        attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
+        attendance.update!(status: "absent")
+      end
     end
     sk.courses.where("seq >= ? AND start_date IS NOT NULL", course_seq).each do |course|
       attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
+    end
+  end
+
+  # 转出时把源班同序号课次的出勤状态带到目标班；退课/转出不带，避免把离开状态复制过去
+  def carry_over_attendances(from_klass, to_klass, before_seq:)
+    from_ks = from_klass.klass_students.find_by(student_id: id)
+    to_ks = to_klass.klass_students.find_by(student_id: id)
+    return if from_ks.blank? || to_ks.blank?
+
+    from_klass.courses.where("seq < ?", before_seq).find_each do |course|
+      source = course.attendances.find_by(klass_student_id: from_ks.id)
+      next if source.blank? || source.status.in?(%w[quit transfer])
+
+      target_course = to_klass.courses.find_by(seq: course.seq)
+      next if target_course.blank?
+
+      target_course.attendances
+        .find_or_initialize_by(klass_student_id: to_ks.id)
+        .update!(status: source.status)
     end
   end
 

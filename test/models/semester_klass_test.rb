@@ -15,6 +15,19 @@ class SemesterKlassTest < ActiveSupport::TestCase
     assert_equal "normal", sk.courses.find_by!(seq: 4).attendances.find_by!(klass_student_id: ks.id).status
   end
 
+  test "join_klass can skip backfilling absences for transfers" do
+    sk = semester_klasses(:sk_math_1)
+    sk.courses.find_by!(seq: 1).start!
+    student = students(:student_7_2)
+
+    student.join_klass(sk, course_seq: 3, mark_previous_absent: false)
+
+    ks = sk.klass_students.find_by!(student_id: student.id)
+    [ 1, 2, 3 ].each do |seq|
+      assert_nil sk.courses.find_by!(seq: seq).attendances.find_by(klass_student_id: ks.id)
+    end
+  end
+
   test "creates times courses after create" do
     sk = SemesterKlass.create!(
       campuse: campuses(:campuse_1),

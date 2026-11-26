@@ -142,6 +142,7 @@ stateDiagram-v2
 - **后续所有课次**（`seq > 当前课次`）自动生成/更新考勤为 `quit` 或 `transfer`
 - 对应的 `KlassStudent` 转为 `out`（退班）或 `transfer`（转出）
 - 之后对该学员执行 `mark_rejoin`，当前及后续课次恢复 `normal`
+- 转出到目标班时，目标班在入班课次之前的课程沿用源班同序号课次的考勤状态（退课 / 转出不复制），而不是补记 `absent`
 
 `KlassStudent` 自身状态机：`in`（初始）→ `out` / `transfer`，`transfer` 与 `out` 之间可互相转换。
 

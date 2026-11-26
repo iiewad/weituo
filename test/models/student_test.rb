@@ -25,6 +25,25 @@ class StudentTest < ActiveSupport::TestCase
     assert_nil sk.klass_students.find_by(student_id: student.id)
   end
 
+  test "carry over attendances copies statuses but skips quit and transfer" do
+    source = semester_klasses(:sk_math_1)
+    target = semester_klasses(:sk_math_3)
+    student = students(:student_7_1)
+    source.courses.find_by!(seq: 1).start!
+    source.courses.find_by!(seq: 2).start!
+    source_ks = source.klass_students.find_by!(student_id: student.id)
+    source.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: source_ks.id).update!(status: "sick_leave")
+    source.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: source_ks.id).update!(status: "quit")
+
+    student.join_klass(target, course_seq: 4, mark_previous_absent: false)
+    student.carry_over_attendances(source, target, before_seq: 4)
+
+    target_ks = target.klass_students.find_by!(student_id: student.id)
+    assert_equal "sick_leave", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_nil target.courses.find_by!(seq: 2).attendances.find_by(klass_student_id: target_ks.id)
+    assert_nil target.courses.find_by!(seq: 3).attendances.find_by(klass_student_id: target_ks.id)
+  end
+
   test "join klass can allow a grade mismatch for reservations" do
     student = students(:student_7_1)
     target = SemesterKlass.create!(

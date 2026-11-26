@@ -56,7 +56,10 @@ class Admin::AttendancesController < AdminController
       @attendance.mark_transfer!
       # 记录目标班，撤销转出时可据此把学员从目标班移出
       @attendance.update!(marked_by: Current.user, transfer_target_klass_id: target.id)
-      @student.join_klass(target, course_seq: join_course_seq_for(target))
+      # 转出从目标班首个未开课课次开始，之前课次不补缺课，改为带过来源班同课次的考勤状态
+      entry_seq = join_course_seq_for(target)
+      @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false)
+      @student.carry_over_attendances(@sk, target, before_seq: entry_seq)
     end
 
     redirect_to admin_semester_klass_path(@sk),

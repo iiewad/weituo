@@ -149,6 +149,33 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
+  test "transfer carries the source attendance statuses to earlier target courses" do
+    source = semester_klasses(:sk_math_2)
+    source.courses.order(:seq).limit(3).each(&:start!)
+    ks = klass_students(:ks_2)
+    source.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).mark_personal_leave!
+    source.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: ks.id).mark_absent!
+    transfer_attendance = source.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: ks.id)
+
+    target = semester_klasses(:sk_math_3)
+    target.courses.order(:seq).limit(2).each(&:start!)
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      source, source.courses.find_by!(seq: 3), transfer_attendance,
+      target_semester_klass_id: target.id
+    )
+
+    assert_redirected_to admin_semester_klass_path(source)
+    target_ks = target.klass_students.find_by!(student_id: ks.student_id)
+    # 目标班已开的两课沿用源班同课次的状态，而不是补记缺课
+    assert_equal "personal_leave", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_equal "absent", target.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_nil target.courses.find_by!(seq: 3).attendances.find_by(klass_student_id: target_ks.id)
+
+    target.courses.find_by!(seq: 3).start!
+    assert_equal "normal", target.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: target_ks.id).status
+  end
+
   test "transfer requires an available target class" do
     attendance = prepared_attendance
 
