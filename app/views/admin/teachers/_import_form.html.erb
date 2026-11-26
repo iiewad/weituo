@@ -1,0 +1,26 @@
+<%= form_with url: import_admin_teachers_path, method: :post, local: true, class: "space-y-4" do |form| %>
+  <div class="wt-surface p-4">
+    <h3 class="text-sm font-semibold">批量导入教师</h3>
+    <p class="mt-1 text-xs text-base-content/50">每行一位教师：科目,姓名,电话。可直接从 Excel 粘贴（制表符分隔）；科目名称需与系统一致。</p>
+
+    <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3 font-mono text-[11px] leading-5 text-base-content/60">
+      数学,张老师,13800000000<br>
+      英语,王老师,13900000000
+    </div>
+
+    <ul class="mt-2 space-y-1 text-[11px] leading-snug text-base-content/50">
+      <li>· 科目填写系统里已有的科目名称，如 数学 / 英语。</li>
+      <li>· 电话可留空；同科目同名教师已存在时跳过，不会重复创建。</li>
+      <li>· 科目不存在或教师已存在的行会跳过，导入结果会提示新增与跳过数量。</li>
+    </ul>
+  </div>
+
+  <div class="wt-surface p-4">
+    <%= form.label :teachers_text, "教师名单", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+    <%= form.text_area :teachers_text, rows: 8,
+          class: "textarea textarea-sm w-full font-mono text-xs leading-5",
+          placeholder: "数学,张老师,13800000000\n英语,王老师,13900000000" %>
+  </div>
+
+  <%= form.submit "开始导入", class: "btn btn-primary w-full" %>
+<% end %>

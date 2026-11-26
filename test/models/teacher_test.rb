@@ -48,6 +48,20 @@ class TeacherTest < ActiveSupport::TestCase
     assert_includes teacher.errors[:subject_id], "未在该学校开设"
   end
 
+  test "add by text supports tabs, headers and duplicate skipping" do
+    text = [ "科目\t姓名\t电话", "数学\t表格老师\t138", "数学\t表格老师\t139", "英语\t表格老师\t137" ].join("\n")
+
+    created = skipped = nil
+    assert_difference -> { Teacher.count }, 2 do
+      created, skipped = Teacher.add_by_text(campuses(:campuse_1).id, text)
+    end
+
+    assert_equal 2, created
+    assert_equal 1, skipped
+    assert Teacher.exists?(name: "表格老师", subject: subjects(:math), phone: "138")
+    assert_not Teacher.exists?(name: "表格老师", subject: subjects(:math), phone: "139")
+  end
+
   test "add by text is idempotent" do
     text = "英语,王老师,139"
     Teacher.add_by_text(campuses(:campuse_1).id, text)

@@ -16,14 +16,41 @@ class Teacher < ApplicationRecord
     [ "subject", "campuse" ]
   end
 
+  IMPORT_HEADERS = [ "科目", "subject" ].freeze
+
+  # 按行导入教师：科目,姓名,电话（支持英文/中文逗号与制表符），返回 [新增数, 跳过数]
   def self.add_by_text(campuse_id, str)
-    campuse = Campuse.find(campuse_id)
-    str.split("\n").each do |line|
-      subject_name, name, phone = line.split(",")
+    created = 0
+    skipped = 0
+
+    str.to_s.split("\n").each do |line|
+      next if line.strip.blank?
+
+      parts = line.strip.split(/[,\t，]/).map(&:strip)
+      next if IMPORT_HEADERS.include?(parts.first)
+
+      subject_name, name, phone = parts
       subject = Subject.find_by(name: subject_name)
-      next if subject.blank?
-      teacher = Teacher.find_or_create_by(name: name, phone: phone, subject_id: subject.id, campuse_id: campuse_id)
+      if subject.blank? || name.blank?
+        skipped += 1
+        next
+      end
+
+      teacher = find_or_initialize_by(name: name, subject_id: subject.id, campuse_id: campuse_id)
+      if teacher.persisted?
+        skipped += 1
+        next
+      end
+
+      teacher.phone = phone.presence
+      if teacher.save
+        created += 1
+      else
+        skipped += 1
+      end
     end
+
+    [ created, skipped ]
   end
 
   def name_with_subject

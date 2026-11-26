@@ -88,6 +88,35 @@ class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
     assert_select "tbody tr", text: /#{teacher.name}/
   end
 
+  test "import creates teachers from pasted text" do
+    assert_difference -> { Teacher.count }, 2 do
+      post import_admin_teachers_path, params: {
+        teachers_text: "数学,导入老师甲,13800000001\n英语,导入老师乙,"
+      }
+    end
+
+    assert_redirected_to admin_teachers_path
+    assert_match "新增 2 名教师", flash[:notice]
+    assert Teacher.exists?(name: "导入老师甲", subject: subjects(:math), phone: "13800000001")
+    assert Teacher.exists?(name: "导入老师乙", subject: subjects(:eng))
+  end
+
+  test "import skips unknown subjects and existing teachers" do
+    post import_admin_teachers_path, params: {
+      teachers_text: "物理,物理老师,138\n数学,#{teachers(:math_teacher_1).name},123"
+    }
+
+    assert_redirected_to admin_teachers_path
+    assert_match "没有新增教师", flash[:alert]
+  end
+
+  test "import requires pasted text" do
+    post import_admin_teachers_path, params: { teachers_text: "  " }
+
+    assert_redirected_to admin_teachers_path
+    assert_match "请粘贴", flash[:alert]
+  end
+
   test "create" do
     assert_difference -> { Teacher.count }, 1 do
       post admin_teachers_path, params: { teacher: { name: "新老师", phone: "123", subject_id: subjects(:math).id } }

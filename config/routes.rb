@@ -42,6 +42,9 @@ Rails.application.routes.draw do
         patch :archive
         patch :restore
       end
+      collection do
+        post :import
+      end
     end
     resources :day_schools, only: [ :index, :create, :update, :destroy ]
     resources :students, only: [ :index, :create, :update ] do

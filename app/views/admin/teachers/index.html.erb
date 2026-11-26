@@ -2,6 +2,9 @@
 <% content_for :page_subtitle, "共 #{@teachers.total_count} 名教师 · #{Current.campuse&.name}" %>
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: Teacher.new, drawer_id: "drawer-teacher-new", button_name: "创建教师", drawer_width: "180", drawer_content: "admin/teachers/form" %>
+  <%= render "admin/shared/drawer", item: Teacher.new, drawer_id: "drawer-teacher-import", button_name: "导入",
+        button_class: "btn btn-xs btn-outline btn-primary", drawer_width: "220",
+        drawer_content: "admin/teachers/import_form" %>
 <% end %>
 
 <div class="mb-4">

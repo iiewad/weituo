@@ -25,6 +25,24 @@ class Admin::TeachersController < AdminController
     redirect_to admin_teachers_path(status: params[:status].presence), notice: "#{@teacher.name} 已恢复"
   end
 
+  # 粘贴名单导入教师：每行「科目,姓名,电话」
+  def import
+    text = params[:teachers_text].to_s
+    if text.strip.blank?
+      redirect_to admin_teachers_path, alert: "请粘贴教师名单"
+      return
+    end
+
+    created, skipped = Teacher.add_by_text(Current.campuse.id, text)
+    if created.zero?
+      redirect_to admin_teachers_path, alert: "没有新增教师，请检查科目名称或教师是否已存在"
+    else
+      parts = [ "新增 #{created} 名教师" ]
+      parts << "跳过 #{skipped} 行（科目不存在或重复）" if skipped.positive?
+      redirect_to admin_teachers_path, notice: parts.join("，")
+    end
+  end
+
   def create
     @teacher = Teacher.new(teacher_params)
     @teacher.campuse_id = Current.campuse.id
