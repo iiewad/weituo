@@ -84,11 +84,47 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal grades(:grade_8), student.reload.grade
   end
 
-  test "update grade moves to the next level and stops at the top" do
+  test "join klass rejects a second class of the same subject in the same semester" do
     student = students(:student_7_1)
-    student.update_grade
-    assert_equal grades(:grade_8).id, student.reload.grade_id
+    first = semester_klasses(:sk_math_2)
+    second = semester_klasses(:sk_math_3)
 
+    assert student.join_klass(first)
+    assert_nil student.join_klass(second)
+    assert_not second.klass_students.exists?(student_id: student.id)
+  end
+
+  test "join klass allows a different subject in the same semester" do
+    student = students(:student_7_1)
+    assert student.join_klass(semester_klasses(:sk_math_2))
+
+    english = SemesterKlass.create!(
+      semester: semesters(:semester_current), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:eng), teacher: teachers(:eng_teacher_1),
+      genre: "TG", seq: 1, times: 1
+    )
+    assert student.join_klass(english)
+  end
+
+  test "join klass allows a same-subject class in a different semester" do
+    student = students(:student_7_1)
+    assert student.join_klass(semester_klasses(:sk_math_1))
+    # sk_math_2 属于另一学期的同科目班，不受同学期同科目限制
+    assert student.join_klass(semester_klasses(:sk_math_2))
+  end
+
+  test "join klass exempt transfer from the same-subject restriction" do
+    student = students(:student_7_1)
+    source = semester_klasses(:sk_math_2)
+    target = semester_klasses(:sk_math_3)
+    assert student.join_klass(source)
+
+    # 转班：即便已在同科目其他班，带 transfer_from 仍可进目标班
+    assert student.join_klass(target, course_seq: 1, transfer_from: source)
+    assert target.klass_students.exists?(student_id: student.id)
+  end
+
+  test "update grade moves to the next level and stops at the top" do
     top = students(:student_9_1)
     top.update_grade
     assert_equal grades(:grade_9).id, top.reload.grade_id

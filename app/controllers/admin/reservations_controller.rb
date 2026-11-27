@@ -94,17 +94,19 @@ class Admin::ReservationsController < AdminController
 
     klass = nil
     enrolled = 0
-    skipped = 0
+    grade_skipped = 0
+    subject_skipped = 0
     ActiveRecord::Base.transaction do
       klass = create_klass_for(
         semester: semester, grade: grade, subject: subject,
         genre: genre, phase: phase, teacher: teacher
       )
-      enrolled, skipped = enroll(klass, reservations)
+      enrolled, grade_skipped, subject_skipped = enroll(klass, reservations)
     end
 
     notice = "已生成班级 #{klass.name}，加入 #{enrolled} 名预留学员"
-    notice += "（另有 #{skipped} 名未升级到 #{grade.name}，已跳过，升级后可再次生成）" if skipped.positive?
+    notice += "（另有 #{grade_skipped} 名未升级到 #{grade.name}，已跳过，升级后可再次生成）" if grade_skipped.positive?
+    notice += "（另有 #{subject_skipped} 名已在同学期同科目其他班，已跳过）" if subject_skipped.positive?
     redirect_to back, notice: notice
   rescue ActiveRecord::RecordInvalid => e
     redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
@@ -197,12 +199,13 @@ class Admin::ReservationsController < AdminController
 
       klasses = []
       enrolled_total = 0
-      skipped_total = 0
+      grade_skipped_total = 0
+      subject_skipped_total = 0
       ActiveRecord::Base.transaction do
         plans.each do |sample, settings, group|
           # 该分组无人升级到目标年级时整组跳过，不生成空班
           if group.none? { |reservation| reservation.student.grade_id == settings[:grade].id }
-            skipped_total += group.size
+            grade_skipped_total += group.size
             next
           end
 
@@ -211,9 +214,10 @@ class Admin::ReservationsController < AdminController
             genre: settings[:genre], phase: settings[:phase], teacher: settings[:teacher],
             times: settings[:times]
           )
-          enrolled, skipped = enroll(klass, group)
+          enrolled, grade_skipped, subject_skipped = enroll(klass, group)
           enrolled_total += enrolled
-          skipped_total += skipped
+          grade_skipped_total += grade_skipped
+          subject_skipped_total += subject_skipped
           klasses << klass
         end
       end
@@ -224,7 +228,8 @@ class Admin::ReservationsController < AdminController
       end
 
       notice = "已生成 #{klasses.size} 个班级，加入 #{enrolled_total} 名预留学员"
-      notice += "（另有 #{skipped_total} 名未升级，已跳过，升级后可再次生成）" if skipped_total.positive?
+      notice += "（另有 #{grade_skipped_total} 名未升级，已跳过，升级后可再次生成）" if grade_skipped_total.positive?
+      notice += "（另有 #{subject_skipped_total} 名已在同学期同科目其他班，已跳过）" if subject_skipped_total.positive?
       redirect_to back, notice: notice
     rescue ActiveRecord::RecordInvalid => e
       redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
@@ -263,11 +268,13 @@ class Admin::ReservationsController < AdminController
       end
 
       enrolled = 0
-      skipped = 0
-      ActiveRecord::Base.transaction { enrolled, skipped = enroll(klass, reservations) }
+      grade_skipped = 0
+      subject_skipped = 0
+      ActiveRecord::Base.transaction { enrolled, grade_skipped, subject_skipped = enroll(klass, reservations) }
 
       notice = "已将 #{enrolled} 名学员加入班级 #{klass.name}"
-      notice += "（另有 #{skipped} 名年级与班级不符，已跳过）" if skipped.positive?
+      notice += "（另有 #{grade_skipped} 名年级与班级不符，已跳过）" if grade_skipped.positive?
+      notice += "（另有 #{subject_skipped} 名已在同学期同科目其他班，已跳过）" if subject_skipped.positive?
       redirect_to back, notice: notice
     rescue ActiveRecord::RecordInvalid => e
       redirect_to back, alert: "加入班级失败：#{e.record.errors.full_messages.join("；")}"
@@ -293,26 +300,28 @@ class Admin::ReservationsController < AdminController
     end
 
     # 学员年级与班级年级一致才可进班：只加入已升级到目标年级的预留学员，
-    # 未升级的跳过（预留保持待分班，升级后可再次生成 / 进班）；返回 [已加入, 跳过]
+    # 未升级的跳过（预留保持待分班，升级后可再次生成 / 进班）；同学期已在同科目其他班的也跳过。
+    # 返回 [已加入, 年级不符跳过, 同科目冲突跳过]
     def enroll(klass, reservations)
       enrolled = 0
-      skipped = 0
+      grade_skipped = 0
+      subject_skipped = 0
       reservations.each do |reservation|
         if reservation.student.grade_id != klass.grade_id
-          skipped += 1
+          grade_skipped += 1
           next
         end
 
-        # join_klass 在班级无对应课次等情况下返回 nil，此时不标记预留已生成，计入跳过
+        # 年级已匹配，join_klass 仅在同学期同科目冲突（或班级无对应课次）时返回 nil，此时不标记预留已生成
         unless reservation.student.join_klass(klass, course_seq: 1)
-          skipped += 1
+          subject_skipped += 1
           next
         end
 
         reservation.update!(semester_klass_id: klass.id, teacher: klass.teacher)
         enrolled += 1
       end
-      [ enrolled, skipped ]
+      [ enrolled, grade_skipped, subject_skipped ]
     end
 
     def batch_group_label(reservation)

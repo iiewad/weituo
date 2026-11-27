@@ -46,6 +46,8 @@ class Student < ApplicationRecord
     # 学员年级与班级年级一致才可进班；预留分班须先把学员升级到目标年级
     return if sk.grade_id != grade_id
     return if sk.campuse_id != campuse_id
+    # 同学期同科目只能在一个班；转班（transfer_from 非空）不受此限制
+    return if transfer_from.nil? && enrolled_in_same_subject?(sk)
 
     course = sk.courses.find_by(seq: course_seq)
     return if course.blank?
@@ -69,6 +71,15 @@ class Student < ApplicationRecord
     sk.courses.where("seq >= ? AND start_date IS NOT NULL", course_seq).each do |course|
       attendance = course.attendances.find_or_create_by(klass_student_id: ks.id)
     end
+  end
+
+  # 同学期是否已在同科目的其他班就读（在班且未归档）；用于限制同科目重复进班，转班除外
+  def enrolled_in_same_subject?(sk)
+    klass_students.where(status: :in)
+      .joins(:semester_klass)
+      .where(semester_klasses: { semester_id: sk.semester_id, subject_id: sk.subject_id })
+      .where.not(semester_klass_id: sk.id)
+      .exists?
   end
 
   # 转入时把目标班入班课次（before_seq）之前、已开课的课次标记为「转入」，表示这些课次学员尚未
