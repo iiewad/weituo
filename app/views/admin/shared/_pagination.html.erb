@@ -1,0 +1,45 @@
+<%# locals: collection:, page_url:, aria_label: "分页" %>
+<% current_page = collection.current_page
+   total_pages = collection.total_pages
+   start_page = [ current_page - 2, 1 ].max
+   end_page = [ start_page + 4, total_pages ].min
+   start_page = [ end_page - 4, 1 ].max %>
+<% if total_pages > 1 %>
+  <nav class="mt-4 flex flex-wrap items-center justify-center gap-1" aria-label="<%= aria_label %>">
+    <% if current_page > 1 %>
+      <%= link_to "‹", page_url.call(current_page - 1),
+            class: "btn btn-xs btn-square btn-ghost", aria: { label: "上一页" } %>
+    <% else %>
+      <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">‹</span>
+    <% end %>
+
+    <% if start_page > 1 %>
+      <%= link_to 1, page_url.call(1), class: "btn btn-xs btn-ghost" %>
+      <% if start_page > 2 %>
+        <span class="px-1 text-xs text-base-content/40">…</span>
+      <% end %>
+    <% end %>
+
+    <% (start_page..end_page).each do |page| %>
+      <% if page == current_page %>
+        <span class="btn btn-xs btn-primary" aria-current="page"><%= page %></span>
+      <% else %>
+        <%= link_to page, page_url.call(page), class: "btn btn-xs btn-ghost" %>
+      <% end %>
+    <% end %>
+
+    <% if end_page < total_pages %>
+      <% if end_page < total_pages - 1 %>
+        <span class="px-1 text-xs text-base-content/40">…</span>
+      <% end %>
+      <%= link_to total_pages, page_url.call(total_pages), class: "btn btn-xs btn-ghost" %>
+    <% end %>
+
+    <% if current_page < total_pages %>
+      <%= link_to "›", page_url.call(current_page + 1),
+            class: "btn btn-xs btn-square btn-ghost", aria: { label: "下一页" } %>
+    <% else %>
+      <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">›</span>
+    <% end %>
+  </nav>
+<% end %>

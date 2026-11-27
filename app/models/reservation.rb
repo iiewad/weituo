@@ -54,4 +54,9 @@ class Reservation < ApplicationRecord
   def group_key
     [ semester_id, grade_id, subject_id, genre, phase, teacher_id ]
   end
+
+  # 分组的稳定字符串标识，用于表单字段名（如 groups[<key>][teacher_id]）与前端匹配
+  def group_key_string
+    group_key.map { |value| value.nil? ? "" : value }.join("-")
+  end
 end

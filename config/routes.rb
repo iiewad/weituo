@@ -53,6 +53,7 @@ Rails.application.routes.draw do
     resources :reservations, only: [ :index, :update, :destroy ] do
       collection do
         post :generate
+        post :batch_enroll
       end
     end
     resources :day_schools, only: [ :index, :create, :update, :destroy ] do

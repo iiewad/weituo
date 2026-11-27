@@ -1,70 +1,104 @@
 <% content_for :page_title, "预留表" %>
-<% content_for :page_subtitle, "共 #{@reservations.total_count} 条预留 · 待分班 #{@pending_count} 人 · #{Current.campuse&.name}" %>
+<% content_for :page_subtitle, [ Current.semester&.name, Current.campuse&.name ].compact.join(" · ") %>
 <% index_params = { q: params[:q]&.to_unsafe_h, status: params[:status] }.compact %>
 
-<div class="mb-4">
-  <%= render "filter_form" %>
-</div>
+<%= turbo_frame_tag "reservations_content" do %>
+  <%= render "admin/shared/alert" if turbo_frame_request? %>
 
-<div class="wt-surface overflow-x-auto">
-  <table class="table table-sm">
-    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
-      <tr>
-        <th>学员</th>
-        <th>源学期</th>
-        <th>预留目标学期</th>
-        <th>目标年级</th>
-        <th>科目</th>
-        <th>班型</th>
-        <th>教师</th>
-        <th>状态</th>
-        <th class="text-right">操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @reservations.each do |reservation| %>
-        <tr class="hover:bg-base-200/40">
-          <td>
-            <div class="font-medium"><%= reservation.student.identity_label %></div>
-            <div class="text-xs text-base-content/50"><%= reservation.student.identity_detail %></div>
-          </td>
-          <td class="text-base-content/70"><%= reservation.source_semester&.name || "—" %></td>
-          <td class="text-base-content/70"><%= reservation.semester.name %></td>
-          <td><span class="badge badge-outline badge-primary badge-sm"><%= reservation.grade.name %></span></td>
-          <td class="font-medium"><%= reservation.subject.name %></td>
-          <td>
-            <span class="badge badge-outline <%= SemesterKlass::GENRE_BADGE.fetch(reservation.genre, "badge-ghost") %> badge-sm">
-              <%= SemesterKlass::GENRE_MAP_REVERSE[reservation.genre] %>
-            </span>
-            <span class="ml-1 text-xs text-base-content/50"><%= SemesterKlass::PHASE_PREFIX[reservation.phase] %></span>
-          </td>
-          <td class="text-base-content/70"><%= reservation.teacher&.name || "待定" %></td>
-          <td>
-            <% if reservation.generated? %>
-              <span class="badge badge-soft badge-success badge-sm">已生成 · <%= reservation.semester_klass.name %></span>
-            <% else %>
-              <span class="badge badge-soft badge-warning badge-sm">待分班</span>
-            <% end %>
-          </td>
-          <td class="text-right">
-            <% unless reservation.generated? %>
-              <%= render "generate_action", reservation: reservation, index_params: index_params %>
-            <% end %>
-          </td>
-        </tr>
+  <div data-controller="reservation-select">
+    <div class="mb-4">
+      <%= render "filter_form" %>
+    </div>
+
+    <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-base-content/60">
+      <span>共 <span class="font-semibold text-base-content"><%= @reservations.total_count %></span> 条预留</span>
+      <span>待分班 <span class="font-semibold text-base-content"><%= @pending_count %></span> 人</span>
+    </div>
+
+    <% if @batch_groups.any? %>
+      <div class="mb-2 flex flex-wrap items-center gap-2">
+        <button type="button" class="btn btn-sm btn-primary"
+                data-reservation-select-target="batchButton" data-action="reservation-select#openBatch" disabled>批量进班</button>
+        <span class="text-xs text-base-content/60" data-reservation-select-target="count"></span>
+        <span class="text-xs text-base-content/40">勾选待分班的学员后可批量进班</span>
+      </div>
+    <% end %>
+
+    <div class="wt-surface overflow-x-auto">
+      <table class="table table-sm">
+        <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+          <tr>
+            <th class="w-8">
+              <input type="checkbox" class="checkbox checkbox-xs" aria-label="全选待分班学员"
+                     data-reservation-select-target="selectAll" data-action="change->reservation-select#toggleAll">
+            </th>
+            <th>学员</th>
+            <th>源学期</th>
+            <th>目标年级</th>
+            <th>科目</th>
+            <th>班型</th>
+            <th>教师</th>
+            <th>状态</th>
+            <th class="text-right">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @reservations.each do |reservation| %>
+            <tr class="hover:bg-base-200/40">
+              <td class="text-center">
+                <% unless reservation.generated? %>
+                  <input type="checkbox" class="checkbox checkbox-xs"
+                         value="<%= reservation.id %>"
+                         aria-label="选择 <%= reservation.student.identity_label %>"
+                         data-reservation-select-target="rowCheckbox"
+                         data-group-key="<%= reservation.group_key_string %>"
+                         data-student-name="<%= reservation.student.identity_label %>"
+                         data-action="change->reservation-select#refresh">
+                <% end %>
+              </td>
+              <td>
+                <div class="font-medium"><%= reservation.student.identity_label %></div>
+                <div class="text-xs text-base-content/50"><%= reservation.student.identity_detail %></div>
+              </td>
+              <td class="text-base-content/70"><%= reservation.source_semester&.name || "—" %></td>
+              <td><span class="badge badge-outline badge-primary badge-sm"><%= reservation.grade.name %></span></td>
+              <td class="font-medium"><%= reservation.subject.name %></td>
+              <td>
+                <span class="badge badge-outline <%= SemesterKlass::GENRE_BADGE.fetch(reservation.genre, "badge-ghost") %> badge-sm">
+                  <%= SemesterKlass::GENRE_MAP_REVERSE[reservation.genre] %>
+                </span>
+                <span class="ml-1 text-xs text-base-content/50"><%= SemesterKlass::PHASE_PREFIX[reservation.phase] %></span>
+              </td>
+              <td class="text-base-content/70"><%= reservation.teacher&.name || "待定" %></td>
+              <td>
+                <% if reservation.generated? %>
+                  <span class="badge badge-soft badge-success badge-sm">已生成 · <%= reservation.semester_klass.name %></span>
+                <% else %>
+                  <span class="badge badge-soft badge-warning badge-sm">待分班</span>
+                <% end %>
+              </td>
+              <td class="text-right">
+                <% unless reservation.generated? %>
+                  <%= render "generate_action", reservation: reservation, index_params: index_params %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @reservations.empty? %>
+        <div class="p-10 text-center text-sm text-base-content/50">没有符合条件的预留记录，可在班级详情页的「预留」中登记。</div>
       <% end %>
-    </tbody>
-  </table>
+    </div>
 
-  <% if @reservations.empty? %>
-    <div class="p-10 text-center text-sm text-base-content/50">没有符合条件的预留记录，可在班级详情页的「预留」中登记。</div>
-  <% end %>
-</div>
+    <%= render "admin/shared/pagination",
+          collection: @reservations,
+          page_url: ->(page) { admin_reservations_path(q: params[:q]&.to_unsafe_h, status: params[:status], page: page) },
+          aria_label: "预留分页" %>
 
-<% if @reservations.total_pages > 1 %>
-  <div class="mt-4 flex items-center justify-center gap-2">
-    <%= link_to_previous_page @reservations, "«", class: "btn btn-sm btn-ghost" %>
-    <span class="btn btn-sm btn-ghost no-animation"><%= @reservations.current_page %> / <%= @reservations.total_pages %></span>
-    <%= link_to_next_page @reservations, "»", class: "btn btn-sm btn-ghost" %>
+    <% if @batch_groups.any? %>
+      <%= render "batch_enroll_modal" %>
+    <% end %>
   </div>
 <% end %>

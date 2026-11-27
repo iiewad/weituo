@@ -23,45 +23,54 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     }
   end
 
-  test "index lists every reserved student of every semester with the target" do
+  # 预留表只列出当前所选学期的预留；切换学期后其它学期的预留才会出现
+  def switch_to_semester(semester)
+    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semester)
+  end
+
+  test "index lists reservations targeting the selected semester" do
     reserve(@student, genre: "JY")
-    reserve(@other, genre: "TG", semester: semesters(:semester_current), source: semester_klasses(:sk_math_1))
+    reserve(@other, genre: "TG", source: semester_klasses(:sk_math_1))
+    switch_to_semester(semesters(:semester_next))
 
     get admin_reservations_path
 
     assert_response :success
     assert_select "th", text: "源学期"
-    assert_select "th", text: "预留目标学期"
+    assert_select "th", text: "预留目标学期", count: 0
     assert_select "tbody tr", count: 2
     assert_select "td", text: /#{@student.identity_label}/
     assert_select "td", text: /#{@other.identity_label}/
     assert_select "td", text: "精英班 一期"
     assert_select "td", text: "八年级"
-    # 来源班级所在学期 与 预留目标学期
-    assert_select "tbody tr td:nth-child(2)", text: semesters(:semester_previous).name
-    assert_select "tbody tr td:nth-child(3)", text: semesters(:semester_current).name
+    # 首列为勾选框：第 2 列学员，第 3 列源学期
+    assert_select "tbody tr td:nth-child(3)", text: semesters(:semester_previous).name
     assert_select "td", text: /待分班/, count: 2
     assert_select "form[action^='#{generate_admin_reservations_path}']", count: 2
+  end
+
+  test "index only shows reservations targeting the current semester" do
+    reserve(@student, genre: "JY")
+    reserve(@other, genre: "TG", semester: semesters(:semester_current), source: semester_klasses(:sk_math_1))
+
+    get admin_reservations_path
+
+    assert_select "tbody tr", count: 1
+    assert_select "td", text: /#{@other.identity_label}/
+    assert_select "td", text: /#{@student.identity_label}/, count: 0
   end
 
   test "index filters by reservation content" do
     reserve(@student, genre: "JY")
     reserve(@other, genre: "TG")
+    switch_to_semester(semesters(:semester_next))
 
     get admin_reservations_path(q: { genre_eq: "JY" })
 
     assert_select "tbody tr", count: 1
     assert_select "td", text: /#{@student.identity_label}/
 
-    get admin_reservations_path(q: { semester_id_eq: semesters(:semester_current).id })
-
-    assert_select "tbody tr", count: 0
-
-    get admin_reservations_path(q: { source_semester_id_eq: semesters(:semester_current).id })
-
-    assert_select "tbody tr", count: 2
-
-    get admin_reservations_path(q: { source_semester_id_eq: semesters(:semester_previous).id })
+    get admin_reservations_path(q: { genre_eq: "XQ" })
 
     assert_select "tbody tr", count: 0
 
@@ -74,6 +83,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   test "index filters out generated reservations unless asked" do
     reserve(@student, genre: "JY")
     Reservation.last.update!(semester_klass: semester_klasses(:sk_math_1))
+    switch_to_semester(semesters(:semester_next))
 
     get admin_reservations_path(status: "pending")
 
@@ -145,6 +155,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   test "reservations without a teacher pick it when generating" do
     reserve(@student, genre: "JY", teacher: nil)
     reserve(@other, genre: "JY", teacher: nil)
+    switch_to_semester(semesters(:semester_next))
 
     get admin_reservations_path
 
@@ -179,6 +190,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
       teacher: teachers(:math_teacher_1), genre: "JY", source_semester: hidden.semester, source_semester_klass: hidden
     )
 
+    switch_to_semester(semesters(:semester_next))
     get admin_reservations_path
 
     assert_select "tbody tr", count: 1
@@ -264,5 +276,171 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
       delete admin_reservation_path(reservation)
     end
     assert_response :not_found
+  end
+
+  test "index renders batch selection and shows every filter" do
+    pending = reserve(@student, genre: "JY")
+    generated = reserve(@other, genre: "TG")
+    generated.update!(semester_klass: semester_klasses(:sk_math_1))
+
+    switch_to_semester(semesters(:semester_next))
+    get admin_reservations_path
+
+    assert_select "input[data-reservation-select-target='rowCheckbox'][value='#{pending.id}'][data-group-key]"
+    assert_select "input[data-reservation-select-target='rowCheckbox'][value='#{generated.id}']", count: 0
+    assert_select "dialog#batch-enroll-modal form[action='#{batch_enroll_admin_reservations_path}']"
+    assert_select "form details", count: 0
+    assert_select "form select[name='q[grade_id_eq]']"
+    assert_select "form select[name='q[subject_id_eq]']"
+    assert_select "form select[name='q[genre_eq]']"
+    assert_select "form select[name='q[teacher_id_eq]']"
+    assert_select "form select[name='q[source_semester_id_eq]']", count: 0
+  end
+
+  test "index paginates reservations and keeps filters in page links" do
+    26.times do |i|
+      student = Student.create!(campuse: campuses(:campuse_1), name: "分页学员#{i}", grade: grades(:grade_8))
+      reserve(student, genre: "JY")
+    end
+    switch_to_semester(semesters(:semester_next))
+
+    get admin_reservations_path
+
+    assert_select "nav[aria-label='预留分页']"
+    assert_select "nav[aria-label='预留分页'] a[href*='page=2']"
+    assert_select "tbody tr", count: 25
+
+    get admin_reservations_path(page: 2)
+
+    assert_select "tbody tr", count: 1
+  end
+
+  test "index renders into a turbo frame and keeps filters inside it" do
+    reserve(@student, genre: "JY")
+    switch_to_semester(semesters(:semester_next))
+
+    get admin_reservations_path, headers: { "Turbo-Frame" => "reservations_content" }
+
+    assert_response :success
+    assert_select "body > turbo-frame#reservations_content", count: 1
+    assert_select "turbo-frame#reservations_content form select[name='q[grade_id_eq]']"
+    assert_select "turbo-frame#reservations_content input[data-reservation-select-target='rowCheckbox']"
+  end
+
+  test "batch_enroll generates one class per group and enrolls only selected students" do
+    first = reserve(@student, genre: "JY")
+    second = reserve(@other, genre: "JY")
+    reserve(students(:student_7_3), genre: "JY")
+
+    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
+      post batch_enroll_admin_reservations_path, params: { mode: "generate", reservation_ids: [ first.id, second.id ] }
+    end
+
+    assert_redirected_to admin_reservations_path
+    assert_match "已生成 1 个班级", flash[:notice]
+
+    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal teachers(:math_teacher_1), klass.teacher
+    assert_equal [ @student.id, @other.id ].sort, klass.klass_students.pluck(:student_id).sort
+    assert first.reload.generated?
+    assert second.reload.generated?
+    assert Reservation.pending.exists?(student: students(:student_7_3))
+  end
+
+  test "batch_enroll picks a teacher for groups without one" do
+    reservation = reserve(@student, genre: "JY", teacher: nil)
+    key = reservation.group_key_string
+
+    post batch_enroll_admin_reservations_path, params: {
+      mode: "generate", reservation_ids: [ reservation.id ],
+      groups: { key => { teacher_id: teachers(:math_teacher_2).id } }
+    }
+
+    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal teachers(:math_teacher_2), klass.teacher
+    assert_equal teachers(:math_teacher_2), reservation.reload.teacher
+  end
+
+  test "batch_enroll applies customized class info per group" do
+    reservation = reserve(@student, genre: "JY", teacher: nil)
+    key = reservation.group_key_string
+
+    post batch_enroll_admin_reservations_path, params: {
+      mode: "generate", reservation_ids: [ reservation.id ],
+      groups: { key => {
+        grade_id: grades(:grade_7).id, genre: "TG", phase: 2,
+        teacher_id: teachers(:math_teacher_2).id, times: 8
+      } }
+    }
+
+    assert_redirected_to admin_reservations_path
+    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal grades(:grade_7), klass.grade
+    assert_equal "TG", klass.genre
+    assert_equal 2, klass.phase
+    assert_equal teachers(:math_teacher_2), klass.teacher
+    assert_equal 8, klass.times
+    assert_equal 8, klass.courses.count
+    assert reservation.reload.generated?
+  end
+
+  test "batch_enroll refuses groups without a teacher" do
+    reservation = reserve(@student, genre: "JY", teacher: nil)
+
+    assert_no_difference -> { SemesterKlass.count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "generate", reservation_ids: [ reservation.id ] }
+    end
+
+    assert_match "部分分组未选择本科目的在任教师", flash[:alert]
+    assert Reservation.pending.exists?(id: reservation.id)
+  end
+
+  test "batch_enroll joins an existing class when semester and subject match" do
+    reservation = reserve(@student, genre: "JY")
+    target = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 40, genre: "JY", grade: grades(:grade_8), semester: semesters(:semester_next), times: 1
+    )
+
+    post batch_enroll_admin_reservations_path, params: { mode: "join", reservation_ids: [ reservation.id ], klass_id: target.id }
+
+    assert_redirected_to admin_reservations_path
+    assert_match "已将 1 名学员加入班级", flash[:notice]
+    assert_equal [ @student.id ], target.klass_students.pluck(:student_id)
+    assert_equal target, reservation.reload.semester_klass
+  end
+
+  test "batch_enroll rejects joining a class from another semester" do
+    reservation = reserve(@student, genre: "JY")
+    target = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 41, genre: "TG", grade: grades(:grade_7), semester: semesters(:semester_current), times: 1
+    )
+
+    assert_no_difference -> { KlassStudent.count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "join", reservation_ids: [ reservation.id ], klass_id: target.id }
+    end
+
+    assert_match "同一目标学期与科目", flash[:alert]
+    assert_nil reservation.reload.semester_klass
+  end
+
+  test "batch_enroll ignores reservations outside the manager's grades" do
+    sign_in_as users(:two)
+    hidden = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 93, genre: "TG", grade: grades(:grade_7), semester: semesters(:semester_current), times: 1
+    )
+    reservation = Reservation.create!(
+      student: @other, semester: semesters(:semester_next), subject: subjects(:math), grade: grades(:grade_7),
+      teacher: teachers(:math_teacher_1), genre: "JY", source_semester: hidden.semester, source_semester_klass: hidden
+    )
+
+    assert_no_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "generate", reservation_ids: [ reservation.id ] }
+    end
+
+    assert_match "请先选择待分班的预留学员", flash[:alert]
+    assert Reservation.pending.exists?(id: reservation.id)
   end
 end

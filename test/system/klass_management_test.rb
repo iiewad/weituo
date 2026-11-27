@@ -48,6 +48,7 @@ class KlassManagementTest < ApplicationSystemTestCase
     # 预留只登记，不直接建班
     assert_equal 0, SemesterKlass.where(semester: semesters(:semester_next)).count
 
+    visit switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
     visit admin_reservations_path
     assert_text "待分班"
     accept_confirm(/生成班级/) { click_button "生成班级" }

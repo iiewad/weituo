@@ -1,7 +1,6 @@
 class Admin::ReservationsController < AdminController
-  # 预留表：列出所有预留学员，可按学员姓名 / 源学期 / 预留目标学期 / 年级 / 科目 / 班型 / 教师 / 状态筛选
+  # 预留表：只列出目标学期为当前所选学期的预留，可按学员姓名 / 年级 / 科目 / 班型 / 教师 / 状态筛选
   def index
-    @semesters = Current.school.semesters.order(:seq)
     @grades = Grade.order(:level)
     @subjects = Subject.order(:id)
     @teachers = Current.campuse.teachers.includes(:subject).order(:name)
@@ -9,6 +8,8 @@ class Admin::ReservationsController < AdminController
 
     @q = Reservation.ransack(params[:q])
     scope = visible_reservations.merge(@q.result).ordered_by_target
+    # 只列出目标学期为当前所选学期的预留；看其它学期请先切换学期
+    scope = scope.where(semester_id: Current.semester.id) if Current.semester
     scope = scope.pending if @status == "pending"
     scope = scope.generated if @status == "generated"
 
@@ -21,6 +22,35 @@ class Admin::ReservationsController < AdminController
       .group_by(&:group_key).transform_values(&:size)
     # 预留未指定教师（或教师已存档）的分组，生成班级时在这里选
     @teachers_by_subject = @teachers.reject(&:archived?).group_by(&:subject_id)
+
+    # 批量进班：当前页待分班预留的分组（含可调整的班级信息）与可加入的已有班级
+    page_pending = @reservations.reject(&:generated?)
+    group_grades = page_pending.map(&:grade)
+    @grade_options = (Current.user.grades_by_campuse(Current.campuse.id).order(:level).to_a | group_grades).sort_by(&:level)
+    @batch_groups = page_pending.group_by(&:group_key).map do |_key, group|
+      sample = group.first
+      teacher = sample.teacher
+      teacher = nil if teacher&.archived?
+      {
+        key: sample.group_key_string,
+        label: batch_group_label(sample),
+        semester_name: sample.semester.name,
+        subject_name: sample.subject.name,
+        grade_id: sample.grade_id,
+        genre: sample.genre,
+        phase: sample.phase,
+        teacher_id: teacher&.id,
+        teachers: @teachers_by_subject.fetch(sample.subject_id, []),
+        times: configured_times(sample.semester, sample.grade, sample.subject)
+      }
+    end
+    @batch_klasses = SemesterKlass
+      .where(campuse_id: Current.campuse.id,
+             semester_id: page_pending.map(&:semester_id).uniq,
+             subject_id: page_pending.map(&:subject_id).uniq)
+      .includes(:semester, :subject, :grade, :teacher)
+      .to_a
+      .sort_by(&:display_order_key)
   end
 
   # 按分组生成下学期班级，并把该组待分班的预留学员加入班级。
@@ -58,24 +88,37 @@ class Admin::ReservationsController < AdminController
 
     klass = nil
     ActiveRecord::Base.transaction do
-      klass = SemesterKlass.create!(
-        semester: semester, campuse: Current.campuse, grade: grade, subject: subject,
-        teacher: teacher, genre: genre, phase: phase,
-        seq: SemesterKlass.next_seq(
-          campuse_id: Current.campuse.id, semester_id: semester.id,
-          grade_id: grade.id, subject_id: subject.id, genre: genre, phase: phase
-        ),
-        times: configured_times(semester, grade, subject)
+      klass = create_klass_for(
+        semester: semester, grade: grade, subject: subject,
+        genre: genre, phase: phase, teacher: teacher
       )
-      reservations.each do |reservation|
-        reservation.student.join_klass(klass, course_seq: 1, allow_grade_mismatch: true)
-        reservation.update!(semester_klass_id: klass.id, teacher: klass.teacher)
-      end
+      enroll(klass, reservations)
     end
 
     redirect_to back, notice: "已生成班级 #{klass.name}，加入 #{reservations.size} 名预留学员"
   rescue ActiveRecord::RecordInvalid => e
     redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
+  end
+
+  # 批量进班：把选中的待分班预留学员按分组生成新班级（generate），或加入已有班级（join）
+  def batch_enroll
+    back = admin_reservations_path(**index_params)
+    ids = Array(params[:reservation_ids]).map(&:to_i).uniq.reject(&:zero?)
+    reservations = visible_reservations.pending
+      .where(id: ids)
+      .includes(:student, :source_semester_klass, :semester, :grade, :subject, :teacher)
+      .to_a
+
+    if reservations.empty?
+      redirect_to back, alert: "请先选择待分班的预留学员"
+      return
+    end
+
+    if params[:mode] == "join"
+      batch_join_existing(reservations, back)
+    else
+      batch_generate_klasses(reservations, back)
+    end
   end
 
   # 修改预留目标（年级 / 班型 / 教师）；已生成班级的预留不可改
@@ -128,6 +171,103 @@ class Admin::ReservationsController < AdminController
 
     def index_params
       { q: params[:q]&.to_unsafe_h, status: params[:status] }.compact
+    end
+
+    # 按分组批量生成下学期班级，仅加入选中的预留学员；每个分组的班级信息（年级 / 班型 / 阶段 / 教师 / 课次）可单独调整
+    def batch_generate_klasses(reservations, back)
+      plans = reservations.group_by(&:group_key).map do |_key, group|
+        sample = group.first
+        [ sample, klass_settings_for(sample), group ]
+      end
+
+      if plans.any? { |_sample, settings, _group| settings[:teacher].blank? }
+        redirect_to back, alert: "部分分组未选择本科目的在任教师，无法生成班级"
+        return
+      end
+
+      klasses = []
+      ActiveRecord::Base.transaction do
+        plans.each do |sample, settings, group|
+          klass = create_klass_for(
+            semester: sample.semester, grade: settings[:grade], subject: sample.subject,
+            genre: settings[:genre], phase: settings[:phase], teacher: settings[:teacher],
+            times: settings[:times]
+          )
+          enroll(klass, group)
+          klasses << klass
+        end
+      end
+
+      redirect_to back, notice: "已生成 #{klasses.size} 个班级，加入 #{reservations.size} 名预留学员"
+    rescue ActiveRecord::RecordInvalid => e
+      redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
+    end
+
+    # 读取弹窗里该分组自定义的班级信息，缺省时回退到预留本身的取值
+    def klass_settings_for(sample)
+      settings = params.dig(:groups, sample.group_key_string) || {}
+      grade = Grade.find_by(id: settings[:grade_id]) || sample.grade
+      genre = settings[:genre].presence_in(SemesterKlass::GENRE_MAP.values) || sample.genre
+      phase = settings[:phase].to_i
+      phase = sample.phase unless SemesterKlass::PHASE_PREFIX.key?(phase)
+      times = settings[:times].to_i
+      times = configured_times(sample.semester, grade, sample.subject) if times <= 0
+      teacher = Current.campuse.teachers.active.find_by(id: settings[:teacher_id], subject_id: sample.subject_id)
+      teacher ||= sample.teacher unless sample.teacher&.archived?
+
+      {
+        grade: grade,
+        genre: genre,
+        phase: phase,
+        times: times,
+        teacher: teacher
+      }
+    end
+
+    # 把选中的预留学员加入一个已有班级（须同一目标学期与科目）
+    def batch_join_existing(reservations, back)
+      klass = Current.campuse.semester_klasses
+        .includes(:semester, :subject)
+        .find_by(id: params[:klass_id])
+
+      unless klass && reservations.all? { |reservation| same_target?(reservation, klass) }
+        redirect_to back, alert: "所选学员须属于同一目标学期与科目，且与所选班级一致"
+        return
+      end
+
+      ActiveRecord::Base.transaction { enroll(klass, reservations) }
+      redirect_to back, notice: "已将 #{reservations.size} 名学员加入班级 #{klass.name}"
+    rescue ActiveRecord::RecordInvalid => e
+      redirect_to back, alert: "加入班级失败：#{e.record.errors.full_messages.join("；")}"
+    end
+
+    def same_target?(reservation, klass)
+      reservation.semester_id == klass.semester_id && reservation.subject_id == klass.subject_id
+    end
+
+    def create_klass_for(semester:, grade:, subject:, genre:, phase:, teacher:, times: nil)
+      times ||= configured_times(semester, grade, subject)
+      SemesterKlass.create!(
+        semester: semester, campuse: Current.campuse, grade: grade, subject: subject,
+        teacher: teacher, genre: genre, phase: phase,
+        seq: SemesterKlass.next_seq(
+          campuse_id: Current.campuse.id, semester_id: semester.id,
+          grade_id: grade.id, subject_id: subject.id, genre: genre, phase: phase
+        ),
+        times: times
+      )
+    end
+
+    def enroll(klass, reservations)
+      reservations.each do |reservation|
+        reservation.student.join_klass(klass, course_seq: 1, allow_grade_mismatch: true)
+        reservation.update!(semester_klass_id: klass.id, teacher: klass.teacher)
+      end
+    end
+
+    def batch_group_label(reservation)
+      "#{reservation.grade.name} · #{reservation.subject.name} · " \
+        "#{SemesterKlass::GENRE_MAP_REVERSE[reservation.genre]} #{SemesterKlass::PHASE_PREFIX[reservation.phase]}"
     end
 
     def configured_times(semester, grade, subject)
