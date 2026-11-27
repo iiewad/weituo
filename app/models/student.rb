@@ -41,7 +41,8 @@ class Student < ApplicationRecord
 
   # mark_previous_absent: 入班课次之前的课次是否补记缺课；转出到目标班时传 false
   # reinstate: 已有报名处于退课/转出时是否恢复在班；从转入班反向转回原班时传 true
-  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true, reinstate: false)
+  # transfer_from: 转入来源班；非空时记录来源班与入班课次，供转入班展示转入信息
+  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true, reinstate: false, transfer_from: nil)
     return if !allow_grade_mismatch && sk.grade_id != grade_id
     return if sk.campuse_id != campuse_id
 
@@ -56,6 +57,7 @@ class Student < ApplicationRecord
     elsif reinstate && ks.status.in?([ "out", "transfer" ])
       ks.update!(status: :in)
     end
+    ks.update!(transfer_source_klass_id: transfer_from.id, transfer_in_seq: course_seq) if transfer_from
 
     if mark_previous_absent
       sk.courses.where("seq < ?", course_seq).each do |course|
@@ -68,24 +70,20 @@ class Student < ApplicationRecord
     end
   end
 
-  # 转出时把源班同序号课次的出勤状态带到目标班；退课/转出不带，避免把离开状态复制过去。
-  # 反向转回时目标班可能已有历史考勤：只补缺失的行、覆盖原来的退/转标记，不重写真实考勤。
-  def carry_over_attendances(from_klass, to_klass, before_seq:)
-    from_ks = from_klass.klass_students.find_by(student_id: id)
+  # 转入时把目标班入班课次（before_seq）之前、已开课的课次标记为「转入」，表示这些课次学员尚未
+  # 转入本班、未在本班就读；源班的真实考勤保留在源班，不再复制到目标班。
+  # 已有真实考勤的行保留（反向转回原班时原班出勤不被覆盖），只把缺口 / 退课 / 转出行改为转入。
+  def mark_transferred_in_attendances(to_klass, before_seq:)
     to_ks = to_klass.klass_students.find_by(student_id: id)
-    return if from_ks.blank? || to_ks.blank?
+    return if to_ks.blank?
 
-    from_klass.courses.where("seq < ?", before_seq).find_each do |course|
-      source = course.attendances.find_by(klass_student_id: from_ks.id)
-      next if source.blank? || source.status.in?(%w[quit transfer])
+    to_klass.courses.where("seq < ?", before_seq).find_each do |course|
+      next unless course.started?
 
-      target_course = to_klass.courses.find_by(seq: course.seq)
-      next if target_course.blank?
+      row = course.attendances.find_or_initialize_by(klass_student_id: to_ks.id)
+      next if row.persisted? && !row.status.in?(%w[quit transfer])
 
-      target = target_course.attendances.find_or_initialize_by(klass_student_id: to_ks.id)
-      next if target.persisted? && !target.status.in?(%w[quit transfer])
-
-      target.update!(status: source.status)
+      row.update!(status: "transfer_in")
     end
   end
 

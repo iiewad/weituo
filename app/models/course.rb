@@ -12,9 +12,13 @@ class Course < ApplicationRecord
       semester_klass.klass_students.find_each do |ks|
         attendance = attendances.find_or_create_by!(klass_student_id: ks.id)
         # 退课 / 转出学员继续留在班级，后续开课沿用其报名状态生成对应考勤
-        case ks.status
-        when "out"      then attendance.update!(status: "quit")
-        when "transfer" then attendance.update!(status: "transfer")
+        if ks.status == "out"
+          attendance.update!(status: "quit")
+        elsif ks.status == "transfer"
+          attendance.update!(status: "transfer")
+        elsif ks.status == "in" && ks.transfer_in_seq && seq < ks.transfer_in_seq
+          # 转入学员入班课次之前的课次后补开课时标记「转入」；已有真实考勤保留，只改缺口默认行
+          attendance.update!(status: "transfer_in") if attendance.previously_new_record?
         end
       end
     end

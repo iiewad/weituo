@@ -39,23 +39,30 @@ class StudentTest < ActiveSupport::TestCase
     assert_nil sk.klass_students.find_by(student_id: student.id)
   end
 
-  test "carry over attendances copies statuses but skips quit and transfer" do
-    source = semester_klasses(:sk_math_1)
+  test "mark transferred in marks earlier started target courses and preserves real attendance" do
     target = semester_klasses(:sk_math_3)
+    source = semester_klasses(:sk_math_1)
     student = students(:student_7_1)
-    source.courses.find_by!(seq: 1).start!
-    source.courses.find_by!(seq: 2).start!
-    source_ks = source.klass_students.find_by!(student_id: student.id)
-    source.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: source_ks.id).update!(status: "sick_leave")
-    source.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: source_ks.id).update!(status: "quit")
+    # 入班课次为第 4 课：目标班第 1-3 课已开课
+    target.courses.find_by!(seq: 1).start!
+    target.courses.find_by!(seq: 2).start!
+    target.courses.find_by!(seq: 3).start!
 
-    student.join_klass(target, course_seq: 4, mark_previous_absent: false)
-    student.carry_over_attendances(source, target, before_seq: 4)
-
+    student.join_klass(target, course_seq: 4, mark_previous_absent: false, transfer_from: source)
     target_ks = target.klass_students.find_by!(student_id: student.id)
-    assert_equal "sick_leave", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
-    assert_nil target.courses.find_by!(seq: 2).attendances.find_by(klass_student_id: target_ks.id)
-    assert_nil target.courses.find_by!(seq: 3).attendances.find_by(klass_student_id: target_ks.id)
+    # 目标班第 2 课已有真实考勤（模拟反向转回原班），应保留不被覆盖
+    target.courses.find_by!(seq: 2).attendances.create!(klass_student: target_ks, status: "absent")
+
+    student.mark_transferred_in_attendances(target, before_seq: 4)
+
+    assert_equal "transfer_in", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_equal "absent", target.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_equal "transfer_in", target.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: target_ks.id).status
+    # 入班课次起（未开课）不建转入行
+    assert_nil target.courses.find_by!(seq: 4).attendances.find_by(klass_student_id: target_ks.id)
+    # 转入信息记录在报名上
+    assert_equal source, target_ks.reload.transfer_source_klass
+    assert_equal 4, target_ks.transfer_in_seq
   end
 
   test "join klass can allow a grade mismatch for reservations" do

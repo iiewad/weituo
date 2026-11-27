@@ -132,6 +132,27 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "turbo-frame#klass_detail form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button[data-turbo-frame='_top']"
   end
 
+  test "show renders the transfer-in cell detail for a transferred student" do
+    source = semester_klasses(:sk_math_2)
+    target = semester_klasses(:sk_math_3)
+    student = students(:student_7_1)
+    target_ks = KlassStudent.create!(
+      semester_klass: target, student:, status: "in",
+      transfer_source_klass: source, transfer_in_seq: 2
+    )
+    first = target.courses.find_by!(seq: 1)
+    first.start!
+    # 入班课次之前的课次开课时自动标记「转入」
+    assert_equal "transfer_in", first.attendances.find_by!(klass_student_id: target_ks.id).status
+
+    get admin_semester_klass_path(target)
+
+    assert_response :success
+    # 转入格详情含来源班与入班课次
+    assert_match "由 #{source.name} 转入", response.body
+    assert_match "第 2 课起在本班上课", response.body
+  end
+
   test "show renders the frame on full page loads" do
     sk = semester_klasses(:sk_math_2)
 

@@ -5,7 +5,7 @@ class Attendance < ApplicationRecord
   belongs_to :marked_by, class_name: "User", optional: true
   # 转出目标班；用于在原班提示学员去哪个班反向转出回来
   belongs_to :transfer_target_klass, class_name: "SemesterKlass", optional: true
-  enum :status, [ :absent, :normal, :filled, :personal_leave, :sick_leave, :quit, :transfer ]
+  enum :status, [ :absent, :normal, :filled, :personal_leave, :sick_leave, :quit, :transfer, :transfer_in ]
   # 校验一个学员一个课程只能有一个考勤记录
   validates :klass_student_id, uniqueness: { scope: :course_id }
   # 只有已开课课次才有考勤；所有事件统一加守卫，防止异常数据绕过界面直接改写
@@ -18,6 +18,9 @@ class Attendance < ApplicationRecord
     state :sick_leave
     state :quit
     state :transfer
+    # 转入：目标班入班课次之前的课次标记，表示该课次学员尚未转入本班、未在本班就读。
+    # 只读——不声明任何进出 transfer_in 的事件，所有 mark_* 的 from 都不含它，改写一律非法迁移。
+    state :transfer_in
 
     # 恢复正常：纠正误点的缺课 / 请假 / 补课；退课走「重新加入」，转出不可撤销
     event :mark_normal do
@@ -94,7 +97,8 @@ class Attendance < ApplicationRecord
     "personal_leave" => { label: "事", name: "事假", color: "warning" },
     "sick_leave"     => { label: "病", name: "病假", color: "warning" },
     "quit"           => { label: "退", name: "退课", color: "neutral" },
-    "transfer"       => { label: "转", name: "转出", color: "neutral" }
+    "transfer"       => { label: "转", name: "转出", color: "neutral" },
+    "transfer_in"    => { label: "入", name: "转入", color: "neutral" }
   }.freeze
 
   def status_meta

@@ -70,4 +70,28 @@ class CourseTest < ActiveSupport::TestCase
 
     assert_equal "transfer", course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id).status
   end
+
+  test "start marks a transferred-in student's pre-entry courses as transfer_in" do
+    sk = semester_klasses(:sk_math_1)
+    ks = klass_students(:ks_1)
+    ks.update!(transfer_source_klass: semester_klasses(:sk_math_2), transfer_in_seq: 3)
+
+    [ 1, 2, 3 ].each { |seq| assert sk.courses.find_by!(seq: seq).start! }
+
+    assert_equal "transfer_in", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
+    assert_equal "transfer_in", sk.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: ks.id).status
+    assert_equal "normal", sk.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: ks.id).status
+  end
+
+  test "start does not overwrite an existing pre-entry attendance row of a transferred-in student" do
+    sk = semester_klasses(:sk_math_1)
+    ks = klass_students(:ks_1)
+    ks.update!(transfer_source_klass: semester_klasses(:sk_math_2), transfer_in_seq: 3)
+    first = sk.courses.find_by!(seq: 1)
+    first.attendances.create!(klass_student: ks, status: "absent")
+
+    assert first.start!
+
+    assert_equal "absent", first.attendances.find_by!(klass_student_id: ks.id).status
+  end
 end

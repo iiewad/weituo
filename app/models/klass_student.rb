@@ -6,6 +6,8 @@ class KlassStudent < ApplicationRecord
 
   belongs_to :semester_klass
   belongs_to :student
+  # 转入来源班与入班课次：仅转出转入时写入，供转入班展示「由 X 转入 · 第 N 课起」
+  belongs_to :transfer_source_klass, class_name: "SemesterKlass", optional: true
   has_many :attendances, dependent: :destroy
 
   enum :status, [ :out, :in, :transfer ]

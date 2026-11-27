@@ -8,6 +8,9 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     course.update!(start_date: Date.current)
     attendance = course.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
     target = semester_klasses(:sk_math_3)
+    # 目标班已开第 1 课：转入后该课次应标记为「转入」
+    target_first = target.courses.find_by!(seq: 1)
+    target_first.update!(start_date: Date.current)
 
     visit admin_semester_klass_path(sk)
     find("[data-floating-card-target='trigger']").click
@@ -21,7 +24,14 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     assert_text "已将"
     assert_equal "transfer", attendance.reload.status
     assert_equal "transfer", klass_students(:ks_2).reload.status
-    assert target.klass_students.exists?(student_id: students(:student_7_1).id)
+    target_ks = target.klass_students.find_by!(student_id: students(:student_7_1).id)
+    assert_equal "transfer_in", target_first.attendances.find_by!(klass_student_id: target_ks.id).status
+
+    # 目标班页面：入班前课次格显示「入」
+    visit admin_semester_klass_path(target)
+    within(find("tr#klass_student_#{target_ks.id}")) do
+      assert_selector "[data-floating-card-target='trigger']", text: "入"
+    end
   end
 
   test "转出后可在转入班反向转出回原班" do
@@ -39,6 +49,7 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     find("button[data-action='transfer-drawer#open']", text: "转出").click
     choose "target_semester_klass_id_#{class_b.id}"
     click_button "确认转出"
+    assert_text "已将"
     assert_equal "transfer", klass_students(:ks_2).reload.status
 
     b_first = class_b.courses.find_by!(seq: 1)

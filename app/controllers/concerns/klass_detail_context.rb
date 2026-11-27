@@ -4,7 +4,7 @@ module KlassDetailContext
 
   private
     def set_klass_row_context
-      @klass_students = @sk.klass_students.includes(:student).to_a
+      @klass_students = @sk.klass_students.includes(:student, transfer_source_klass: [ :grade, :subject ]).to_a
       @courses = @sk.courses.order(:seq).to_a
       @attendance_by_cell = Attendance.where(
         course_id: @courses.map(&:id),

@@ -105,7 +105,7 @@ flowchart LR
 
 ### 4. 考勤状态流转
 
-状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上，用于在原班提示回班路径。
+状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出、`transfer_in` 转入（只读，由转出生成，表示该课次学员尚未转入本班、未在本班就读，不计入出勤/预留次数）。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上，用于在原班提示回班路径；转入来源班与入班课次记录在 `KlassStudent.transfer_source_klass_id` / `transfer_in_seq` 上，用于转入班考勤格的「转入」详情展示。
 
 | 事件 | 允许从 | 到 | 额外副作用 |
 | --- | --- | --- | --- |
@@ -137,6 +137,8 @@ stateDiagram-v2
 
 `transfer` 是终态，不可撤销；要回原班，需在转入班的考勤格再次 `transfer` 到原班（控制器允许目标班存在 `transfer` 状态的报名，并以 `join_klass(..., reinstate: true)` 恢复在班）。
 
+`transfer_in`（转入）不在上表/图中，因为它没有 `mark_*` 事件——它由转出动作对目标班入班课次之前的已开课次直接 `update!(status:)` 生成，入班前课次在转入后才补开课时由 `Course#start!` 同样生成，是只读状态：对 `transfer_in` 行调用任何 `mark_*!` 都会触发 `AASM::InvalidTransition`，控制器回退提示，天然不可改。
+
 ### 5. 退课 / 转出的级联
 
 在某课次标记 `quit` 或 `transfer` 时，不只是改这一条考勤：
@@ -144,7 +146,7 @@ stateDiagram-v2
 - **后续所有课次**（`seq > 当前课次`）自动生成/更新考勤为 `quit` 或 `transfer`
 - 对应的 `KlassStudent` 转为 `out`（退班）或 `transfer`（转出）
 - 之后对退课学员执行 `mark_rejoin`，当前及后续退课课次恢复 `normal`；转出不可撤销
-- 转出到目标班时，目标班在入班课次之前的课程沿用源班同序号课次的考勤状态（退课 / 转出不复制），而不是补记 `absent`；反向转回时只补缺失的考勤、覆盖原「转出」记录，不重写真实考勤
+- 转出到目标班时，入班课次按源班转出课次对齐（取「转出课次 + 1」与「目标班首个未开课课次」的较大者）；入班课次之前的课次统一标记为只读的 `transfer_in`（转入）——已开课的由转出动作标记，转入后才开课的由 `Course#start!` 标记——不再沿用源班考勤，源班真实考勤原样保留在源班；反向转回时同样保留原班真实考勤，只把缺失 / 退课 / 转出的课次改为 `transfer_in`
 
 `KlassStudent` 自身状态机：`in`（初始）→ `out` / `transfer`，`transfer` 与 `out` 之间可互相转换（班级页不再提供转出撤销）。
 

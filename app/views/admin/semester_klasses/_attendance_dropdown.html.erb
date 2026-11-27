@@ -29,6 +29,10 @@
             已转出，不可撤销；如需回班，请在转入的班级中把学员转出到本班。
           </p>
         <% end %>
+      <% elsif attendance.transfer_in? %>
+        <p class="text-[11px] leading-snug text-base-content/50">
+          由 <%= semester_klass_student.transfer_source_klass&.name || "其他班级" %> 转入<% if semester_klass_student.transfer_in_seq %>，第 <%= semester_klass_student.transfer_in_seq %> 课起在本班上课<% end %>；本课次在转入前，学员未在本班就读。
+        </p>
       <% else %>
         <%
         action_groups =

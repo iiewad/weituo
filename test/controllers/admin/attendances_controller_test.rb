@@ -255,7 +255,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
-  test "transfer carries the source attendance statuses to earlier target courses" do
+  test "transfer marks earlier started target courses as transfer_in and keeps source attendance in the source" do
     source = semester_klasses(:sk_math_2)
     source.courses.order(:seq).limit(3).each(&:start!)
     ks = klass_students(:ks_2)
@@ -273,13 +273,45 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(source)
     target_ks = target.klass_students.find_by!(student_id: ks.student_id)
-    # 目标班已开的两课沿用源班同课次的状态，而不是补记缺课
-    assert_equal "personal_leave", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
-    assert_equal "absent", target.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: target_ks.id).status
+    # 目标班入班前已开课次统一标记「转入」，不再沿用源班考勤
+    assert_equal "transfer_in", target.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_equal "transfer_in", target.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: target_ks.id).status
     assert_nil target.courses.find_by!(seq: 3).attendances.find_by(klass_student_id: target_ks.id)
+    # 源班真实考勤原样保留在源班
+    assert_equal "personal_leave", source.courses.find_by!(seq: 1).attendances.find_by!(klass_student_id: ks.id).status
+    assert_equal "absent", source.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: ks.id).status
+    # 转入来源与入班课次记录在目标班报名上：入班课次按源班转出课次（第 3 课）对齐为第 4 课
+    assert_equal source, target_ks.reload.transfer_source_klass
+    assert_equal 4, target_ks.transfer_in_seq
 
+    # 入班前的课次后补开课时标记「转入」，入班课次起正常出勤
     target.courses.find_by!(seq: 3).start!
-    assert_equal "normal", target.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: target_ks.id).status
+    assert_equal "transfer_in", target.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: target_ks.id).status
+    target.courses.find_by!(seq: 4).start!
+    assert_equal "normal", target.courses.find_by!(seq: 4).attendances.find_by!(klass_student_id: target_ks.id).status
+  end
+
+  test "transfer into a fresh class marks later-started courses before the entry as transfer_in" do
+    source = semester_klasses(:sk_math_2)
+    source.courses.order(:seq).limit(3).each(&:start!)
+    ks = klass_students(:ks_2)
+    transfer_attendance = source.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: ks.id)
+    target = semester_klasses(:sk_math_3)
+
+    # 先转入全新目标班（入班课次按源班转出课次对齐为第 4 课），再批量补开第 1-5 课
+    transfer_to(transfer_attendance, target)
+    target_ks = target.klass_students.find_by!(student_id: ks.student_id)
+    assert_equal 4, target_ks.transfer_in_seq
+
+    target.courses.order(:seq).limit(5).each(&:start!)
+    (1..3).each do |seq|
+      row = target.courses.find_by!(seq: seq).attendances.find_by!(klass_student_id: target_ks.id)
+      assert_equal "transfer_in", row.status, "第 #{seq} 课应为转入"
+    end
+    (4..5).each do |seq|
+      row = target.courses.find_by!(seq: seq).attendances.find_by!(klass_student_id: target_ks.id)
+      assert_equal "normal", row.status, "第 #{seq} 课应正常出勤"
+    end
   end
 
   test "transfer rejects a target class that has already finished" do
@@ -351,8 +383,8 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to admin_semester_klass_path(class_b)
     assert_equal "in", ks.reload.status
-    # 原班的转出行被来源班同课次状态覆盖
-    assert_equal "normal", a_transfer_row.reload.status
+    # 原班的转出行改为「转入（来自 B）」，不再沿用来源班同课次状态
+    assert_equal "transfer_in", a_transfer_row.reload.status
     assert_equal "transfer", b_ks.reload.status
     assert_equal "transfer", b_transfer_row.reload.status
     assert_equal class_a.id, b_transfer_row.transfer_target_klass_id
@@ -367,15 +399,21 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     a_first.start!
     transfer_to(a_first.attendances.find_by!(klass_student_id: ks.id), class_b)
 
+    # B 班入班课次对齐为第 2 课：第 1 课后补开课标记「转入」，第 2 课起正常出勤
     b_first = class_b.courses.find_by!(seq: 1)
-    b_first.start!
+    b_second = class_b.courses.find_by!(seq: 2)
+    [ b_first, b_second ].each(&:start!)
     b_ks = class_b.klass_students.find_by!(student_id: ks.student_id)
-    transfer_to(b_first.attendances.find_by!(klass_student_id: b_ks.id), class_a)
+    assert_equal "transfer_in", b_first.attendances.find_by!(klass_student_id: b_ks.id).status
+    transfer_to(b_second.attendances.find_by!(klass_student_id: b_ks.id), class_a)
     assert_equal "in", ks.reload.status
 
+    # 回到 A 班入班课次对齐为第 3 课：第 2 课后补开课标记「转入」，第 3 课起正常出勤
     a_second = class_a.courses.find_by!(seq: 2)
-    a_second.start!
-    transfer_to(a_second.attendances.find_by!(klass_student_id: ks.id), class_b)
+    a_third = class_a.courses.find_by!(seq: 3)
+    [ a_second, a_third ].each(&:start!)
+    assert_equal "transfer_in", a_second.attendances.find_by!(klass_student_id: ks.id).status
+    transfer_to(a_third.attendances.find_by!(klass_student_id: ks.id), class_b)
 
     assert_equal "transfer", ks.reload.status
     assert_equal "in", b_ks.reload.status
@@ -402,14 +440,19 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     b_third = class_b.courses.find_by!(seq: 3)
     [ b_first, b_second, b_third ].each(&:start!)
     b_ks = class_b.klass_students.find_by!(student_id: ks.student_id)
-    b_second.attendances.find_by!(klass_student_id: b_ks.id).mark_absent!
+    # B 班入班课次对齐为第 3 课：第 1、2 课后补开课标记「转入」，第 3 课起正常出勤
+    assert_equal "transfer_in", b_first.attendances.find_by!(klass_student_id: b_ks.id).status
+    b_third.attendances.find_by!(klass_student_id: b_ks.id).mark_absent!
 
-    # 从 B 第 3 课转出，B 第 1、2 课是已开课的早期课次，会随转出带回 A
+    # 从 B 第 3 课转回 A：入班课次对齐为第 4 课，A 第 1、2 课是入班前已开课次，标记「转入（来自 B）」
     transfer_to(b_third.attendances.find_by!(klass_student_id: b_ks.id), class_a)
 
+    # A 第 1 课的真实考勤（病假）原样保留，A 第 2 课原「转出」行改为「转入」
     assert_equal "sick_leave", a_first_row.reload.status
-    assert_equal "absent", a_second_row.reload.status
+    assert_equal "transfer_in", a_second_row.reload.status
     assert_equal "in", ks.reload.status
+    assert_equal class_b, ks.reload.transfer_source_klass
+    assert_equal 4, ks.transfer_in_seq
   end
 
   test "mark refuses rejoin for a transferred attendance" do

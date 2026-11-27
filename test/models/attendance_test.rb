@@ -196,6 +196,18 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "transfer", klass_students(:ks_1).reload.status
   end
 
+  test "transfer_in is read-only and rejects every mark transition" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+    attendance.update!(status: "transfer_in")
+
+    %w[normal absent personal_leave sick_leave filled quit transfer rejoin].each do |status|
+      assert_raises(AASM::InvalidTransition) { attendance.public_send("mark_#{status}!") }
+    end
+    assert_equal "transfer_in", attendance.reload.status
+  end
+
   test "filled is not allowed from quit or transfer" do
     course = courses(:sk_1_course_1)
     later = courses(:sk_1_course_2)
@@ -246,7 +258,8 @@ class AttendanceTest < ActiveSupport::TestCase
       "personal_leave" => [ "事", "事假", "warning" ],
       "sick_leave" => [ "病", "病假", "warning" ],
       "quit" => [ "退", "退课", "neutral" ],
-      "transfer" => [ "转", "转出", "neutral" ]
+      "transfer" => [ "转", "转出", "neutral" ],
+      "transfer_in" => [ "入", "转入", "neutral" ]
     }
 
     expected.each do |status, (label, name, color)|

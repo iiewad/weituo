@@ -96,7 +96,7 @@ class Admin::AttendancesController < AdminController
       return
     end
 
-    # 转出从目标班首个未开课课次开始，之前课次不补缺课，改为带过来源班同课次的考勤状态
+    # 入班课次按源班转出课次对齐，之前课次不补缺课，统一标记「转入」（源班考勤保留在源班）
     entry_seq = join_course_seq_for(target)
     if entry_seq.nil?
       redirect_to admin_semester_klass_path(@sk), alert: "#{target.name} 课程已全部开始，无法转入"
@@ -107,8 +107,9 @@ class Admin::AttendancesController < AdminController
       @attendance.mark_transfer!
       # 记录目标班，供原班提示学员去哪个班反向转出回来
       @attendance.update!(marked_by: Current.user, transfer_target_klass_id: target.id)
-      @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false, reinstate: true)
-      @student.carry_over_attendances(@sk, target, before_seq: entry_seq)
+      # 转入目标班：记录来源班与入班课次，入班前已开课次标记「转入」（源班考勤保留在源班）
+      @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false, reinstate: true, transfer_from: @sk)
+      @student.mark_transferred_in_attendances(target, before_seq: entry_seq)
     end
 
     redirect_to admin_semester_klass_path(@sk),
@@ -125,8 +126,14 @@ class Admin::AttendancesController < AdminController
       ).where.not(id: @sk.id)
     end
 
-    # 转入后从目标班首个未开课课次开始；没有未开课课次（已结课）时返回 nil，不允许转入
+    # 入班课次按源班转出课次对齐：取「源班转出课次 + 1」与「目标班首个未开课课次」的较大者，
+    # 目标班后补开课的入班前课次由 Course#start! 标记「转入」；对齐课次不存在（目标班课次更少）
+    # 时退回首个未开课课次；没有未开课课次（已结课）时返回 nil，不允许转入
     def join_course_seq_for(target)
-      target.courses.where(start_date: nil).minimum(:seq)
+      first_unstarted = target.courses.where(start_date: nil).minimum(:seq)
+      return nil if first_unstarted.nil?
+
+      aligned = @course.seq + 1
+      aligned > first_unstarted && target.courses.exists?(seq: aligned) ? aligned : first_unstarted
     end
 end

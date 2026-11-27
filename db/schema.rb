@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_27_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_27_130000) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -77,9 +77,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_27_120000) do
     t.integer "status", default: 1
     t.bigint "student_id", null: false
     t.datetime "archived_at"
+    t.bigint "transfer_source_klass_id"
+    t.integer "transfer_in_seq"
     t.index ["archived_at"], name: "index_klass_students_on_archived_at"
     t.index ["semester_klass_id", "student_id"], name: "index_klass_students_on_semester_klass_id_and_student_id", unique: true
     t.index ["student_id"], name: "index_klass_students_on_student_id"
+    t.index ["transfer_source_klass_id"], name: "index_klass_students_on_transfer_source_klass_id"
   end
 
   create_table "reservations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -228,6 +231,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_27_120000) do
   add_foreign_key "grade_subjects", "subjects"
   add_foreign_key "guardians", "students"
   add_foreign_key "klass_students", "semester_klasses"
+  add_foreign_key "klass_students", "semester_klasses", column: "transfer_source_klass_id", on_delete: :nullify
   add_foreign_key "klass_students", "students"
   add_foreign_key "reservations", "grades"
   add_foreign_key "reservations", "semester_klasses", column: "source_semester_klass_id", on_delete: :nullify

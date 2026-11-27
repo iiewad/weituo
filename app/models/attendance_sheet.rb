@@ -11,10 +11,11 @@ class AttendanceSheet
     "personal_leave" => "FEF3C7",
     "sick_leave" => "FEF3C7",
     "quit" => "E2E8F0",
-    "transfer" => "E2E8F0"
+    "transfer" => "E2E8F0",
+    "transfer_in" => "E2E8F0"
   }.freeze
 
-  LEGEND = "√ 正常 · 补 补课 · 缺 缺课 · 事 事假 · 病 病假 · 退 退课 · 转 转出"
+  LEGEND = "√ 正常 · 补 补课 · 缺 缺课 · 事 事假 · 病 病假 · 退 退课 · 转 转出 · 入 转入"
 
   def self.build_styles(workbook)
     styles = workbook.styles

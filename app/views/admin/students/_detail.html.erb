@@ -123,6 +123,7 @@
                 <% present = counts["normal"].to_i + counts["filled"].to_i %>
                 <% leave = counts["personal_leave"].to_i + counts["sick_leave"].to_i %>
                 <% quit_or_transfer = counts["quit"].to_i + counts["transfer"].to_i %>
+                <% transferred_in = counts["transfer_in"].to_i %>
 
                 <div class="rounded-box border border-base-300 bg-base-100 px-3 py-2">
                   <div class="flex items-center justify-between gap-2">
@@ -141,6 +142,7 @@
                       <% if leave.positive? %> · 请假 <%= leave %><% end %>
                       <% if counts["absent"].to_i.positive? %> · 缺课 <%= counts["absent"].to_i %><% end %>
                       <% if quit_or_transfer.positive? %> · 退转 <%= quit_or_transfer %><% end %>
+                      <% if transferred_in.positive? %> · 转入 <%= transferred_in %><% end %>
                     </p>
                   <% end %>
                 </div>
