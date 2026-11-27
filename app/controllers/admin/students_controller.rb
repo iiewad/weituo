@@ -243,13 +243,15 @@ class Admin::StudentsController < AdminController
 
     # 当前页学员的全部历史报名，按学期倒序，供详情抽屉追溯在班记录
     def klass_student_history(student_ids)
+      # 上限取当前查看的学期（而非学校标记的 current），与页面范围、抽屉「当前学期」标记保持一致；
+      # 否则切换到比 current 标记更新的学期时，该学期的班级会被过滤掉，抽屉看不到当前学期所在班级。
+      current_seq = Current.semester&.seq
       KlassStudent
         .active
         .where(student_id: student_ids)
         .includes(semester_klass: [ :semester, :grade, :subject, :teacher ])
         .group_by(&:student_id)
         .transform_values do |records|
-          current_seq = Semester.current(Current.school.id)&.seq
           records
             .select { |ks| current_seq.nil? || ks.semester_klass.semester.seq <= current_seq }
             .sort_by { |ks| [ -ks.semester_klass.semester.seq.to_i, ks.semester_klass.seq.to_i ] }

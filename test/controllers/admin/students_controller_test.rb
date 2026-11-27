@@ -59,6 +59,25 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes drawer.to_html, "9_学生1"
   end
 
+  test "detail drawer shows the viewed semester's class even when it is newer than the flagged current semester" do
+    student = students(:student_7_1)
+    next_klass = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), semester: semesters(:semester_next),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 1, times: 1
+    )
+    KlassStudent.create!(semester_klass: next_klass, student: student, status: "in")
+
+    # 切换到比学校 current 标记（semester_current, seq=2）更新的学期（semester_next, seq=3）
+    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
+    get admin_students_path
+
+    assert_response :success
+    drawer = Nokogiri::HTML(response.body).at_css("#drawer-student-detail-#{student.id}").parent
+    assert_includes drawer.text, next_klass.name
+    assert_includes drawer.text, "当前学期"
+  end
+
   %w[in_class not_in_class out_class].each do |filter|
     test "index with #{filter} filter" do
       get admin_students_path(filter: filter)
