@@ -90,8 +90,9 @@
         <% if item.new_record? %>
           <p class="pt-1 text-xs text-base-content/50">保存时自动生成，跳过含 4 的序号</p>
         <% else %>
-          <p class="pt-1 text-sm font-medium"><%= item.seq %></p>
-          <p class="mt-1 text-[11px] leading-tight text-base-content/40">序号由系统自动维护，不可修改。</p>
+          <%= form.number_field :seq, min: 1, class: "input input-sm w-full",
+                oninput: "this.value = this.value.replace(/4/g, '')" %>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">可修改；序号不含 4，且同年级 / 科目 / 班型 / 阶段下不可重复。</p>
         <% end %>
       </div>
 

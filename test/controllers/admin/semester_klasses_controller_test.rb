@@ -1090,6 +1090,19 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 42, sk.seq
   end
 
+  test "update rejects a seq that conflicts within the same grade, subject, genre and phase" do
+    target = semester_klasses(:sk_math_3)
+    conflict = semester_klasses(:sk_math_2)
+
+    put admin_semester_klass_path(target), params: { semester_klass: {
+      genre: target.genre, seq: conflict.seq, times: target.times, teacher_id: target.teacher_id
+    } }
+
+    assert_redirected_to admin_semester_klasses_path
+    assert_match "已存在该序号", flash[:alert]
+    assert_equal 3, target.reload.seq
+  end
+
   test "update syncs courses when times changes" do
     sk = semester_klasses(:sk_math_2)
 

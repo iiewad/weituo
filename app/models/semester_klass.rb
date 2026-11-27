@@ -10,10 +10,10 @@ class SemesterKlass < ApplicationRecord
   has_many :archived_klass_students, -> { archived }, class_name: "KlassStudent"
   has_many :students, through: :klass_students
 
-  # 确保同一学期、同一阶段内，科目+班型+序号的组合是唯一的
-  validates :semester_id, uniqueness: {
-    scope: [ :campuse_id, :grade_id, :subject_id, :genre, :seq, :phase ],
-    message: "班级信息已存在，不可重复"
+  # 同一学期、校区、阶段内，年级+科目+班型+序号唯一（序号可修改，但不能与同组班级冲突）
+  validates :seq, uniqueness: {
+    scope: [ :semester_id, :campuse_id, :grade_id, :subject_id, :genre, :phase ],
+    message: "同年级 / 科目 / 班型 / 阶段下已存在该序号，不可重复"
   }
   validates :seq, presence: true, numericality: { only_integer: true }
   validates :times, presence: true, numericality: { only_integer: true, greater_than: 0 }

@@ -140,7 +140,7 @@ class SemesterKlassTest < ActiveSupport::TestCase
     )
 
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:semester_id], "班级信息已存在，不可重复"
+    assert_includes duplicate.errors[:seq], "同年级 / 科目 / 班型 / 阶段下已存在该序号，不可重复"
   end
 
   test "next seq is scoped by phase" do
@@ -194,7 +194,7 @@ class SemesterKlassTest < ActiveSupport::TestCase
     )
 
     assert_not duplicate.valid?
-    assert duplicate.errors[:semester_id].any?
+    assert duplicate.errors[:seq].any?
   end
 
   test "rejects a subject that differs from the teacher subject" do
