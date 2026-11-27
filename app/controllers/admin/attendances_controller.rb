@@ -1,6 +1,10 @@
 class Admin::AttendancesController < AdminController
+  include KlassDetailContext
+
   # 可直接从考勤格切换的状态；转出必须走 #transfer 并选择目标班级
   MARKABLE_STATUSES = %w[normal absent personal_leave sick_leave filled quit rejoin].freeze
+  # 只改当前考勤行的状态走行级流式替换；退课 / 重新加入会级联报名与花名册，仍整体刷新
+  STREAMABLE_STATUSES = (MARKABLE_STATUSES - %w[quit rejoin]).freeze
   STATUS_LABELS = Attendance::STATUS_META.transform_values { |meta| meta[:name] }
     .merge("rejoin" => "重新加入").freeze
 
@@ -37,7 +41,25 @@ class Admin::AttendancesController < AdminController
       return
     end
 
-    redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
+    respond_to do |format|
+      format.html { redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新" }
+
+      format.turbo_stream do
+        if STREAMABLE_STATUSES.include?(status)
+          set_klass_row_context
+          ks = @klass_students.find { |klass_student| klass_student.id == @attendance.klass_student_id }
+        end
+
+        if ks
+          render turbo_stream: [
+            turbo_stream.replace(ks, partial: "admin/semester_klasses/attendance_row", locals: { ks: ks }),
+            turbo_stream.update("flash", partial: "admin/shared/alert")
+          ]
+        else
+          redirect_to admin_semester_klass_path(@sk), notice: "考勤已更新"
+        end
+      end
+    end
   end
 
   # 转出引导：把学员转出当前班的同时加入目标班，保留原班考勤历史。

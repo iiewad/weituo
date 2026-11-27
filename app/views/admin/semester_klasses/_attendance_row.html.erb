@@ -1,0 +1,36 @@
+<%# 依赖 show / mark 流式响应提供：@sk @courses @attendance_by_cell @next_semester @reserved_student_ids @reservations_by_student_id @placed_student_ids @transfer_target_klasses @enrolled_target_ids_by_student @reserve_grades @reserve_teachers %>
+<tr id="<%= dom_id(ks) %>" class="hover:bg-base-200/40" data-attendance-search-target="row"
+    data-search-text="<%= [ ks.student.name, ks.student.identity_suffix ].compact.join(" ") %>">
+  <td class="text-center">
+    <input type="checkbox" class="checkbox checkbox-xs" value="<%= ks.student_id %>"
+           aria-label="选择 <%= ks.student.name %>" data-student-name="<%= ks.student.identity_label %>"
+           data-ks-id="<%= ks.id %>"
+           data-reserve-eligible="<%= ks.status == "in" && @next_semester.present? && !@reserved_student_ids.include?(ks.student_id) %>"
+           data-attendance-select-target="rowCheckbox" data-action="change->attendance-select#refresh">
+  </td>
+  <th class="sticky left-0 z-10 bg-base-100 font-medium">
+    <div class="flex items-center gap-1">
+      <div class="whitespace-nowrap">
+        <span class="block"><%= ks.student.name %></span>
+        <% if ks.student.identity_suffix.present? %>
+          <span class="block text-[11px] font-normal text-base-content/40"><%= ks.student.identity_suffix %></span>
+        <% end %>
+      </div>
+      <% if ks.status == "in" && @next_semester %>
+        <% reservation = @reservations_by_student_id[ks.student_id] %>
+        <% if reservation || @placed_student_ids.include?(ks.student_id) %>
+          <%= render "admin/semester_klasses/reservation_card", student: ks.student, reservation: reservation %>
+        <% end %>
+      <% end %>
+    </div>
+  </th>
+  <% @courses.each do |course| %>
+    <td class="text-center">
+      <% if course.started? %>
+        <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: @attendance_by_cell[[ course.id, ks.id ]] %>
+      <% else %>
+        <span class="text-base-content/20">—</span>
+      <% end %>
+    </td>
+  <% end %>
+</tr>

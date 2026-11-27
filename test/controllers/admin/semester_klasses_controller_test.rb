@@ -116,6 +116,32 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='submit'][value='批量开课']"
   end
 
+  test "show renders the attendance content inside the klass_detail frame" do
+    sk = semester_klasses(:sk_math_2)
+    first = sk.courses.find_by!(seq: 1)
+
+    get admin_semester_klass_path(sk), headers: { "Turbo-Frame" => "klass_detail" }
+
+    assert_response :success
+    assert_select "body > turbo-frame#klass_detail", count: 1
+    assert_select "turbo-frame#klass_detail #flash"
+    assert_select "turbo-frame#klass_detail table"
+    assert_select "tr#klass_student_#{klass_students(:ks_2).id}[data-attendance-search-target='row']"
+    # 切换班级要整页导航，标题 / 面包屑 / 操作按钮才会跟着换
+    assert_select "turbo-frame#klass_detail a[data-turbo-frame='_top']", minimum: 1
+    assert_select "turbo-frame#klass_detail form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button[data-turbo-frame='_top']"
+  end
+
+  test "show renders the frame on full page loads" do
+    sk = semester_klasses(:sk_math_2)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "turbo-frame#klass_detail table"
+    assert_select "turbo-frame#klass_detail #flash", count: 1
+  end
+
   test "reserve writes a reservation without enrolling the student in a next semester class" do
     sk = semester_klasses(:sk_math_2)
     student = students(:student_7_1)

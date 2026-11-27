@@ -6,7 +6,13 @@ export default class extends Controller {
   static targets = [ "input", "row", "count", "empty" ]
 
   connect() {
+    this.afterStreamRender = () => requestAnimationFrame(() => this.apply())
+    document.addEventListener("turbo:before-stream-render", this.afterStreamRender)
     this.apply()
+  }
+
+  disconnect() {
+    document.removeEventListener("turbo:before-stream-render", this.afterStreamRender)
   }
 
   apply() {

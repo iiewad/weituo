@@ -40,6 +40,13 @@
   --noise: 0;
 }
 
+/* turbo-frame 是自定义元素，浏览器默认按 inline 渲染；页面里的 Frame 需要块级布局。 */
+@layer base {
+  turbo-frame {
+    display: block;
+  }
+}
+
 @layer components {
   .wt-hero-gradient {
     background-image:

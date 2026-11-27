@@ -1,4 +1,6 @@
 class Admin::SemesterKlassesController < AdminController
+  include KlassDetailContext
+
   def export_attendances
     send_data AttendanceWorkbook.new(
       campuse: Current.campuse,
@@ -270,36 +272,24 @@ class Admin::SemesterKlassesController < AdminController
       .where(campuse_id: Current.campuse.id, grade_id: allowed_grade_ids)
       .includes(:semester, :grade, :subject, :teacher)
       .find(params[:id])
+    set_klass_context
+  end
+
+  private
+  # 班级详情页上下文；考勤行流式替换只需 set_klass_row_context
+  def set_klass_context
     @sks = SemesterKlass.where(
       campuse_id: Current.campuse.id,
       semester_id: Current.semester.id,
       grade_id: allowed_grade_ids,
     ).includes(:grade, :subject, :teacher)
-    @klass_students = @sk.klass_students.includes(:student).to_a
+    set_klass_row_context
     @archived_klass_students = @sk.archived_klass_students.includes(:student).order(archived_at: :desc).to_a
-    @courses = @sk.courses.order(:seq).to_a
     # 开课需按顺序：工具栏只提供下一个未开课课次
     @next_course = @courses.find { |course| !course.started? }
-    @attendance_by_cell = Attendance.where(
-      course_id: @courses.map(&:id),
-      klass_student_id: @klass_students.map(&:id)
-    ).includes(:marked_by).index_by { |attendance| [ attendance.course_id, attendance.klass_student_id ] }
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
-    @next_semester = @sk.semester.related_next_semester
-    @reserved_student_ids = @sk.reserve_students.map(&:id)
-    @reservations_by_student_id = if @next_semester
-      Reservation.where(semester_id: @next_semester.id, subject_id: @sk.subject_id, student_id: @klass_students.map(&:student_id))
-        .includes(:student, :grade, :teacher, :semester_klass).index_by(&:student_id)
-    else
-      {}
-    end
-    @placed_student_ids = @sk.next_semester_placed_student_ids
     @reserve_candidates = @sk.klass_students.where(status: "in").includes(:student)
       .reject { |klass_student| @reserved_student_ids.include?(klass_student.student_id) }
-    @reserve_grade_ids = reserve_grade_ids
-    @reserve_grades = Grade.where(id: @reserve_grade_ids).order(:level).to_a
-    @reserve_default_grade = @reserve_grades.find { |grade| grade.level == @sk.grade.level + 1 } || @sk.grade
-    @reserve_teachers = @sk.campuse.teachers.active.where(subject_id: @sk.subject_id).order(:name).to_a
     @target_semester = @next_semester
     @active_counts = { @sk.id => @active_student_count }
     @students_by_grade = if @next_semester
@@ -316,29 +306,11 @@ class Admin::SemesterKlassesController < AdminController
       .order("courses.seq")
       .group_by(&:klass_student_id)
       .transform_values(&:first)
-    @transfer_target_klasses = @sk.semester.semester_klasses
-      .where(campuse_id: @sk.campuse_id, grade_id: @sk.grade_id)
-      .where.not(id: @sk.id)
-      .includes(:subject, :teacher)
-      .to_a
-      .sort_by(&:display_order_key)
-    transfer_target_ids = @transfer_target_klasses.map(&:id)
-    @transfer_target_counts = KlassStudent.active.where(
-      semester_klass_id: transfer_target_ids, status: "in"
-    ).group(:semester_klass_id).count
-    # 学员已加入的目标班：转出抽屉按学员动态隐藏，避免重复转入
-    @enrolled_target_ids_by_student = KlassStudent
-      .active
-      .where(semester_klass_id: transfer_target_ids)
-      .pluck(:student_id, :semester_klass_id)
-      .group_by(&:first)
-      .transform_values { |pairs| pairs.map(&:last) }
     set_teacher_groups
     set_grade_subject_times_defaults
     @new_class_candidates = new_class_candidates
   end
 
-  private
   # 开班 / 复制时只列出当前校区的教师，科目按教师所属科目分组
   def set_teacher_groups
     teachers = Current.campuse.teachers.active.includes(:subject).order(:subject_id, :name).to_a
@@ -349,13 +321,6 @@ class Admin::SemesterKlassesController < AdminController
     @teacher_groups = teachers.group_by(&:subject)
       .sort_by { |subject, _| subject.id }
       .map { |subject, list| [ subject.name, list.map { |teacher| [ teacher.name, teacher.id ] } ] }
-  end
-
-  def reserve_grade_ids
-    ids = [ @sk.grade_id ]
-    next_grade = Grade.find_by(level: @sk.grade.level + 1)
-    ids << next_grade.id if next_grade
-    ids
   end
 
   def configured_times_for(grade_id, subject_id)

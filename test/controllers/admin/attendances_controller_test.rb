@@ -82,6 +82,63 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "filled", attendance.reload.status
   end
 
+  test "mark streams a row replacement for a plain status" do
+    attendance = prepared_attendance
+    ks = klass_students(:ks_2)
+
+    put mark_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance
+    ), params: { status: "absent" }, as: :turbo_stream
+
+    assert_response :success
+    assert_equal "text/vnd.turbo-stream.html", response.media_type
+    assert_select "turbo-stream[action='replace'][target='klass_student_#{ks.id}']"
+    assert_select "turbo-stream[action='update'][target='flash']"
+    assert_includes response.body, "tr id=\"klass_student_#{ks.id}\""
+    assert_equal "absent", attendance.reload.status
+    assert_equal users(:one), attendance.marked_by
+  end
+
+  test "mark streams a second status change on the same row" do
+    attendance = prepared_attendance
+    attendance.mark_absent!
+    ks = klass_students(:ks_2)
+
+    put mark_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance
+    ), params: { status: "filled" }, as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action='replace'][target='klass_student_#{ks.id}']"
+    assert_equal "filled", attendance.reload.status
+  end
+
+  test "mark streams quit as a redirect so rosters and badges refresh" do
+    attendance = prepared_attendance
+    sk = attendance.course.semester_klass
+
+    put mark_admin_semester_klass_course_attendance_path(sk, attendance.course, attendance),
+      params: { status: "quit" }, as: :turbo_stream
+
+    assert_response :redirect
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal "quit", attendance.reload.status
+  end
+
+  test "mark rejects an unstarted course for stream requests" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 2)
+    attendance = course.attendances.create!(klass_student: klass_students(:ks_2))
+
+    put mark_admin_semester_klass_course_attendance_path(sk, course, attendance),
+      params: { status: "absent" }, as: :turbo_stream
+
+    assert_response :redirect
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "尚未开课", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+  end
+
   test "mark rejoin after quitting" do
     attendance = prepared_attendance
     attendance.mark_quit!

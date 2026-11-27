@@ -10,7 +10,13 @@ export default class extends Controller {
   ]
 
   connect() {
+    this.afterStreamRender = () => requestAnimationFrame(() => this.refresh())
+    document.addEventListener("turbo:before-stream-render", this.afterStreamRender)
     this.refresh()
+  }
+
+  disconnect() {
+    document.removeEventListener("turbo:before-stream-render", this.afterStreamRender)
   }
 
   toggleAll() {

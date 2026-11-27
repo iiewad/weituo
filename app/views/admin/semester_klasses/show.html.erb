@@ -29,6 +29,8 @@
   <% end %>
 <% end %>
 
+<%= turbo_frame_tag "klass_detail" do %>
+<div id="flash"><%= render "admin/shared/alert" if turbo_frame_request? %></div>
 <div class="mb-4 flex flex-wrap gap-2">
   <span class="badge badge-primary badge-sm gap-1">
     <span class="h-1.5 w-1.5 rounded-full bg-primary-content"></span>
@@ -49,15 +51,6 @@
 
   <div class="wt-surface min-w-0 flex-1 overflow-x-auto" data-controller="attendance-search">
     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 px-3 py-2">
-      <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-base-content/60">
-        <span class="font-medium text-base-content/70">图例</span>
-        <% Attendance::STATUS_META.each do |status, meta| %>
-          <span class="inline-flex items-center gap-1">
-            <span class="badge badge-soft badge-<%= meta[:color] %> badge-xs"><%= meta[:label] %></span>
-            <span><%= meta[:name] %></span>
-          </span>
-        <% end %>
-      </div>
       <div class="flex shrink-0 items-center gap-2">
         <label class="input input-sm flex items-center gap-2 rounded-field">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
@@ -78,10 +71,12 @@
         <% end %>
         <% if @next_course %>
           <%= button_to "开第 #{@next_course.seq} 课", start_admin_semester_klass_course_path(@sk, @next_course), method: :put,
+                data: { turbo_frame: "_top" },
                 class: "btn btn-sm btn-primary whitespace-nowrap" %>
           <% unstarted_courses = @courses.reject(&:started?) %>
           <% if unstarted_courses.size > 1 %>
             <%= form_with url: start_through_admin_semester_klass_courses_path(@sk), method: :put,
+                  data: { turbo_frame: "_top" },
                   class: "flex items-center gap-1" do |form| %>
               <label for="through_seq" class="whitespace-nowrap text-xs text-base-content/60">开课到</label>
               <%= select_tag :through_seq,
@@ -92,6 +87,15 @@
           <% end %>
         <% else %>
           <span class="badge badge-success badge-sm">全部课次已开课</span>
+        <% end %>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-base-content/60">
+        <span class="font-medium text-base-content/70">图例</span>
+        <% Attendance::STATUS_META.each do |status, meta| %>
+          <span class="inline-flex items-center gap-1">
+            <span class="badge badge-soft badge-<%= meta[:color] %> badge-xs"><%= meta[:label] %></span>
+            <span><%= meta[:name] %></span>
+          </span>
         <% end %>
       </div>
     </div>
@@ -115,41 +119,7 @@
       </thead>
       <tbody>
         <% @klass_students.each do |ks| %>
-          <tr class="hover:bg-base-200/40" data-attendance-search-target="row"
-              data-search-text="<%= [ ks.student.name, ks.student.identity_suffix ].compact.join(" ") %>">
-            <td class="text-center">
-              <input type="checkbox" class="checkbox checkbox-xs" value="<%= ks.student_id %>"
-                     aria-label="选择 <%= ks.student.name %>" data-student-name="<%= ks.student.identity_label %>"
-                     data-ks-id="<%= ks.id %>"
-                     data-reserve-eligible="<%= ks.status == "in" && @next_semester.present? && !@reserved_student_ids.include?(ks.student_id) %>"
-                     data-attendance-select-target="rowCheckbox" data-action="change->attendance-select#refresh">
-            </td>
-            <th class="sticky left-0 z-10 bg-base-100 font-medium">
-              <div class="flex items-center gap-1">
-                <div class="whitespace-nowrap">
-                  <span class="block"><%= ks.student.name %></span>
-                  <% if ks.student.identity_suffix.present? %>
-                    <span class="block text-[11px] font-normal text-base-content/40"><%= ks.student.identity_suffix %></span>
-                  <% end %>
-                </div>
-                <% if ks.status == "in" && @next_semester %>
-                  <% reservation = @reservations_by_student_id[ks.student_id] %>
-                  <% if reservation || @placed_student_ids.include?(ks.student_id) %>
-                    <%= render "admin/semester_klasses/reservation_card", student: ks.student, reservation: reservation %>
-                  <% end %>
-                <% end %>
-              </div>
-            </th>
-            <% @courses.each do |course| %>
-              <td class="text-center">
-                <% if course.started? %>
-                  <%= render "admin/semester_klasses/attendance_dropdown", semester_klass_student: ks, course: course, student: ks.student, attendance: @attendance_by_cell[[ course.id, ks.id ]] %>
-                <% else %>
-                  <span class="text-base-content/20">—</span>
-                <% end %>
-              </td>
-            <% end %>
-          </tr>
+          <%= render "admin/semester_klasses/attendance_row", ks: ks %>
         <% end %>
         <tr class="hidden" data-attendance-search-target="empty">
           <td colspan="<%= @courses.size + 2 %>" class="py-8 text-center text-sm text-base-content/50">没有匹配的学员</td>
@@ -216,4 +186,5 @@
       </ul>
     </details>
   </div>
+<% end %>
 <% end %>

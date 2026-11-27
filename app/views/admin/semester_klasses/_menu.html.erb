@@ -24,6 +24,7 @@
                     <% active = sk == current_sk %>
                     <li>
                       <%= link_to admin_semester_klass_path(sk),
+                            data: { turbo_frame: "_top" },
                             class: ("menu-active" if active),
                             aria: { current: ("page" if active) } do %>
                         <span class="min-w-0 truncate"><%= sk.name %></span>
