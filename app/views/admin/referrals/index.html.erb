@@ -1,5 +1,11 @@
-<% content_for :page_title, "推荐统计" %>
+<% content_for :page_title, "推荐看板" %>
 <% content_for :page_subtitle, [ Current.campuse&.name, "共 #{@referral_count} 条推荐关系" ].compact.join(" · ") %>
+<% content_for :page_actions do %>
+  <%= link_to export_admin_referrals_path(grade_id: params[:grade_id].presence, period: @period, name: params[:name].presence), class: "btn btn-xs btn-outline btn-primary", data: { turbo: false } do %>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+    导出报表
+  <% end %>
+<% end %>
 
 <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
   <div class="wt-surface p-4">
@@ -32,6 +38,7 @@
 </div>
 
 <%= form_with url: admin_referrals_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do %>
+  <%= hidden_field_tag :name, params[:name] if params[:name].present? %>
   <div>
     <%= label_tag :grade_id, "推荐人年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
     <%= select_tag :grade_id,
@@ -40,8 +47,16 @@
           class: "select select-sm w-40",
           onchange: "this.form.requestSubmit()" %>
   </div>
-  <% if @selected_grade %>
-    <%= link_to "清除筛选", admin_referrals_path, class: "btn btn-xs btn-ghost" %>
+  <div>
+    <%= label_tag :period, "时间范围", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+    <%= select_tag :period,
+          options_for_select(Admin::ReferralsController::PERIODS.map { |value, label| [ label, value ] }, @period),
+          include_blank: "全部时间",
+          class: "select select-sm w-40",
+          onchange: "this.form.requestSubmit()" %>
+  </div>
+  <% if @selected_grade || @period %>
+    <%= link_to "清除筛选", admin_referrals_path(name: params[:name].presence), class: "btn btn-xs btn-ghost" %>
   <% end %>
 <% end %>
 
@@ -100,9 +115,18 @@
 </div>
 
 <div class="wt-surface mt-4 overflow-hidden">
-  <div class="flex items-center justify-between gap-2 border-b border-base-200 px-4 py-3">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 px-4 py-3">
     <h2 class="text-sm font-semibold">推荐明细</h2>
-    <span class="text-xs text-base-content/40">共 <%= @referral_count %> 条</span>
+    <%= form_with url: admin_referrals_path, method: :get, class: "flex items-center gap-2" do %>
+      <%= hidden_field_tag :grade_id, params[:grade_id] if params[:grade_id].present? %>
+      <%= hidden_field_tag :period, @period if @period.present? %>
+      <%= hidden_field_tag :per_page, @per_page if @per_page.present? %>
+      <%= text_field_tag :name, params[:name], placeholder: "搜索推荐人 / 被推荐人姓名", class: "input input-sm w-56" %>
+      <%= submit_tag "搜索", class: "btn btn-sm btn-primary" %>
+      <% if params[:name].present? %>
+        <%= link_to "清除", admin_referrals_path(grade_id: params[:grade_id].presence, period: @period), class: "btn btn-sm btn-ghost" %>
+      <% end %>
+    <% end %>
   </div>
 
   <% if @referral_records.any? %>
@@ -135,21 +159,74 @@
   <% end %>
 </div>
 
-<% if @total_pages > 1 %>
-  <% page_params = { grade_id: params[:grade_id].presence }.compact %>
-  <div class="mt-4 flex items-center justify-between">
-    <span class="text-xs text-base-content/50">第 <%= @current_page %> / <%= @total_pages %> 页</span>
-    <div class="flex gap-1">
-      <% if @current_page > 1 %>
-        <%= link_to "‹ 上一页", admin_referrals_path(page_params.merge(page: @current_page - 1)), class: "btn btn-xs btn-ghost" %>
-      <% else %>
-        <span class="btn btn-xs btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">‹ 上一页</span>
-      <% end %>
-      <% if @current_page < @total_pages %>
-        <%= link_to "下一页 ›", admin_referrals_path(page_params.merge(page: @current_page + 1)), class: "btn btn-xs btn-ghost" %>
-      <% else %>
-        <span class="btn btn-xs btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">下一页 ›</span>
-      <% end %>
-    </div>
+<%
+  page_params = {
+    grade_id: params[:grade_id].presence,
+    period: @period,
+    name: params[:name].presence,
+    per_page: @per_page
+  }.compact
+  current_page = @referral_records.current_page
+  total_pages = @referral_records.total_pages
+  start_page = [ current_page - 2, 1 ].max
+  end_page = [ start_page + 4, total_pages ].min
+  start_page = [ end_page - 4, 1 ].max
+%>
+
+<div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap items-center gap-3 text-xs text-base-content/60">
+    <span>共 <span class="font-semibold text-base-content"><%= @referral_records.total_count %></span> 条推荐</span>
+
+    <%= form_with url: admin_referrals_path, method: :get, class: "flex items-center gap-1.5" do %>
+      <%= hidden_field_tag :grade_id, params[:grade_id] if params[:grade_id].present? %>
+      <%= hidden_field_tag :period, @period if @period.present? %>
+      <%= hidden_field_tag :name, params[:name] if params[:name].present? %>
+      <label for="referrals-per-page" class="text-xs">每页</label>
+      <%= select_tag :per_page, options_for_select(@per_page_options, @per_page),
+            id: "referrals-per-page",
+            class: "select select-xs w-20",
+            onchange: "this.form.requestSubmit()" %>
+      <span>条</span>
+    <% end %>
   </div>
-<% end %>
+
+  <% if total_pages > 1 %>
+    <nav class="flex flex-wrap items-center justify-center gap-1" aria-label="推荐明细分页">
+      <% if current_page > 1 %>
+        <%= link_to "‹", admin_referrals_path(page_params.merge(page: current_page - 1)),
+              class: "btn btn-xs btn-square btn-ghost", aria: { label: "上一页" } %>
+      <% else %>
+        <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">‹</span>
+      <% end %>
+
+      <% if start_page > 1 %>
+        <%= link_to 1, admin_referrals_path(page_params.merge(page: 1)), class: "btn btn-xs btn-ghost" %>
+        <% if start_page > 2 %>
+          <span class="px-1 text-xs text-base-content/40">…</span>
+        <% end %>
+      <% end %>
+
+      <% (start_page..end_page).each do |page| %>
+        <% if page == current_page %>
+          <span class="btn btn-xs btn-primary" aria-current="page"><%= page %></span>
+        <% else %>
+          <%= link_to page, admin_referrals_path(page_params.merge(page: page)), class: "btn btn-xs btn-ghost" %>
+        <% end %>
+      <% end %>
+
+      <% if end_page < total_pages %>
+        <% if end_page < total_pages - 1 %>
+          <span class="px-1 text-xs text-base-content/40">…</span>
+        <% end %>
+        <%= link_to total_pages, admin_referrals_path(page_params.merge(page: total_pages)), class: "btn btn-xs btn-ghost" %>
+      <% end %>
+
+      <% if current_page < total_pages %>
+        <%= link_to "›", admin_referrals_path(page_params.merge(page: current_page + 1)),
+              class: "btn btn-xs btn-square btn-ghost", aria: { label: "下一页" } %>
+      <% else %>
+        <span class="btn btn-xs btn-square btn-ghost cursor-not-allowed opacity-40" aria-disabled="true">›</span>
+      <% end %>
+    </nav>
+  <% end %>
+</div>
