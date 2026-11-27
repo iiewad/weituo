@@ -47,6 +47,11 @@ Rails.application.routes.draw do
         post :import
       end
     end
+    resources :reservations, only: [ :index ] do
+      collection do
+        post :generate
+      end
+    end
     resources :day_schools, only: [ :index, :create, :update, :destroy ] do
       collection do
         post :import

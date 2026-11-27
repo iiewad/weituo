@@ -44,7 +44,8 @@ class StatementReportModelTest < ActiveSupport::TestCase
     end
 
     assert_equal SemesterKlass.where(campuse_id: @campuse.id).count, rows.size
-    assert_operator queries, :<=, 10, "报表应只做固定次数的查询，实际发出 #{queries} 次"
+    # 10 次为固定查询（学期、班级、报名、学员、出勤、预留表等），新增固定查询时同步调整
+    assert_operator queries, :<=, 11, "报表应只做固定次数的查询，实际发出 #{queries} 次"
   end
 
   test "reserve requires enough attendance in the next semester subject class" do
@@ -71,6 +72,20 @@ class StatementReportModelTest < ActiveSupport::TestCase
     assert_equal 1, row.unreserved_count
     assert_equal [ attendee.identity_label ], row.reserve_students.map(&:name)
     assert_includes row.unreserved_students.map(&:detail).join(" "), "已上 1 次，未达 2 次"
+  end
+
+  test "unreserved detail tells a pending reservation apart from not enrolled" do
+    current = semester_klasses(:sk_math_2)
+    Reservation.create!(
+      student: students(:student_7_1), semester: semesters(:semester_next), subject: subjects(:math),
+      grade: grades(:grade_8), teacher: teachers(:math_teacher_1), genre: "JY", source_semester_klass: current
+    )
+
+    row = StatementReport.new(SemesterKlass.where(id: current.id), campuse: @campuse).rows.first
+
+    assert_not_includes row.reserve_students.map(&:name), students(:student_7_1).identity_label
+    unreserved = row.unreserved_students.to_h { |entry| [ entry.name, entry.detail ] }
+    assert_equal "已登记预留，待分班", unreserved[students(:student_7_1).identity_label]
   end
 
   test "summary aggregates counts and average rates" do

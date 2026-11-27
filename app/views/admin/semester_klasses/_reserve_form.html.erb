@@ -6,7 +6,8 @@
 <% elsif @reserve_candidates.empty? %>
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold">预留下学期</h3>
-    <p class="mt-1 text-xs text-base-content/50">当前班级没有可预留的学员（可能已全部预留）。</p>
+    <p class="mt-1 text-xs text-base-content/50">当前班级没有可预留的学员（可能已全部登记）。</p>
+    <p class="mt-1 text-[11px] text-base-content/40">可在侧边栏「预留表」中查看已登记学员并分班。</p>
   </div>
 <% else %>
   <%= form_with url: reserve_admin_semester_klass_path(@sk), method: :post,
@@ -14,33 +15,12 @@
     <div class="wt-surface p-4">
       <h3 class="text-sm font-semibold">预留下学期 · <%= @next_semester.name %></h3>
       <p class="mt-1 text-xs text-base-content/50">
-        <%= @sk.name %> · <%= @sk.grade.name %> · <%= @sk.subject.name %> · 可换班型 / 教师 / 升年级
+        <%= @sk.name %> · <%= @sk.grade.name %> · <%= @sk.subject.name %>
       </p>
 
-      <div class="mt-3 space-y-2">
-        <p class="text-xs font-medium text-base-content/60">目标班级</p>
-        <% @reserve_targets.each do |target| %>
-          <label class="flex cursor-pointer items-start gap-2 rounded-box border border-base-300 bg-base-100 p-2">
-            <%= form.radio_button :target_semester_klass_id, target.id, checked: @reserve_targets.first == target,
-                  class: "radio radio-sm mt-0.5" %>
-            <span class="min-w-0">
-              <span class="block text-sm font-medium"><%= target.grade.name %> · <%= target.name %></span>
-              <span class="block text-[11px] text-base-content/50">
-                <%= SemesterKlass::GENRE_MAP_REVERSE[target.genre] %> · <%= target.teacher.name %> 老师 ·
-                在班 <%= target.klass_students.where(status: "in").count %> 人
-              </span>
-            </span>
-          </label>
-        <% end %>
-        <label class="flex cursor-pointer items-center gap-2 rounded-box border border-base-300 bg-base-100 p-2">
-          <%= form.radio_button :target_semester_klass_id, "", checked: @reserve_targets.empty?, class: "radio radio-sm" %>
-          <span class="text-sm font-medium">新建班级</span>
-        </label>
-      </div>
-
-      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <%= form.label :new_grade_id, "年级", class: "mb-1 block text-xs text-base-content/60" %>
+          <%= form.label :new_grade_id, "目标年级", class: "mb-1 block text-xs text-base-content/60" %>
           <%= form.select :new_grade_id, @reserve_grades.map { |grade| [ grade.name, grade.id ] },
                 { selected: @reserve_default_grade.id }, { class: "select select-sm w-full" } %>
         </div>
@@ -50,18 +30,14 @@
                 { selected: @sk.genre }, { class: "select select-sm w-full" } %>
         </div>
         <div>
-          <%= form.label :new_teacher_id, "教师", class: "mb-1 block text-xs text-base-content/60" %>
+          <%= form.label :new_teacher_id, "教师（可不选）", class: "mb-1 block text-xs text-base-content/60" %>
           <%= form.select :new_teacher_id, @reserve_teachers.map { |teacher| [ teacher.name, teacher.id ] },
-                { selected: @sk.teacher_id }, { class: "select select-sm w-full" } %>
-        </div>
-        <div>
-          <%= form.label :new_times, "课次", class: "mb-1 block text-xs text-base-content/60" %>
-          <%= form.number_field :new_times, value: @reserve_default_times, min: 1, class: "input input-sm w-full" %>
+                { include_blank: "暂不指定", selected: @sk.teacher_id }, { class: "select select-sm w-full" } %>
         </div>
       </div>
-      <p class="mt-1 text-[11px] leading-snug text-base-content/40">
-        选择「新建班级」时使用以上设置；班级序号自动生成。预留只建立下学期报名关系，不会修改学员现年级；
-        升年级请使用学员管理的批量升年级。
+
+      <p class="mt-2 text-[11px] leading-snug text-base-content/40">
+        预留只写入预留表，不会直接加入下学期班级，也不修改学员现年级；下学期在「预留表」中按分组生成班级并加入学员，未指定教师的在生成时再选。
       </p>
     </div>
 
@@ -70,7 +46,7 @@
         <h3 class="text-sm font-semibold">选择学员</h3>
         <span class="text-xs text-base-content/50">共 <%= @reserve_candidates.size %> 人可选</span>
       </div>
-      <p class="mt-1 text-xs text-base-content/50">已在下学期同科目班级的学员不再显示。</p>
+      <p class="mt-1 text-xs text-base-content/50">已登记预留的学员不再显示。</p>
       <div class="mt-2 max-h-64 space-y-1 overflow-y-auto">
         <% @reserve_candidates.each do |klass_student| %>
           <label class="flex items-center gap-2 rounded-box px-2.5 py-1.5 text-xs hover:bg-base-200/60">

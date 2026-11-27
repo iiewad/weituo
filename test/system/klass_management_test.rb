@@ -28,7 +28,7 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_current_path admin_semester_klass_path(sk)
   end
 
-  test "预留下学期并新建目标班级" do
+  test "预留下学期并在预留表中生成班级" do
     sign_in
     sk = semester_klasses(:sk_math_2)
     visit admin_semester_klass_path(sk)
@@ -37,11 +37,18 @@ class KlassManagementTest < ApplicationSystemTestCase
 
     within("form[action='#{reserve_admin_semester_klass_path(sk)}']") do
       select "精英班", from: "班型"
-      fill_in "课次", with: "8"
       click_button "确认预留"
     end
 
     assert_text "已预留 1 名学员"
+    # 预留只登记，不直接建班
+    assert_equal 0, SemesterKlass.where(semester: semesters(:semester_next)).count
+
+    visit admin_reservations_path
+    assert_text "待分班"
+    accept_confirm(/生成班级/) { click_button "生成班级" }
+
+    assert_text "已生成班级"
     target = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
     assert_equal grades(:grade_8), target.grade
     assert_equal grades(:grade_7), students(:student_7_1).reload.grade

@@ -1,0 +1,25 @@
+<%# 待分班预留行的操作：按该学员所在的分组生成下学期班级。
+    预留已有本科目在任教师时直接提交；否则（未指定或教师已存档）先选教师 %>
+<% size = @group_sizes.fetch(reservation.group_key, 1) %>
+<% options = @teachers_by_subject.fetch(reservation.subject_id, []) %>
+<% confirm = "将按「#{reservation.grade.name} · #{reservation.subject.name} · #{SemesterKlass::GENRE_MAP_REVERSE[reservation.genre]}」分组生成班级，并加入该组共 #{size} 名学员？" %>
+<% group_params = {
+     semester_id: reservation.semester_id, grade_id: reservation.grade_id, subject_id: reservation.subject_id,
+     genre: reservation.genre, phase: reservation.phase, group_teacher_id: reservation.teacher_id
+   } %>
+
+<% if options.any? { |teacher| teacher.id == reservation.teacher_id } %>
+  <%= button_to "生成班级", generate_admin_reservations_path(**group_params.merge(teacher_id: reservation.teacher_id, **index_params)),
+        method: :post, class: "btn btn-xs btn-primary", data: { turbo_confirm: confirm } %>
+<% elsif options.empty? %>
+  <span class="text-xs text-base-content/40">暂无本科目在任教师</span>
+<% else %>
+  <%= form_with url: generate_admin_reservations_path(**index_params), method: :post, class: "flex items-center justify-end gap-1" do %>
+    <% group_params.each do |name, value| %>
+      <%= hidden_field_tag name, value %>
+    <% end %>
+    <%= select_tag :teacher_id, options_for_select(options.map { |teacher| [teacher.name, teacher.id] }),
+          { class: "select select-xs w-24", required: true, aria: { label: "生成班级的教师" } } %>
+    <%= submit_tag "生成班级", class: "btn btn-xs btn-primary", data: { turbo_confirm: confirm } %>
+  <% end %>
+<% end %>

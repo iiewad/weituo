@@ -202,7 +202,7 @@ class Admin::SemesterKlassesController < AdminController
       disposition: "attachment"
   end
 
-  # 预留下学期：把在班学员加入下学期同科目的目标班（班型/教师可不同）
+  # 预留下学期：把在班学员登记到预留表（目标年级 / 班型 / 教师可不同），分班在预留表中完成
   def reserve
     @sk = campuse_semester_klasses.find(params[:id])
     next_semester = @sk.semester.related_next_semester
@@ -220,30 +220,49 @@ class Admin::SemesterKlassesController < AdminController
       return
     end
 
-    target = reserve_target_for(next_semester)
-    if target.blank?
-      redirect_to admin_semester_klass_path(@sk), alert: "请选择目标班级，或填写完整的新班级信息"
+    grade = Grade.find_by(id: params[:new_grade_id])
+    # 教师可不指定，留到预留表生成分班时再选
+    teacher = @sk.campuse.teachers.active.find_by(id: params[:new_teacher_id], subject_id: @sk.subject_id) if params[:new_teacher_id].present?
+    genre = params[:new_genre].presence
+    if grade.blank? || !reserve_grade_ids.include?(grade.id) || !SemesterKlass::GENRE_MAP.value?(genre)
+      redirect_to admin_semester_klass_path(@sk), alert: "请选择目标年级和班型"
+      return
+    end
+    if params[:new_teacher_id].present? && teacher.blank?
+      redirect_to admin_semester_klass_path(@sk), alert: "所选教师不是本科目的在任教师"
       return
     end
 
     reserved = 0
+    skipped = 0
     ActiveRecord::Base.transaction do
       students.each do |student|
-        next if target.klass_students.exists?(student_id: student.id)
-        next if target.grade.level < student.grade.level
+        reservation = Reservation.find_or_initialize_by(
+          student_id: student.id, semester_id: next_semester.id, subject_id: @sk.subject_id
+        )
+        # 已经生成下学期班级的记录不再改动
+        if reservation.semester_klass_id.present?
+          skipped += 1
+          next
+        end
 
-        # 预留只建立下学期报名关系，不修改学员当前年级
-        student.join_klass(target, course_seq: 1, allow_grade_mismatch: true)
-        reserved += 1
+        reservation.assign_attributes(grade: grade, genre: genre, teacher: teacher, source_semester_klass: @sk)
+        if reservation.save
+          reserved += 1
+        else
+          skipped += 1
+        end
       end
     end
 
     if reserved.zero?
-      redirect_to admin_semester_klass_path(@sk), alert: "没有学员被预留，请检查目标年级或学员是否已在目标班"
+      redirect_to admin_semester_klass_path(@sk), alert: "没有学员被预留，可能已全部登记"
       return
     end
 
-    redirect_to admin_semester_klass_path(@sk), notice: "已预留 #{reserved} 名学员到 #{target.name}"
+    notice = "已预留 #{reserved} 名学员到 #{next_semester.name}，可在「预留表」中分班"
+    notice += "（跳过 #{skipped} 人）" if skipped.positive?
+    redirect_to admin_semester_klass_path(@sk), notice: notice
   end
 
   def show
@@ -273,17 +292,7 @@ class Admin::SemesterKlassesController < AdminController
     @reserve_grade_ids = reserve_grade_ids
     @reserve_grades = Grade.where(id: @reserve_grade_ids).order(:level).to_a
     @reserve_default_grade = @reserve_grades.find { |grade| grade.level == @sk.grade.level + 1 } || @sk.grade
-    @reserve_targets = if @next_semester
-      SemesterKlass.where(
-        semester_id: @next_semester.id, campuse_id: @sk.campuse_id,
-        grade_id: @reserve_grade_ids, subject_id: @sk.subject_id
-      ).includes(:grade, :teacher).to_a
-        .sort_by { |target| [ target.grade.level, target.genre, target.seq ] }
-    else
-      []
-    end
     @reserve_teachers = @sk.campuse.teachers.active.where(subject_id: @sk.subject_id).order(:name).to_a
-    @reserve_default_times = @next_semester ? reserve_default_times(@next_semester, @reserve_default_grade) : @sk.times.to_i
     @target_semester = @next_semester
     @active_counts = { @sk.id => @active_student_count }
     @students_by_grade = if @next_semester
@@ -340,53 +349,6 @@ class Admin::SemesterKlassesController < AdminController
     next_grade = Grade.find_by(level: @sk.grade.level + 1)
     ids << next_grade.id if next_grade
     ids
-  end
-
-  def reserve_target_for(next_semester)
-    if params[:target_semester_klass_id].present?
-      SemesterKlass.where(
-        semester_id: next_semester.id, campuse_id: @sk.campuse_id,
-        grade_id: reserve_grade_ids, subject_id: @sk.subject_id
-      ).find_by(id: params[:target_semester_klass_id])
-    else
-      create_reserve_target(next_semester)
-    end
-  end
-
-  def create_reserve_target(next_semester)
-    grade = Grade.find_by(id: params[:new_grade_id])
-    return nil if grade.blank? || !reserve_grade_ids.include?(grade.id)
-
-    teacher = @sk.campuse.teachers.active.find_by(id: params[:new_teacher_id], subject_id: @sk.subject_id)
-    genre = params[:new_genre].presence
-    return nil if teacher.blank? || !SemesterKlass::GENRE_MAP.value?(genre)
-
-    times = params[:new_times].to_i
-    times = reserve_default_times(next_semester, grade) if times <= 0
-
-    SemesterKlass.create!(
-      semester: next_semester,
-      campuse: @sk.campuse,
-      grade: grade,
-      subject: @sk.subject,
-      teacher: teacher,
-      genre: genre,
-      phase: @sk.phase,
-      seq: SemesterKlass.next_seq(
-        campuse_id: @sk.campuse_id, semester_id: next_semester.id,
-        grade_id: grade.id, subject_id: @sk.subject_id, genre: genre, phase: @sk.phase
-      ),
-      times: times
-    )
-  rescue ActiveRecord::RecordInvalid => e
-    Rails.logger.warn("预留创建目标班级失败：#{e.record.errors.full_messages.join("；")}")
-    nil
-  end
-
-  def reserve_default_times(next_semester, grade)
-    Current.school.grade_subjects.find_by(
-      semester_id: next_semester.id, grade_id: grade.id, subject_id: @sk.subject_id
-    )&.times || @sk.times.to_i
   end
 
   def configured_times_for(grade_id, subject_id)

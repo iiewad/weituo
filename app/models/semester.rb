@@ -16,6 +16,12 @@ class Semester < ApplicationRecord
     where(school_id: school_id).where(seq: ...current_semester.seq).order(seq: :desc)
   end
   has_many :semester_klasses, dependent: :destroy
+  # 学期删除后预留记录失去目标，一并删除，否则外键会拦住学校表单里的学期删除
+  has_many :reservations, dependent: :destroy
+
+  def self.ransackable_attributes(auth_object = nil)
+    [ "id", "name", "seq" ]
+  end
 
   # 学期顺序统一以 seq 为准
   def related_next_semester

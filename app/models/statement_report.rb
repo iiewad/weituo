@@ -118,6 +118,10 @@ class StatementReport
         .where(status: %w[normal filled], klass_students: { semester_klass_id: class_ids })
         .group("klass_students.semester_klass_id", "klass_students.student_id")
         .count
+
+      # 已登记预留表、但尚未排入下学期班级的学员：未预留原因要区分「未报」与「待分班」
+      @reserved_keys = Reservation.where(student_id: @student_info.keys)
+        .pluck(:semester_id, :subject_id, :student_id).to_set
     end
 
     def study_count(student_id, semester_id, subject_id)
@@ -230,6 +234,8 @@ class StatementReport
           "暂无下学期"
         elsif enrolled_next
           "下学期同科目班已上 #{study_count(id, next_semester_id, subject_id)} 次，未达 #{@reserve_min_attendances} 次"
+        elsif @reserved_keys.include?([ next_semester_id, subject_id, id ])
+          "已登记预留，待分班"
         else
           "下学期（#{next_semester&.name}）未报同科目"
         end

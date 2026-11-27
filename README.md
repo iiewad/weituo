@@ -49,6 +49,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 | 教师 | `Teacher` | 属于校区，带科目 |
 | 学员、监护人 | `Student` / `Guardian` | 属于校区，可带年级、日校、家庭住址；监护人可带关系与职业 |
 | 推荐关系 | `StudentReferral` / `student_referrals` | 学员之间的推荐入学关系，被推荐学员唯一 |
+| 预留 | `Reservation` / `reservations` | 学员 + 预留目标学期 + 年级 + 科目 + 班型 + 可选教师 + 来源班级（决定源学期与阶段），同一学员同一学期同一科目唯一；生成班级后记录 `semester_klass` |
 | 班级 | `SemesterKlass` / `semester_klasses` | 学期 + 阶段（一阶段 / 二阶段）+ 校区 + 年级 + 科目 + 班型 + 序号 |
 | 课次 | `Course` / `courses` | 班级下按 `seq` 排列的一节课，有 `start_date` 表示已开课 |
 | 报名 | `KlassStudent` / `klass_students` | 学员与班级的关系，状态 `in` / `out` / `transfer` |
@@ -181,6 +182,7 @@ stateDiagram-v2
 | `/admin/semester_klasses` | 班级管理 |
 | `/admin/semester_klasses/statement` | 班级报表 |
 | `/admin/semester_klasses/copy` | 复制班级（可选目标学期） |
+| `/admin/reservations` | 预留表（所有预留学员名单，按学期 / 年级 / 科目 / 班型 / 教师 / 状态筛选，一键生成分班） |
 | `/admin/teachers` | 教师管理 |
 | `/admin/users` | 用户管理 |
 | `/admin/schools` | 学校管理（校区、学期；年级科目已独立） |

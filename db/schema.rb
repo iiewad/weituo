@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_26_153941) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_27_023354) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -80,6 +80,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_26_153941) do
     t.index ["archived_at"], name: "index_klass_students_on_archived_at"
     t.index ["semester_klass_id", "student_id"], name: "index_klass_students_on_semester_klass_id_and_student_id", unique: true
     t.index ["student_id"], name: "index_klass_students_on_student_id"
+  end
+
+  create_table "reservations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "student_id", null: false
+    t.bigint "semester_id", null: false
+    t.bigint "subject_id", null: false
+    t.bigint "grade_id", null: false
+    t.bigint "teacher_id"
+    t.string "genre", null: false
+    t.bigint "source_semester_klass_id"
+    t.bigint "semester_klass_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["grade_id"], name: "index_reservations_on_grade_id"
+    t.index ["semester_id"], name: "index_reservations_on_semester_id"
+    t.index ["semester_klass_id"], name: "index_reservations_on_semester_klass_id"
+    t.index ["source_semester_klass_id"], name: "index_reservations_on_source_semester_klass_id"
+    t.index ["student_id", "semester_id", "subject_id"], name: "index_reservations_on_student_semester_subject", unique: true
+    t.index ["student_id"], name: "index_reservations_on_student_id"
+    t.index ["subject_id"], name: "index_reservations_on_subject_id"
+    t.index ["teacher_id"], name: "index_reservations_on_teacher_id"
   end
 
   create_table "schools", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -206,6 +227,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_26_153941) do
   add_foreign_key "guardians", "students"
   add_foreign_key "klass_students", "semester_klasses"
   add_foreign_key "klass_students", "students"
+  add_foreign_key "reservations", "grades"
+  add_foreign_key "reservations", "semester_klasses", column: "source_semester_klass_id", on_delete: :nullify
+  add_foreign_key "reservations", "semester_klasses", on_delete: :nullify
+  add_foreign_key "reservations", "semesters"
+  add_foreign_key "reservations", "students"
+  add_foreign_key "reservations", "subjects"
+  add_foreign_key "reservations", "teachers"
   add_foreign_key "semester_klasses", "campuses"
   add_foreign_key "semester_klasses", "grades"
   add_foreign_key "semester_klasses", "semesters"
