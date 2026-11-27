@@ -22,7 +22,7 @@ class Admin::SemesterKlassesController < AdminController
     @semesters = Semester.where(school_id: Current.school.id)
   end
 
-  # 班级报表：调整本校区「预留」的最少上课次数
+  # 班级预留报表：调整本校区「预留」的最少上课次数
   def update_reserve_setting
     value = Integer(params[:reserve_min_attendances].to_s, exception: false)
     if value.nil? || value.negative?
@@ -50,7 +50,7 @@ class Admin::SemesterKlassesController < AdminController
       semester: Current.semester,
       filter_summary: statement_filter_summary
     ).to_xlsx,
-      filename: "班级报表-#{Current.semester.name}-#{Current.campuse.name}.xlsx",
+      filename: "班级预留报表-#{Current.semester.name}-#{Current.campuse.name}.xlsx",
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       disposition: "attachment"
   end

@@ -24,9 +24,9 @@ class SidebarTest < ApplicationSystemTestCase
   test "图标条状态下仍可通过图标导航" do
     find("[data-sidebar-toggle]").click
 
-    find("a[title='班级报表']").click
+    find("a[title='班级预留报表']").click
 
     assert_current_path statement_admin_semester_klasses_path
-    assert_text "班级报表"
+    assert_text "班级预留报表"
   end
 end

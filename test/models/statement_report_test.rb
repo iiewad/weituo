@@ -16,14 +16,9 @@ class StatementReportModelTest < ActiveSupport::TestCase
       assert_equal sk.current_active_students.count, row.active_count
       assert_equal sk.reserve_students.size, row.reserve_count
       assert_equal row.reserve_count + row.unreserved_count, row.active_count
-      assert_equal row.new_students.size, row.new_count
-      assert_equal row.expand_students.size, row.expand_count
-      assert_equal row.reserve_students.size, row.reserve_count
       assert_equal row.unreserved_students.size, row.unreserved_count
 
       if row.active_count.positive?
-        assert_equal (row.new_count.to_f / row.active_count).round(2), row.new_rate
-        assert_equal (row.expand_count.to_f / row.active_count).round(2), row.expand_rate
         assert_equal (row.reserve_count.to_f / row.active_count).round(2), row.reserve_rate
       end
     end
@@ -94,8 +89,6 @@ class StatementReportModelTest < ActiveSupport::TestCase
 
     assert_equal report.rows.size, summary[:class_count]
     assert_equal report.rows.sum(&:active_count), summary[:active_count]
-    assert_kind_of Float, summary[:new_rate]
-    assert_kind_of Float, summary[:expand_rate]
     assert_kind_of Float, summary[:reserve_rate]
   end
 end

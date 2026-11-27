@@ -3,18 +3,10 @@ class StatementReport
   RosterEntry = Struct.new(:name, :tags, keyword_init: true)
 
   Row = Struct.new(
-    :semester_klass, :active_count, :new_count, :expand_count, :reserve_count, :unreserved_count,
-    :active_students, :new_students, :expand_students, :reserve_students, :unreserved_students,
+    :semester_klass, :active_count, :reserve_count, :unreserved_count,
+    :active_students, :reserve_students, :unreserved_students,
     keyword_init: true
   ) do
-    def new_rate
-      rate(new_count)
-    end
-
-    def expand_rate
-      rate(expand_count)
-    end
-
     def reserve_rate
       rate(reserve_count)
     end
@@ -50,8 +42,6 @@ class StatementReport
     {
       class_count: current_rows.size,
       active_count: current_rows.sum(&:active_count),
-      new_rate: average(current_rows, :new_rate),
-      expand_rate: average(current_rows, :expand_rate),
       reserve_rate: average(current_rows, :reserve_rate)
     }
   end
@@ -64,17 +54,9 @@ class StatementReport
     end
 
     def build_semester_index
-      @history_semester_ids = {}
-      @previous_semester_ids = {}
       @next_semester_ids = {}
 
       @semesters.each do |semester|
-        @history_semester_ids[semester.id] = @semesters.select { |other|
-          other.seq < semester.seq
-        }.map(&:id)
-        @previous_semester_ids[semester.id] = @semesters.select { |other|
-          other.seq < semester.seq
-        }.max_by(&:seq)&.id
         @next_semester_ids[semester.id] = @semesters.select { |other|
           other.seq > semester.seq
         }.min_by(&:seq)&.id
@@ -84,9 +66,7 @@ class StatementReport
     # 一次取回本校区所有在班报名，避免逐班级查询学员与历史数据
     def load_student_data
       @active_student_ids = Hash.new { |hash, key| hash[key] = [] }
-      @semester_student_ids = Hash.new { |hash, key| hash[key] = [] }
       @semester_subject_student_ids = Hash.new { |hash, key| hash[key] = [] }
-      @student_semester_classes = Hash.new { |hash, key| hash[key] = [] }
       @student_semester_subject_classes = Hash.new { |hash, key| hash[key] = [] }
       @class_details = SemesterKlass.where(campuse_id: @campuse.id)
         .includes(:grade, :subject, :teacher)
@@ -101,9 +81,7 @@ class StatementReport
           "klass_students.student_id"
         ).each do |semester_id, subject_id, semester_klass_id, student_id|
           @active_student_ids[semester_klass_id] << student_id
-          @semester_student_ids[semester_id] << student_id
           @semester_subject_student_ids[[ semester_id, subject_id ]] << student_id
-          @student_semester_classes[[ semester_id, student_id ]] << semester_klass_id
           @student_semester_subject_classes[[ semester_id, subject_id, student_id ]] << semester_klass_id
         end
 
@@ -134,14 +112,6 @@ class StatementReport
 
     def build_row(semester_klass)
       active_ids = @active_student_ids[semester_klass.id].uniq
-      history_ids = @history_semester_ids[semester_klass.semester_id]
-        .flat_map { |id| @semester_student_ids[id] }.uniq
-      new_ids = active_ids - history_ids
-
-      previous_semester_id = @previous_semester_ids[semester_klass.semester_id]
-      previous_all_ids = previous_semester_id ? @semester_student_ids[previous_semester_id].uniq : []
-      previous_subject_ids = previous_semester_id ? @semester_subject_student_ids[[ previous_semester_id, semester_klass.subject_id ]].uniq : []
-      expand_ids = (active_ids & previous_all_ids) - previous_subject_ids
 
       next_semester_id = @next_semester_ids[semester_klass.semester_id]
       next_subject_ids = next_semester_id ? @semester_subject_student_ids[[ next_semester_id, semester_klass.subject_id ]].uniq : []
@@ -153,73 +123,27 @@ class StatementReport
       Row.new(
         semester_klass:,
         active_count: active_ids.size,
-        new_count: new_ids.size,
-        expand_count: expand_ids.size,
         reserve_count: reserve_ids.size,
         unreserved_count: unreserved_ids.size,
-        active_students: roster_entries(active_ids, new_ids, expand_ids, reserve_ids),
-        new_students: new_entries(new_ids),
-        expand_students: expand_entries(expand_ids, previous_semester_id, semester_klass.subject_id),
+        active_students: roster_entries(active_ids, reserve_ids),
         reserve_students: reserve_entries(reserve_ids, next_semester_id, semester_klass.subject_id),
         unreserved_students: unreserved_entries(unreserved_ids, next_semester_id, semester_klass.subject_id)
       )
     end
 
-    # 在班名单附带该学员在本班的新增/拓科/预留标签，便于对照
-    def roster_entries(ids, new_ids, expand_ids, reserve_ids)
+    # 在班名单附带该学员在本班的预留标签，便于对照
+    def roster_entries(ids, reserve_ids)
       entries = ids.filter_map { |id|
         student = @student_info[id]
         next unless student
 
-        tags = []
-        tags << "新增" if new_ids.include?(id)
-        tags << "拓科" if expand_ids.include?(id)
-        tags << (reserve_ids.include?(id) ? "预留" : "未预留")
+        tags = [ reserve_ids.include?(id) ? "预留" : "未预留" ]
 
         RosterEntry.new(name: student.identity_label, tags:)
       }
 
       # 未预留学员排在名单前面，便于一眼看到需要跟进的学员
       entries.sort_by { |entry| [ entry.tags.include?("未预留") ? 0 : 1, entry.name ] }
-    end
-
-    def new_entries(ids)
-      ids.filter_map { |id|
-        student = @student_info[id]
-        next unless student
-
-        detail = [
-          student.in_date ? "入学 #{student.in_date.strftime("%Y-%m-%d")}" : nil,
-          student.day_school&.name,
-          "历史学期无记录"
-        ].compact.join(" · ")
-
-        Entry.new(name: student.identity_label, detail:)
-      }.sort_by(&:name)
-    end
-
-    def expand_entries(ids, previous_semester_id, subject_id)
-      previous_semester = @semesters_by_id[previous_semester_id]
-
-      ids.filter_map { |id|
-        student = @student_info[id]
-        next unless student
-
-        class_ids = @student_semester_classes[[ previous_semester_id, id ]].uniq -
-          @student_semester_subject_classes[[ previous_semester_id, subject_id, id ]].uniq
-        labels = class_ids.map { |class_id|
-          semester_klass = @class_details[class_id]
-          "#{semester_klass.subject.name}(#{semester_klass.teacher.name})"
-        }.uniq
-
-        detail = if labels.any?
-          "上学期（#{previous_semester&.name}）：#{labels.join("、")}"
-        else
-          "上学期没有其他科目记录"
-        end
-
-        Entry.new(name: student.identity_label, detail:)
-      }.sort_by(&:name)
     end
 
     def unreserved_entries(ids, next_semester_id, subject_id)

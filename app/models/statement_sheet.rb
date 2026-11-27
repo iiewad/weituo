@@ -5,7 +5,7 @@ class StatementSheet
   HEADER_ROW = 4
   DATA_START_ROW = 5
 
-  HEADERS = %w[学期 年级 科目 教师 班型 班级 在班 新增 新增率(%) 拓科 拓科率(%) 预留 预留率(%)]
+  HEADERS = %w[学期 年级 科目 教师 班型 班级 在班 预留 预留率(%)]
 
   DETAIL_TITLE_ROW = 1
   DETAIL_FILTER_ROW = 2
@@ -27,7 +27,7 @@ class StatementSheet
     workbook = package.workbook
     styles = build_styles(workbook)
 
-    workbook.add_worksheet(name: "班级报表") do |sheet|
+    workbook.add_worksheet(name: "班级预留报表") do |sheet|
       build_header(sheet, styles)
       build_rows(sheet, styles)
       decorate(sheet)
@@ -62,18 +62,16 @@ class StatementSheet
     end
 
     def build_header(sheet, styles)
-      sheet.add_row([ "#{@semester.name} · 班级报表" ], style: styles[:title])
+      sheet.add_row([ "#{@semester.name} · 班级预留报表" ], style: styles[:title])
       sheet.merge_cells("A#{TITLE_ROW}:#{last_column}#{TITLE_ROW}")
 
       info = [
         "校区", @campuse.name,
         "班级", "#{@summary[:class_count]} 个",
         "在班", "#{@summary[:active_count]} 人次",
-        "平均新增", "#{@summary[:new_rate]}%",
-        "平均拓科", "#{@summary[:expand_rate]}%",
         "平均预留", "#{@summary[:reserve_rate]}%"
       ]
-      sheet.add_row(info, style: [ styles[:label], styles[:value] ] * 6)
+      sheet.add_row(info, style: [ styles[:label], styles[:value] ] * 4)
 
       sheet.add_row([ "筛选条件：#{@filter_summary}" ], style: styles[:value])
       sheet.merge_cells("A#{FILTER_ROW}:#{last_column}#{FILTER_ROW}")
@@ -99,24 +97,19 @@ class StatementSheet
             SemesterKlass::GENRE_MAP_REVERSE[sk.genre],
             sk.name,
             row.active_count,
-            row.new_count,
-            (row.new_rate * 100).round(1),
-            row.expand_count,
-            (row.expand_rate * 100).round(1),
             row.reserve_count,
             (row.reserve_rate * 100).round(1)
           ],
           style: [
             styles[:cell], styles[:cell], styles[:cell], styles[:cell], styles[:cell],
-            styles[:name], styles[:cell], styles[:cell], styles[:cell], styles[:cell],
-            styles[:cell], styles[:cell], styles[:cell]
+            styles[:name], styles[:cell], styles[:cell], styles[:cell]
           ]
         )
       end
     end
 
     def build_detail_header(sheet, styles)
-      sheet.add_row([ "新增 / 拓科 / 预留学员明细" ], style: styles[:title])
+      sheet.add_row([ "预留学员明细" ], style: styles[:title])
       sheet.merge_cells("A#{DETAIL_TITLE_ROW}:#{detail_last_column}#{DETAIL_TITLE_ROW}")
 
       sheet.add_row([ "筛选条件：#{@filter_summary}" ], style: styles[:value])
@@ -131,8 +124,6 @@ class StatementSheet
       @rows.each do |row|
         sk = row.semester_klass
         [
-          [ "新增", row.new_students ],
-          [ "拓科", row.expand_students ],
           [ "预留", row.reserve_students ]
         ].each do |type, entries|
           entries.each do |entry|
@@ -174,7 +165,7 @@ class StatementSheet
       end
       sheet.column_widths(16, 10, 14, 10, 10, 8, 14, 48)
 
-      detail_row_count = @rows.sum { |row| row.new_students.size + row.expand_students.size + row.reserve_students.size }
+      detail_row_count = @rows.sum { |row| row.reserve_students.size }
       return if detail_row_count.zero?
 
       data_end_row = DETAIL_DATA_START_ROW + detail_row_count - 1
@@ -194,7 +185,7 @@ class StatementSheet
         pane.y_split = HEADER_ROW
         pane.active_pane = :bottom_right
       end
-      sheet.column_widths(16, 10, 10, 10, 10, 14, 8, 8, 10, 8, 10, 8, 10)
+      sheet.column_widths(16, 10, 10, 10, 10, 14, 8, 8, 10)
 
       return if @rows.empty?
 

@@ -13,12 +13,12 @@ class NavigationTest < ApplicationSystemTestCase
     assert_no_text "7_学生2"
   end
 
-  test "班级报表展示汇总卡与表格" do
+  test "班级预留报表展示汇总卡与表格" do
     visit statement_admin_semester_klasses_path
 
-    assert_text "班级报表"
+    assert_text "班级预留报表"
     assert_text "统计班级"
-    assert_text "平均新增率"
+    assert_text "平均预留率"
     assert_selector "table"
   end
 

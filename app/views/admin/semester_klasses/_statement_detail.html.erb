@@ -11,14 +11,12 @@
       <span class="badge badge-outline <%= sk.genre_badge_class %> badge-sm shrink-0"><%= SemesterKlass::GENRE_MAP_REVERSE[sk.genre] %></span>
     </div>
 
-    <div class="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+    <div class="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
       <div class="rounded-box bg-base-200/60 p-2.5">
         <p class="text-base-content/50">在班</p>
         <p class="mt-0.5 text-lg font-semibold"><%= row.active_count %><span class="ml-0.5 text-[11px] font-normal text-base-content/40">人</span></p>
       </div>
       <% [
-        [ "新增", row.new_count, row.new_rate, "" ],
-        [ "拓科", row.expand_count, row.expand_rate, "" ],
         [ "预留", row.reserve_count, row.reserve_rate, "" ],
         [ "未预留", row.unreserved_count, row.unreserved_rate, "text-warning" ]
       ].each do |label, count, rate, color| %>
@@ -53,8 +51,6 @@
     <h3 class="text-sm font-semibold">学员构成</h3>
     <div class="mt-3 space-y-3.5">
       <% [
-        [ "新增", row.new_count, row.new_rate, row.new_students, "bg-accent" ],
-        [ "拓科", row.expand_count, row.expand_rate, row.expand_students, "bg-secondary" ],
         [ "预留", row.reserve_count, row.reserve_rate, row.reserve_students, "bg-primary" ]
       ].each do |label, count, rate, students, color| %>
         <% pct = (rate * 100).round(1) %>
@@ -93,8 +89,6 @@
     <% if row.active_students.any? %>
       <%
         tag_styles = {
-          "新增" => "badge-soft badge-accent",
-          "拓科" => "badge-soft badge-secondary",
           "预留" => "badge-soft badge-primary",
           "未预留" => "badge-soft badge-warning"
         }

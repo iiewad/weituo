@@ -94,10 +94,10 @@ class Admin::DashboardsController < AdminController
         },
         {
           title: "看报表、做续报",
-          description: "在班级报表查看新增 / 拓科 / 预留率；用「预留」或「复制」把当前学员带到下学期。",
+          description: "在班级预留报表查看预留率；用「预留」或「复制」把当前学员带到下学期。",
           done: nil,
           link: statement_admin_semester_klasses_path,
-          link_text: "班级报表"
+          link_text: "班级预留报表"
         }
       ]
 

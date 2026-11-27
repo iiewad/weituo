@@ -36,9 +36,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get statement_admin_semester_klasses_path
 
     assert_response :success
-    assert_select "h1", text: "班级报表"
-    assert_select "th", text: "新增率"
-    assert_select "th", text: "拓科率"
+    assert_select "h1", text: "班级预留报表"
     assert_select "th", text: "预留率"
     assert_select "tbody tr", count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
     assert_select "h3", text: /学员构成/, count: SemesterKlass.where(campuse_id: campuses(:campuse_1).id).count
@@ -588,9 +586,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     workbook = Zip::File.open_buffer(StringIO.new(response.body))
     strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
-    assert_includes strings, "班级报表"
-    assert_includes strings, "新增率(%)"
-    assert_includes strings, "拓科率(%)"
+    assert_includes strings, "班级预留报表"
     assert_includes strings, "预留率(%)"
     assert_includes strings, semester_klasses(:sk_math_2).name
     assert_includes strings, "筛选条件：全部班级"
