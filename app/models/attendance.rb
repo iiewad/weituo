@@ -31,15 +31,16 @@ class Attendance < ApplicationRecord
 
     event :mark_rejoin do
       after do
-        # 与班级页「撤销」共用 KlassStudent#reinstate! 的语义：只撤销最近一段连续退/转
-        klass_student.reinstate!(attendance: self)
+        # 从当前课次起恢复在班，之前缺的课保留退/转历史
+        klass_student.reinstate!
       end
       transitions from: [ :quit, :transfer ], to: :normal
     end
 
-    # 补课销假
+    # 补课销假：只针对缺课/请假后补课。退课/转出学员回来上课应走「重新加入」，
+    # 否则考勤记为补课但报名仍是 out/transfer，后续课次继续生成退/转状态。
     event :mark_filled do
-      transitions from: [ :absent, :personal_leave, :sick_leave, :quit, :transfer ], to: :filled
+      transitions from: [ :absent, :personal_leave, :sick_leave ], to: :filled
     end
 
     event :mark_quit do

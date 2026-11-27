@@ -423,6 +423,22 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_includes card.text, "转出"
   end
 
+  test "show does not offer filled for quit or transferred students" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_quit!
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
+    assert_includes card.text, "重新加入"
+    assert_not_includes card.text, "补课销假"
+  end
+
   test "show disables transfer when the class has no target class" do
     sk = SemesterKlass.create!(
       semester: semesters(:semester_current), campuse: campuses(:campuse_1),

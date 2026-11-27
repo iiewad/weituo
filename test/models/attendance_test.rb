@@ -146,6 +146,46 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "in", klass_students(:ks_1).reload.status
   end
 
+  test "mark rejoin from a later course still releases the transfer target" do
+    source = klass_students(:ks_1)
+    target_sk = semester_klasses(:sk_eng_1)
+    target = KlassStudent.create!(semester_klass: target_sk, student: students(:student_7_1), status: "in")
+    first = courses(:sk_1_course_1)
+    second = courses(:sk_1_course_2)
+    third = courses(:sk_1_course_3)
+    [ first, second, third ].each(&:start!)
+
+    transfer_row = attendance_for(first)
+    transfer_row.mark_transfer!
+    transfer_row.update!(transfer_target_klass_id: target_sk.id)
+
+    attendance_for(third).mark_rejoin!
+
+    assert_equal "in", source.reload.status
+    assert_equal "transfer", attendance_for(first).status
+    assert_equal "normal", attendance_for(third).status
+    assert_nil attendance_for(first).reload.transfer_target_klass_id
+    assert target.reload.archived_at.present?
+  end
+
+  test "filled is not allowed from quit or transfer" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    later.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_quit!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_filled! }
+    assert_equal "quit", attendance.reload.status
+
+    attendance.mark_rejoin!
+    later_attendance = attendance_for(later)
+    later_attendance.mark_transfer!
+    assert_raises(AASM::InvalidTransition) { later_attendance.mark_filled! }
+    assert_equal "transfer", later_attendance.reload.status
+  end
+
   test "personal leave can still be marked quit" do
     course = courses(:sk_1_course_1)
     course.start!
