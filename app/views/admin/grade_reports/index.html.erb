@@ -1,0 +1,126 @@
+<% content_for :page_title, "年级报表" %>
+<% content_for :page_subtitle, "分学期 · 分年级的新增 / 拓科 / 回流汇总" %>
+<% content_for :breadcrumb do %><span>年级报表</span><% end %>
+<% content_for :page_actions do %>
+  <%= link_to export_admin_grade_reports_path(semester_id: params[:semester_id].presence), class: "btn btn-xs btn-outline btn-primary", data: { turbo: false } do %>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+    导出报表
+  <% end %>
+<% end %>
+
+<%
+  metrics = [
+    [ "新增", :new_count, :new_rate, "bg-secondary" ],
+    [ "拓科", :expand_count, :expand_rate, "bg-accent" ],
+    [ "回流", :return_count, :return_rate, "bg-info" ]
+  ]
+%>
+
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-base-content/60">
+  <span class="badge badge-soft badge-primary badge-sm">口径</span>
+  <span><b class="text-base-content/80">新增</b>：历史学期无入班记录</span>
+  <span><b class="text-base-content/80">拓科</b>：延续上学期科目，且本学期新增科目</span>
+  <span><b class="text-base-content/80">回流</b>：上学期未入班，但更早学期有入班记录</span>
+</div>
+
+<div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">覆盖学期</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @summary[:semester_count] %><span class="ml-1 text-sm font-normal text-base-content/50">个</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-full rounded-full bg-primary"></span></p>
+  </div>
+  <div class="wt-surface p-4">
+    <p class="text-xs text-base-content/50">在班学员</p>
+    <p class="mt-1 text-2xl font-semibold"><%= @summary[:active_count] %><span class="ml-1 text-sm font-normal text-base-content/50">人次</span></p>
+    <p class="mt-2 h-1 w-full rounded-full bg-base-200"><span class="block h-1 w-2/3 rounded-full bg-base-content/30"></span></p>
+  </div>
+  <% [
+    [ "新增", @summary[:new_count], "bg-secondary", "bg-secondary/20" ],
+    [ "拓科", @summary[:expand_count], "bg-accent", "bg-accent/20" ],
+    [ "回流", @summary[:return_count], "bg-info", "bg-info/20" ]
+  ].each do |label, count, color, track| %>
+    <div class="wt-surface p-4">
+      <p class="text-xs text-base-content/50"><%= label %></p>
+      <p class="mt-1 text-2xl font-semibold"><%= count %><span class="ml-1 text-sm font-normal text-base-content/50">人次</span></p>
+      <p class="mt-2 h-1 w-full rounded-full <%= track %>"><span class="block h-1 w-1/3 rounded-full <%= color %>"></span></p>
+    </div>
+  <% end %>
+</div>
+
+<%= form_with url: admin_grade_reports_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3" do %>
+  <div>
+    <%= label_tag :semester_id, "学期", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+    <%= select_tag :semester_id,
+          options_from_collection_for_select(@semesters, :id, :name, params[:semester_id]),
+          include_blank: "全部学期",
+          class: "select select-sm w-44",
+          onchange: "this.form.requestSubmit()" %>
+  </div>
+  <% if params[:semester_id].present? %>
+    <%= link_to "清除筛选", admin_grade_reports_path, class: "btn btn-xs btn-ghost" %>
+  <% end %>
+<% end %>
+
+<div class="wt-surface overflow-x-auto">
+  <table class="table table-sm">
+    <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
+      <tr>
+        <th>年级</th>
+        <th>在班</th>
+        <th>新增</th>
+        <th>拓科</th>
+        <th>回流</th>
+        <th class="text-right">详情</th>
+      </tr>
+    </thead>
+    <% @groups.each do |semester, group_rows, totals| %>
+      <tbody>
+        <tr class="bg-base-200/40">
+          <th colspan="6">
+            <span class="badge badge-ghost badge-sm whitespace-nowrap"><%= semester.name %></span>
+          </th>
+        </tr>
+        <% group_rows.each do |row| %>
+          <tr class="hover:bg-base-200/40">
+            <td><span class="badge badge-outline badge-primary badge-sm font-semibold"><%= row.grade.name %></span></td>
+            <td class="font-semibold"><%= row.active_count %><span class="ml-0.5 text-xs font-normal text-base-content/50">人</span></td>
+            <% metrics.each do |label, count_method, rate_method, color| %>
+              <% pct = (row.public_send(rate_method) * 100).round(1) %>
+              <% count = row.public_send(count_method) %>
+              <td title="<%= label %> <%= count %> / 在班 <%= row.active_count %>">
+                <div class="flex items-center gap-2">
+                  <span class="h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-base-200">
+                    <span class="block h-full rounded-full <%= color %>" style="width: <%= pct.clamp(0, 100) %>%"></span>
+                  </span>
+                  <span class="flex flex-col leading-tight">
+                    <span class="text-xs font-medium"><%= pct %>%</span>
+                    <span class="text-[10px] text-base-content/40"><%= count %>/<%= row.active_count %></span>
+                  </span>
+                </div>
+              </td>
+            <% end %>
+            <td class="text-right">
+              <%= render "admin/shared/drawer", item: row.grade,
+                    drawer_id: "grade-report-drawer-#{row.semester.id}-#{row.grade.id}",
+                    button_name: "详情",
+                    drawer_width: "240",
+                    drawer_content: "admin/grade_reports/detail",
+                    drawer_locals: { row: row } %>
+            </td>
+          </tr>
+        <% end %>
+        <tr class="bg-base-200/30 text-xs font-semibold">
+          <td><%= semester.name %>小计</td>
+          <td><%= totals.active_count %><span class="ml-0.5 font-normal text-base-content/50">人</span></td>
+          <% metrics.each do |_, count_method, _, _| %>
+            <td><%= totals.public_send(count_method) %><span class="ml-0.5 font-normal text-base-content/50">人</span></td>
+          <% end %>
+          <td></td>
+        </tr>
+      </tbody>
+    <% end %>
+  </table>
+  <% if @rows.empty? %>
+    <div class="p-12 text-center text-sm text-base-content/50">当前筛选条件下没有年级数据</div>
+  <% end %>
+</div>

@@ -77,6 +77,9 @@ Rails.application.routes.draw do
     resources :referrals, only: [ :index ] do
       collection { get :export }
     end
+    resources :grade_reports, only: [ :index ] do
+      collection { get :export }
+    end
     resources :grade_subjects, only: [ :index ] do
       collection do
         put :sync

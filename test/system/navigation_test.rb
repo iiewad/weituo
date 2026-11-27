@@ -22,6 +22,16 @@ class NavigationTest < ApplicationSystemTestCase
     assert_selector "table"
   end
 
+  test "年级报表展示口径与分学期表格" do
+    visit admin_grade_reports_path
+
+    assert_text "年级报表"
+    assert_text "口径"
+    assert_text semesters(:semester_current).name
+    assert_selector "table"
+    assert_selector "label.drawer-button", text: "详情"
+  end
+
   test "顶栏切换学期后班级列表随之更新" do
     visit admin_semester_klasses_path
     assert_text semester_klasses(:sk_math_2).name
