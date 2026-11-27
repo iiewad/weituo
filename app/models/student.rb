@@ -42,8 +42,9 @@ class Student < ApplicationRecord
   # mark_previous_absent: 入班课次之前的课次是否补记缺课；转出到目标班时传 false
   # reinstate: 已有报名处于退课/转出时是否恢复在班；从转入班反向转回原班时传 true
   # transfer_from: 转入来源班；非空时记录来源班与入班课次，供转入班展示转入信息
-  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true, reinstate: false, transfer_from: nil)
-    return if !allow_grade_mismatch && sk.grade_id != grade_id
+  def join_klass(sk, course_seq: 1, mark_previous_absent: true, reinstate: false, transfer_from: nil)
+    # 学员年级与班级年级一致才可进班；预留分班须先把学员升级到目标年级
+    return if sk.grade_id != grade_id
     return if sk.campuse_id != campuse_id
 
     course = sk.courses.find_by(seq: course_seq)

@@ -96,8 +96,8 @@ class Admin::SemesterKlassesController < AdminController
     )
 
     if @sk.save
-      added, created, skipped = apply_students(@sk)
-      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级创建成功", added, created, skipped)
+      added, created, skipped, grade_mismatch = apply_students(@sk)
+      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级创建成功", added, created, skipped, grade_mismatch)
     else
       redirect_to admin_semester_klasses_path, alert: "班级创建失败，#{@sk.errors.full_messages.join("；")}"
     end
@@ -116,8 +116,8 @@ class Admin::SemesterKlassesController < AdminController
     attrs[:times] = @sk.times if attrs[:times].blank?
 
     if @sk.update(attrs)
-      added, created, skipped = apply_students(@sk)
-      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级更新成功", added, created, skipped)
+      added, created, skipped, grade_mismatch = apply_students(@sk)
+      redirect_to admin_semester_klass_path(@sk), notice: klass_saved_notice("班级更新成功", added, created, skipped, grade_mismatch)
     else
       redirect_to admin_semester_klasses_path, alert: "班级更新失败，#{@sk.errors.full_messages.join("；")}"
     end
@@ -362,15 +362,18 @@ class Admin::SemesterKlassesController < AdminController
     end
 
     student_ids = Array(params[:student_ids]).reject(&:blank?)
-    return [ 0, 0, 0 ] if student_ids.empty?
+    return [ 0, 0, 0, 0 ] if student_ids.empty?
 
     max_seq = [ semester_klass.times.to_i, 1 ].max
     join_seq = [ [ params[:join_course_seq].to_i, 1 ].max, max_seq ].min
-    joined = Student.where(id: student_ids, campuse_id: semester_klass.campuse_id, grade_id: semester_klass.grade_id)
-      .where.not(id: semester_klass.klass_students.select(:student_id)).to_a
+    candidates = Student.where(id: student_ids, campuse_id: semester_klass.campuse_id)
+      .where.not(id: semester_klass.klass_students.select(:student_id))
+    joined = candidates.where(grade_id: semester_klass.grade_id).to_a
+    # 年级与班级不符的学员不能进班，统计后在结果里明确提示，不再静默丢弃
+    grade_mismatch = candidates.count - joined.size
     joined.each { |student| student.join_klass(semester_klass, course_seq: join_seq) }
 
-    [ joined.size, 0, 0 ]
+    [ joined.size, 0, 0, grade_mismatch ]
   end
 
   # 粘贴名单：每行「姓名」或「姓名,入班课次」；课次留空用表单里的入班课次。
@@ -416,7 +419,7 @@ class Admin::SemesterKlassesController < AdminController
       added += 1
     end
 
-    [ added, created, skipped ]
+    [ added, created, skipped, 0 ]
   end
 
   # 兼容「姓名,课次」「姓名 课次」两种写法
@@ -427,11 +430,12 @@ class Admin::SemesterKlassesController < AdminController
     [ parts[0].to_s, (seq.positive? ? seq : nil) ]
   end
 
-  def klass_saved_notice(base, added, created, skipped)
+  def klass_saved_notice(base, added, created, skipped, grade_mismatch = 0)
     parts = []
     parts << "已加入 #{added} 名学员" if added.positive?
     parts << "其中新建 #{created} 名学员" if created.positive?
     parts << "跳过 #{skipped} 行（已在班或姓名无效）" if skipped.positive?
+    parts << "#{grade_mismatch} 人因年级与班级不符未加入" if grade_mismatch.positive?
     parts.empty? ? base : "#{base}，#{parts.join("，")}"
   end
 

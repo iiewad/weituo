@@ -65,7 +65,7 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal 4, target_ks.transfer_in_seq
   end
 
-  test "join klass can allow a grade mismatch for reservations" do
+  test "join klass requires the student grade to match even for next semester classes" do
     student = students(:student_7_1)
     target = SemesterKlass.create!(
       semester: semesters(:semester_next), campuse: campuses(:campuse_1),
@@ -73,10 +73,15 @@ class StudentTest < ActiveSupport::TestCase
       genre: "TG", seq: 3, times: 1
     )
 
+    # 预留分班不再放宽年级：未升级到目标年级不能进班
     assert_nil student.join_klass(target)
-    assert student.join_klass(target, allow_grade_mismatch: true)
+    assert_not target.klass_students.exists?(student_id: student.id)
+
+    # 升级到目标年级后才能进班，且不改动其它属性
+    student.update!(grade: grades(:grade_8))
+    assert student.join_klass(target)
     assert target.klass_students.exists?(student_id: student.id)
-    assert_equal grades(:grade_7), student.reload.grade
+    assert_equal grades(:grade_8), student.reload.grade
   end
 
   test "update grade moves to the next level and stops at the top" do

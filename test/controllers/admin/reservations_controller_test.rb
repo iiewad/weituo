@@ -97,6 +97,9 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "generate creates a next semester class and enrolls the reserved students" do
+    # 学员年级与班级年级一致才可进班：须先升级到目标年级（八年级）
+    @student.update!(grade: grades(:grade_8))
+    @other.update!(grade: grades(:grade_8))
     reserve(@student, genre: "JY")
     reserve(@other, genre: "JY")
 
@@ -113,8 +116,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal teachers(:math_teacher_1), klass.teacher
     assert_equal [ @student.id, @other.id ].sort, klass.klass_students.pluck(:student_id).sort
     assert Reservation.where(student: [ @student, @other ]).all? { |reservation| reservation.semester_klass == klass }
-    # 分班不修改学员现年级
-    assert_equal grades(:grade_7), @student.reload.grade
+    # 分班不改动学员年级
+    assert_equal grades(:grade_8), @student.reload.grade
 
     # 已生成的分组不再重复生成
     assert_no_difference -> { SemesterKlass.count } do
@@ -123,7 +126,37 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_match "没有待分班的预留学员", flash[:alert]
   end
 
+  test "generate refuses when no student has been promoted to the target grade" do
+    reserve(@student, genre: "JY") # 七年级学员，目标八年级，未升级
+
+    assert_no_difference -> { SemesterKlass.count } do
+      post generate_admin_reservations_path, params: group_params("JY")
+    end
+
+    assert_redirected_to admin_reservations_path
+    assert_match "尚未升级", flash[:alert]
+    assert Reservation.pending.exists?(student: @student)
+  end
+
+  test "generate enrolls promoted students and skips those not yet promoted" do
+    @student.update!(grade: grades(:grade_8)) # 已升级
+    reserve(@student, genre: "JY")
+    reserve(@other, genre: "JY") # 仍为七年级
+
+    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
+      post generate_admin_reservations_path, params: group_params("JY")
+    end
+
+    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
+    assert_equal [ @student.id ], klass.klass_students.pluck(:student_id)
+    assert_match "加入 1 名预留学员", flash[:notice]
+    assert_match "1 名未升级", flash[:notice]
+    # 未升级学员的预留保持待分班，升级后可再次生成
+    assert Reservation.pending.exists?(student: @other)
+  end
+
   test "generate keeps the list filters" do
+    @student.update!(grade: grades(:grade_8))
     reserve(@student, genre: "JY")
 
     post generate_admin_reservations_path, params: group_params("JY").merge(q: { genre_eq: "JY" }, status: "pending")
@@ -132,6 +165,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "generate only moves its own group" do
+    @student.update!(grade: grades(:grade_8))
     reserve(@student, genre: "JY")
     reserve(@other, genre: "TG")
 
@@ -153,6 +187,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "reservations without a teacher pick it when generating" do
+    @student.update!(grade: grades(:grade_8))
+    @other.update!(grade: grades(:grade_8))
     reserve(@student, genre: "JY", teacher: nil)
     reserve(@other, genre: "JY", teacher: nil)
     switch_to_semester(semesters(:semester_next))
@@ -196,6 +232,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_select "tbody tr", count: 1
     assert_select "td", text: /#{@student.identity_label}/
 
+    # 升级到目标年级后才能生成进班
+    @student.update!(grade: grades(:grade_8))
     assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
       post generate_admin_reservations_path, params: group_params("JY")
     end
@@ -328,6 +366,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "batch_enroll generates one class per group and enrolls only selected students" do
+    @student.update!(grade: grades(:grade_8))
+    @other.update!(grade: grades(:grade_8))
     first = reserve(@student, genre: "JY")
     second = reserve(@other, genre: "JY")
     reserve(students(:student_7_3), genre: "JY")
@@ -348,6 +388,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "batch_enroll picks a teacher for groups without one" do
+    @student.update!(grade: grades(:grade_8))
     reservation = reserve(@student, genre: "JY", teacher: nil)
     key = reservation.group_key_string
 
@@ -395,7 +436,19 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert Reservation.pending.exists?(id: reservation.id)
   end
 
+  test "batch_enroll skips a group whose students are not promoted and creates no empty class" do
+    reservation = reserve(@student, genre: "JY") # 七年级，目标八年级，未升级
+
+    assert_no_difference -> { SemesterKlass.count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "generate", reservation_ids: [ reservation.id ] }
+    end
+
+    assert_match "尚未升级到目标年级", flash[:alert]
+    assert Reservation.pending.exists?(id: reservation.id)
+  end
+
   test "batch_enroll joins an existing class when semester and subject match" do
+    @student.update!(grade: grades(:grade_8))
     reservation = reserve(@student, genre: "JY")
     target = SemesterKlass.create!(
       campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
@@ -410,6 +463,37 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal target, reservation.reload.semester_klass
   end
 
+  test "batch_enroll refuses to join a class whose grade differs from the reservation target" do
+    reservation = reserve(@student, genre: "JY") # 目标八年级
+    target = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 42, genre: "JY", grade: grades(:grade_7), semester: semesters(:semester_next), times: 1
+    )
+
+    assert_no_difference -> { KlassStudent.count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "join", reservation_ids: [ reservation.id ], klass_id: target.id }
+    end
+
+    assert_match "同一目标学期、科目与年级", flash[:alert]
+    assert_nil reservation.reload.semester_klass
+  end
+
+  test "batch_enroll skips a student not yet promoted even when the class grade matches the target" do
+    reservation = reserve(@student, genre: "JY") # 目标八年级，学员仍七年级未升级
+    target = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 43, genre: "JY", grade: grades(:grade_8), semester: semesters(:semester_next), times: 1
+    )
+
+    assert_no_difference -> { KlassStudent.count } do
+      post batch_enroll_admin_reservations_path, params: { mode: "join", reservation_ids: [ reservation.id ], klass_id: target.id }
+    end
+
+    assert_match "已将 0 名学员加入班级", flash[:notice]
+    assert_match "1 名年级与班级不符", flash[:notice]
+    assert Reservation.pending.exists?(id: reservation.id)
+  end
+
   test "batch_enroll rejects joining a class from another semester" do
     reservation = reserve(@student, genre: "JY")
     target = SemesterKlass.create!(
@@ -421,7 +505,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
       post batch_enroll_admin_reservations_path, params: { mode: "join", reservation_ids: [ reservation.id ], klass_id: target.id }
     end
 
-    assert_match "同一目标学期与科目", flash[:alert]
+    assert_match "同一目标学期、科目与年级", flash[:alert]
     assert_nil reservation.reload.semester_klass
   end
 

@@ -924,6 +924,24 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "absent", sk.courses.find_by!(seq: 1).attendances.find_by!(klass_student: ks).status
   end
 
+  test "create reports students skipped for a grade mismatch instead of silently dropping them" do
+    post admin_semester_klasses_path, params: {
+      student_ids: [ students(:student_8_1).id ], # 八年级，与本班（七年级）不符
+      semester_klass: {
+        semester_id: semesters(:semester_current).id,
+        grade_id: grades(:grade_7).id,
+        teacher_id: teachers(:math_teacher_1).id,
+        campuse_id: campuses(:campuse_1).id,
+        genre: "JY", seq: 56, times: 3
+      }
+    }
+
+    sk = SemesterKlass.order(:id).last
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "1 人因年级与班级不符未加入", flash[:notice]
+    assert_not sk.klass_students.exists?(student_id: students(:student_8_1).id)
+  end
+
   test "index renders the student picker for the new class form" do
     get admin_semester_klasses_path
 
