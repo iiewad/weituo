@@ -6,7 +6,7 @@ class Admin::CampusesController < AdminController
     session[:current_campuse_id] = @campuse.id
     Current.campuse = @campuse
     Current.school = @campuse.school
-    redirect_back fallback_location: root_path, notice: "校区切换成功"
+    redirect_after_context_switch("校区切换成功")
   end
 
   def update

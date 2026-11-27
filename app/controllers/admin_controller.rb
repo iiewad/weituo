@@ -22,6 +22,33 @@ class AdminController < ApplicationController
       scope
     end
 
+    # 切换学期 / 校区后回到班级详情等带 id 的页面会跨上下文 RecordNotFound，这类页面改回班级列表
+    def redirect_after_context_switch(notice)
+      if class_scoped_referer?
+        redirect_to admin_semester_klasses_path, notice: notice
+      else
+        redirect_back fallback_location: root_path, notice: notice
+      end
+    end
+
+    # referer 指向某个具体班级（show / edit / 导出，或嵌套的课次·考勤页）时为 true；
+    # 班级列表、statement 等不带 id 的集合页为 false——它们切换后能在新上下文正常渲染，回退原页即可。
+    # 用路由识别而非字面路径，路由改名时不会静默失效。
+    def class_scoped_referer?
+      path = begin
+        URI.parse(request.referer.to_s).path
+      rescue URI::InvalidURIError
+        ""
+      end
+      return false if path.blank?
+
+      params = Rails.application.routes.recognize_path(path)
+      params[:semester_klass_id].present? ||
+        (params[:controller] == "admin/semester_klasses" && params[:id].present?)
+    rescue ActionController::RoutingError
+      false
+    end
+
     def set_current_context
       Current.campuse = Current.school = Current.semester = nil
 

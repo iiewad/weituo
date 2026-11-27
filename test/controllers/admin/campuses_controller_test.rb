@@ -13,6 +13,18 @@ class Admin::CampusesControllerTest < ActionDispatch::IntegrationTest
     assert_equal other.id, session[:current_campuse_id]
   end
 
+  test "switching from a class detail page lands on the class list" do
+    other = Campuse.create!(name: "第二校区", school: schools(:school_1))
+    UserCampuse.create!(user: users(:one), campuse: other, role: "admin")
+    sk = semester_klasses(:sk_math_2)
+
+    get switch_thread_campuse_admin_school_campuse_path(schools(:school_1), other),
+      headers: { "HTTP_REFERER" => admin_semester_klass_path(sk) }
+
+    assert_redirected_to admin_semester_klasses_path
+    assert_equal other.id, session[:current_campuse_id]
+  end
+
   test "cannot switch to a campus the user is not authorized for" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
 
