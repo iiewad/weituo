@@ -24,6 +24,43 @@ class AttendanceTransferTest < ApplicationSystemTestCase
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
+  test "转出后可在转入班反向转出回原班" do
+    sign_in
+    class_a = semester_klasses(:sk_math_2)
+    class_b = semester_klasses(:sk_math_3)
+    student = students(:student_7_1)
+
+    a_first = class_a.courses.find_by!(seq: 1)
+    a_first.update!(start_date: Date.current)
+    a_first.attendances.create!(klass_student: klass_students(:ks_2), status: "normal")
+
+    visit admin_semester_klass_path(class_a)
+    find("[data-floating-card-target='trigger']").click
+    find("button[data-action='transfer-drawer#open']", text: "转出").click
+    choose "target_semester_klass_id_#{class_b.id}"
+    click_button "确认转出"
+    assert_equal "transfer", klass_students(:ks_2).reload.status
+
+    b_first = class_b.courses.find_by!(seq: 1)
+    b_first.update!(start_date: Date.current)
+    b_ks = class_b.klass_students.find_by!(student_id: student.id)
+    b_first.attendances.find_or_create_by!(klass_student: b_ks)
+
+    visit admin_semester_klass_path(class_b)
+    find("[data-floating-card-target='trigger']").click
+    find("button[data-action='transfer-drawer#open']", text: "转出").click
+
+    # 原班处于「转出」状态，重新显示在可选列表中
+    assert_selector "label[data-class-id='#{class_a.id}']", visible: true
+    choose "target_semester_klass_id_#{class_a.id}"
+    click_button "确认转出"
+
+    assert_text "已将"
+    assert_equal "in", klass_students(:ks_2).reload.status
+    assert_equal "transfer", b_ks.reload.status
+    assert_no_selector "form[action='#{reinstate_admin_semester_klass_klass_student_path(class_b, b_ks)}']"
+  end
+
   test "页面底部可撤销退课并恢复在班" do
     sign_in
     sk = semester_klasses(:sk_math_2)

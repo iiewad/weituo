@@ -330,7 +330,127 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "in", klass_students(:ks_2).reload.status
   end
 
+  test "transfer can move a student back to the class they left" do
+    class_a = semester_klasses(:sk_math_2)
+    class_b = semester_klasses(:sk_math_3)
+    ks = klass_students(:ks_2)
+
+    a_first = class_a.courses.find_by!(seq: 1)
+    a_first.start!
+    a_transfer_row = a_first.attendances.find_by!(klass_student_id: ks.id)
+    transfer_to(a_transfer_row, class_b)
+    assert_equal "transfer", ks.reload.status
+
+    b_first = class_b.courses.find_by!(seq: 1)
+    b_second = class_b.courses.find_by!(seq: 2)
+    [ b_first, b_second ].each(&:start!)
+    b_ks = class_b.klass_students.find_by!(student_id: ks.student_id)
+    b_transfer_row = b_second.attendances.find_by!(klass_student_id: b_ks.id)
+
+    transfer_to(b_transfer_row, class_a)
+
+    assert_redirected_to admin_semester_klass_path(class_b)
+    assert_equal "in", ks.reload.status
+    # 原班的转出行被来源班同课次状态覆盖
+    assert_equal "normal", a_transfer_row.reload.status
+    assert_equal "transfer", b_ks.reload.status
+    assert_equal "transfer", b_transfer_row.reload.status
+    assert_equal class_a.id, b_transfer_row.transfer_target_klass_id
+  end
+
+  test "a student can be transferred back and forth repeatedly" do
+    class_a = semester_klasses(:sk_math_2)
+    class_b = semester_klasses(:sk_math_3)
+    ks = klass_students(:ks_2)
+
+    a_first = class_a.courses.find_by!(seq: 1)
+    a_first.start!
+    transfer_to(a_first.attendances.find_by!(klass_student_id: ks.id), class_b)
+
+    b_first = class_b.courses.find_by!(seq: 1)
+    b_first.start!
+    b_ks = class_b.klass_students.find_by!(student_id: ks.student_id)
+    transfer_to(b_first.attendances.find_by!(klass_student_id: b_ks.id), class_a)
+    assert_equal "in", ks.reload.status
+
+    a_second = class_a.courses.find_by!(seq: 2)
+    a_second.start!
+    transfer_to(a_second.attendances.find_by!(klass_student_id: ks.id), class_b)
+
+    assert_equal "transfer", ks.reload.status
+    assert_equal "in", b_ks.reload.status
+  end
+
+  test "transferring back keeps the original class's real attendance statuses" do
+    class_a = semester_klasses(:sk_math_2)
+    class_b = semester_klasses(:sk_math_3)
+    ks = klass_students(:ks_2)
+
+    a_first = class_a.courses.find_by!(seq: 1)
+    a_second = class_a.courses.find_by!(seq: 2)
+    [ a_first, a_second ].each(&:start!)
+    a_first_row = a_first.attendances.find_by!(klass_student_id: ks.id)
+    a_first_row.mark_sick_leave!
+    a_second_row = a_second.attendances.find_by!(klass_student_id: ks.id)
+
+    transfer_to(a_second_row, class_b)
+    assert_equal "transfer", a_second_row.reload.status
+    assert_equal "sick_leave", a_first_row.reload.status
+
+    b_first = class_b.courses.find_by!(seq: 1)
+    b_second = class_b.courses.find_by!(seq: 2)
+    b_third = class_b.courses.find_by!(seq: 3)
+    [ b_first, b_second, b_third ].each(&:start!)
+    b_ks = class_b.klass_students.find_by!(student_id: ks.student_id)
+    b_second.attendances.find_by!(klass_student_id: b_ks.id).mark_absent!
+
+    # 从 B 第 3 课转出，B 第 1、2 课是已开课的早期课次，会随转出带回 A
+    transfer_to(b_third.attendances.find_by!(klass_student_id: b_ks.id), class_a)
+
+    assert_equal "sick_leave", a_first_row.reload.status
+    assert_equal "absent", a_second_row.reload.status
+    assert_equal "in", ks.reload.status
+  end
+
+  test "mark refuses rejoin for a transferred attendance" do
+    attendance = prepared_attendance
+    transfer_to(attendance, semester_klasses(:sk_math_3))
+    assert_equal "transfer", attendance.reload.status
+
+    mark(attendance, "rejoin")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "无法改为「重新加入」", flash[:alert]
+    assert_equal "transfer", attendance.reload.status
+    assert_equal "transfer", klass_students(:ks_2).reload.status
+  end
+
+  test "transfer rejects a class where the student already quit" do
+    attendance = prepared_attendance
+    target = SemesterKlass.create!(
+      semester: semesters(:semester_current), campuse: campuses(:campuse_1),
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "JY", seq: 89, times: 1
+    )
+    KlassStudent.create!(semester_klass: target, student: students(:student_7_1), status: "out")
+
+    transfer_to(attendance, target)
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "曾在", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
+    assert_equal "out", target.klass_students.find_by!(student_id: students(:student_7_1).id).status
+  end
+
   private
+    def transfer_to(attendance, target)
+      put transfer_admin_semester_klass_course_attendance_path(
+        attendance.course.semester_klass, attendance.course, attendance,
+        target_semester_klass_id: target.id
+      )
+    end
+
     def prepared_attendance
       course = semester_klasses(:sk_math_2).courses.find_by!(seq: 1)
       course.start!

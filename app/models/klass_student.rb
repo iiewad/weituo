@@ -32,20 +32,18 @@ class KlassStudent < ApplicationRecord
     update!(archived_at: nil, status: :in)
   end
 
-  # 撤销退课 / 转出：恢复最近一段连续退/转的考勤，并把报名状态改回在班。
-  # 从考勤入口的「重新加入」调用时，该行已被状态机写回正常，所以只恢复它之后的连续退/转，
+  # 撤销退课：恢复最近一段连续退课的考勤，并把报名状态改回在班。
+  # 转出不可撤销（需在转入班反向转出回原班），所以只处理 quit 行，保留 transfer 历史。
+  # 从考勤入口的「重新加入」调用时，该行已被状态机写回正常，所以只恢复它之后的连续退课，
   # 之前缺的课保留退/转历史；从班级页「撤销」调用时则回滚整段。
-  # 转出目标记录在退/转起点行上，可能早于当前行，统一解除，避免重新加入后仍留在目标班。
   def reinstate!
     transaction do
-      release_transfer_targets
-
       ordered = attendances.joins(:course).order("courses.seq").to_a
       last_present = ordered.rindex { |row| !row.status.in?(%w[quit transfer]) }
       streak = ordered[(last_present ? last_present + 1 : 0)..] || []
 
       streak.each do |row|
-        next unless row.status.in?(%w[quit transfer])
+        next unless row.status == "quit"
 
         row.update!(status: "normal")
       end
@@ -54,21 +52,4 @@ class KlassStudent < ApplicationRecord
       reload.update!(status: :in)
     end
   end
-
-  private
-    def release_transfer_targets
-      attendances.where.not(transfer_target_klass_id: nil).find_each do |row|
-        release_transfer_target(row)
-      end
-    end
-
-    # 转出时在考勤上记录目标班；撤销时把该班报名移出，历史考勤保留
-    def release_transfer_target(attendance)
-      target_id = attendance.transfer_target_klass_id
-      return if target_id.blank?
-
-      target = KlassStudent.unscoped.find_by(semester_klass_id: target_id, student_id: student_id)
-      target.archive! if target && target.archived_at.nil?
-      attendance.update_columns(transfer_target_klass_id: nil)
-    end
 end

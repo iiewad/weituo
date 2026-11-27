@@ -23,7 +23,14 @@
     </div>
 
     <% if attendance.present? %>
-      <%
+      <% if attendance.transfer? %>
+        <% if semester_klass_student.transfer? %>
+          <p class="text-[11px] leading-snug text-base-content/50">
+            已转出，不可撤销；如需回班，请在转入的班级中把学员转出到本班。
+          </p>
+        <% end %>
+      <% else %>
+        <%
         action_groups =
           case attendance.status
           when "normal"
@@ -111,6 +118,7 @@
             <% end %>
           </div>
         </div>
+      <% end %>
       <% end %>
     <% else %>
       <p class="text-xs text-error">考勤记录异常，请联系管理员</p>

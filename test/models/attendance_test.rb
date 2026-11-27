@@ -111,7 +111,7 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "in", klass_students(:ks_1).reload.status
   end
 
-  test "mark rejoin releases the transfer target like the class page undo" do
+  test "mark rejoin is not allowed on a transferred row" do
     source = klass_students(:ks_1)
     target_sk = semester_klasses(:sk_eng_1)
     target = KlassStudent.create!(semester_klass: target_sk, student: students(:student_7_1), status: "in")
@@ -124,11 +124,12 @@ class AttendanceTest < ActiveSupport::TestCase
     )
     source.update!(status: :transfer)
 
-    attendance.mark_rejoin!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_rejoin! }
 
-    assert_equal "normal", attendance.reload.status
-    assert_equal "in", source.reload.status
-    assert target.reload.archived_at.present?
+    assert_equal "transfer", attendance.reload.status
+    assert_equal "transfer", source.reload.status
+    assert_equal target_sk.id, attendance.transfer_target_klass_id
+    assert_nil target.reload.archived_at
   end
 
   test "all transitions require a started course" do
@@ -183,26 +184,16 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "in", klass_students(:ks_1).reload.status
   end
 
-  test "mark rejoin from a later course still releases the transfer target" do
-    source = klass_students(:ks_1)
-    target_sk = semester_klasses(:sk_eng_1)
-    target = KlassStudent.create!(semester_klass: target_sk, student: students(:student_7_1), status: "in")
-    first = courses(:sk_1_course_1)
-    second = courses(:sk_1_course_2)
-    third = courses(:sk_1_course_3)
-    [ first, second, third ].each(&:start!)
+  test "transfer is terminal and cannot be marked quit" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
 
-    transfer_row = attendance_for(first)
-    transfer_row.mark_transfer!
-    transfer_row.update!(transfer_target_klass_id: target_sk.id)
+    attendance.mark_transfer!
 
-    attendance_for(third).mark_rejoin!
-
-    assert_equal "in", source.reload.status
-    assert_equal "transfer", attendance_for(first).status
-    assert_equal "normal", attendance_for(third).status
-    assert_nil attendance_for(first).reload.transfer_target_klass_id
-    assert target.reload.archived_at.present?
+    assert_raises(AASM::InvalidTransition) { attendance.mark_quit! }
+    assert_equal "transfer", attendance.reload.status
+    assert_equal "transfer", klass_students(:ks_1).reload.status
   end
 
   test "filled is not allowed from quit or transfer" do

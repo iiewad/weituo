@@ -26,12 +26,17 @@ class Admin::KlassStudentsController < AdminController
     redirect_to admin_semester_klass_path(@sk), notice: "已恢复到班级"
   end
 
-  # 撤销退课 / 转出，恢复为在班
+  # 撤销退课，恢复为在班；转出不可撤销，需在转入的班级反向转出回来
   def reinstate
     @sk = campuse_semester_klasses.find(params[:semester_klass_id])
     @klass_student = @sk.klass_students.find(params[:id])
+    if @klass_student.transfer?
+      redirect_to admin_semester_klass_path(@sk), alert: "已转出，请在转入的班级中再转出回本班"
+      return
+    end
+
     @klass_student.reinstate!
     redirect_to admin_semester_klass_path(@sk),
-      notice: "已撤销 #{@klass_student.student.identity_label} 的退课/转出"
+      notice: "已撤销 #{@klass_student.student.identity_label} 的退课"
   end
 end

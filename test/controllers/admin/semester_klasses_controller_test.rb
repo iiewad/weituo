@@ -418,7 +418,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "label[data-transfer-drawer-target='option'][data-class-id='#{target.id}'][data-subject-id='#{target.subject_id}']"
   end
 
-  test "show lists quit and transferred students with a reinstate action" do
+  test "show lists quit students with a reinstate action" do
     sk = semester_klasses(:sk_math_2)
     ks = klass_students(:ks_2)
     course = sk.courses.find_by!(seq: 1)
@@ -432,6 +432,56 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "summary", text: /转出 \/ 退课学员 1 人/
     assert_select "li", text: /第 1 课起/
     assert_select "form[action='#{reinstate_admin_semester_klass_klass_student_path(sk, ks)}'] button", text: "撤销"
+  end
+
+  test "show does not offer undo for transferred students and names the target class" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    target = semester_klasses(:sk_math_3)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_transfer!
+    attendance.update!(transfer_target_klass_id: target.id)
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "summary", text: /转出 \/ 退课学员 1 人/
+    assert_select "form[action='#{reinstate_admin_semester_klass_klass_student_path(sk, ks)}']", count: 0
+    assert_match "已转入 #{target.name}", response.body
+  end
+
+  test "show does not offer rejoin for a transferred attendance card" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_transfer!
+
+    get admin_semester_klass_path(sk)
+
+    card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
+    assert_includes card.text, "已转出，不可撤销"
+    assert_not_includes card.text, "重新加入"
+    assert_select "form[action*='status=rejoin']", count: 0
+  end
+
+  test "show leaves a historical transfer card unannotated after the student returns" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_transfer!
+    ks.reload.update!(status: :in)
+
+    get admin_semester_klass_path(sk)
+
+    card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
+    assert_not_includes card.text, "已转出，不可撤销"
+    assert_not_includes card.text, "重新加入"
   end
 
   test "show lets a student on leave still quit or transfer" do

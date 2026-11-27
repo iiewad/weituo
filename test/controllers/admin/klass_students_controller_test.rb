@@ -45,6 +45,22 @@ class Admin::KlassStudentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes sk.klass_students.reload, ks
   end
 
+  test "reinstate rejects a transferred enrollment" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    course = courses(:sk_2_course_1)
+    course.update!(start_date: Date.current)
+    attendance = course.attendances.create!(klass_student: ks, status: "normal")
+    attendance.mark_transfer!
+
+    put reinstate_admin_semester_klass_klass_student_path(sk, ks)
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请在转入的班级中再转出回本班", flash[:alert]
+    assert_equal "transfer", ks.reload.status
+    assert_equal "transfer", attendance.reload.status
+  end
+
   test "remove_batch archives the selected enrollments" do
     sk = semester_klasses(:sk_math_2)
     ks = klass_students(:ks_2)

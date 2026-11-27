@@ -143,24 +143,37 @@
   <div class="wt-surface mt-4 p-4">
     <details>
       <summary class="cursor-pointer text-sm font-semibold">
-        转出 / 退课学员 <%= @left_klass_students.size %> 人（可撤销）
+        转出 / 退课学员 <%= @left_klass_students.size %> 人
       </summary>
       <ul class="mt-3 divide-y divide-base-200">
         <% @left_klass_students.each do |klass_student| %>
           <% leave = @leave_attendance_by_klass_student[klass_student.id] %>
+          <% transfer = klass_student.transfer? %>
+          <% target_klass = @transfer_target_by_klass_student[klass_student.id]&.transfer_target_klass %>
           <li class="flex flex-wrap items-center justify-between gap-2 py-2">
             <div class="min-w-0">
               <span class="text-sm font-medium"><%= klass_student.student.identity_label %></span>
               <span class="badge badge-soft badge-neutral badge-xs ml-1">
-                <%= klass_student.status == "transfer" ? "转出" : "退课" %>
+                <%= transfer ? "转出" : "退课" %>
               </span>
               <% if leave %>
                 <span class="ml-2 text-xs text-base-content/40">第 <%= leave.course.seq %> 课起</span>
               <% end %>
+              <% if transfer %>
+                <p class="mt-0.5 text-xs text-base-content/40">
+                  <% if target_klass %>
+                    已转入 <%= target_klass.name %>，如需回班请在该班考勤格中转出到本班
+                  <% else %>
+                    如需回班，请到转入的班级中转出到本班
+                  <% end %>
+                </p>
+              <% end %>
             </div>
-            <%= button_to "撤销", reinstate_admin_semester_klass_klass_student_path(@sk, klass_student),
-                  method: :put, class: "btn btn-xs btn-ghost text-primary",
-                  data: { turbo_confirm: "确定撤销该学员的退课/转出记录，恢复为在班吗？" } %>
+            <% unless transfer %>
+              <%= button_to "撤销", reinstate_admin_semester_klass_klass_student_path(@sk, klass_student),
+                    method: :put, class: "btn btn-xs btn-ghost text-primary",
+                    data: { turbo_confirm: "确定撤销该学员的退课记录，恢复为在班吗？" } %>
+            <% end %>
           </li>
         <% end %>
       </ul>

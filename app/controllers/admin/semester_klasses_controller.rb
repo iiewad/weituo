@@ -306,6 +306,16 @@ class Admin::SemesterKlassesController < AdminController
       .order("courses.seq")
       .group_by(&:klass_student_id)
       .transform_values(&:first)
+    # 转出提示取最近一条带目标班的转出记录；只有发起转出的那一行带指针，级联行没有
+    transfer_student_ids = @left_klass_students.select(&:transfer?).map(&:id)
+    @transfer_target_by_klass_student = Attendance
+      .joins(:course)
+      .where(klass_student_id: transfer_student_ids, status: "transfer")
+      .where.not(transfer_target_klass_id: nil)
+      .includes(:transfer_target_klass)
+      .order("courses.seq DESC")
+      .to_a
+      .index_by(&:klass_student_id)
     set_teacher_groups
     set_grade_subject_times_defaults
     @new_class_candidates = new_class_candidates

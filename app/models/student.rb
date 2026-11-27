@@ -40,7 +40,8 @@ class Student < ApplicationRecord
   end
 
   # mark_previous_absent: 入班课次之前的课次是否补记缺课；转出到目标班时传 false
-  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true)
+  # reinstate: 已有报名处于退课/转出时是否恢复在班；从转入班反向转回原班时传 true
+  def join_klass(sk, course_seq: 1, allow_grade_mismatch: false, mark_previous_absent: true, reinstate: false)
     return if !allow_grade_mismatch && sk.grade_id != grade_id
     return if sk.campuse_id != campuse_id
 
@@ -52,6 +53,8 @@ class Student < ApplicationRecord
       ks.save!
     elsif ks.archived_at.present?
       ks.restore!
+    elsif reinstate && ks.status.in?([ "out", "transfer" ])
+      ks.update!(status: :in)
     end
 
     if mark_previous_absent
@@ -65,7 +68,8 @@ class Student < ApplicationRecord
     end
   end
 
-  # 转出时把源班同序号课次的出勤状态带到目标班；退课/转出不带，避免把离开状态复制过去
+  # 转出时把源班同序号课次的出勤状态带到目标班；退课/转出不带，避免把离开状态复制过去。
+  # 反向转回时目标班可能已有历史考勤：只补缺失的行、覆盖原来的退/转标记，不重写真实考勤。
   def carry_over_attendances(from_klass, to_klass, before_seq:)
     from_ks = from_klass.klass_students.find_by(student_id: id)
     to_ks = to_klass.klass_students.find_by(student_id: id)
@@ -78,9 +82,10 @@ class Student < ApplicationRecord
       target_course = to_klass.courses.find_by(seq: course.seq)
       next if target_course.blank?
 
-      target_course.attendances
-        .find_or_initialize_by(klass_student_id: to_ks.id)
-        .update!(status: source.status)
+      target = target_course.attendances.find_or_initialize_by(klass_student_id: to_ks.id)
+      next if target.persisted? && !target.status.in?(%w[quit transfer])
+
+      target.update!(status: source.status)
     end
   end
 

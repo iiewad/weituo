@@ -33,10 +33,11 @@ module KlassDetailContext
       @transfer_target_counts = KlassStudent.active.where(
         semester_klass_id: transfer_target_ids, status: "in"
       ).group(:semester_klass_id).count
-      # 学员已加入的目标班：转出抽屉按学员动态隐藏，避免重复转入
+      # 学员已在的目标班：在班 / 曾退课的班级隐藏，避免重复转入；转出状态的班级保留可选，
+      # 用于在转入班反向转出回原班
       @enrolled_target_ids_by_student = KlassStudent
         .active
-        .where(semester_klass_id: transfer_target_ids)
+        .where(semester_klass_id: transfer_target_ids, status: %i[in out])
         .pluck(:student_id, :semester_klass_id)
         .group_by(&:first)
         .transform_values { |pairs| pairs.map(&:last) }

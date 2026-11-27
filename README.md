@@ -105,7 +105,7 @@ flowchart LR
 
 ### 4. 考勤状态流转
 
-状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上。
+状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上，用于在原班提示回班路径。
 
 | 事件 | 允许从 | 到 | 额外副作用 |
 | --- | --- | --- | --- |
@@ -113,9 +113,9 @@ flowchart LR
 | `mark_personal_leave` | `absent` / `normal` / `filled` | `personal_leave` | 记 `personal_leave_at`，**要求课次已开课** |
 | `mark_sick_leave` | `absent` / `normal` / `filled` | `sick_leave` | 记 `sick_leave_at` |
 | `mark_filled` | `absent` / `personal_leave` / `sick_leave` / `quit` / `transfer` | `filled` | 清空各类请假/退课时间戳 |
-| `mark_quit` | `absent` / `normal` / `personal_leave` / `sick_leave` / `filled` / `transfer` | `quit` | 级联后续课次 + 报名转 `out` |
+| `mark_quit` | `absent` / `normal` / `personal_leave` / `sick_leave` / `filled` | `quit` | 级联后续课次 + 报名转 `out` |
 | `mark_transfer` | `absent` / `normal` / `personal_leave` / `sick_leave` / `quit` / `filled` | `transfer` | 级联后续课次 + 报名转 `transfer` |
-| `mark_rejoin` | `quit` / `transfer` | `normal` | 当前及后续课次恢复 `normal` |
+| `mark_rejoin` | `quit` | `normal` | 当前及后续退课课次恢复 `normal` |
 
 打标入口是 `PUT /admin/semester_klasses/:sk_id/courses/:course_id/attendances/:id/mark?status=...`，控制器按白名单分派 `mark_*!`，未知 status 会被忽略。
 
@@ -133,8 +133,9 @@ stateDiagram-v2
     quit --> filled: mark_filled
     transfer --> filled: mark_filled
     quit --> normal: mark_rejoin
-    transfer --> normal: mark_rejoin
 ```
+
+`transfer` 是终态，不可撤销；要回原班，需在转入班的考勤格再次 `transfer` 到原班（控制器允许目标班存在 `transfer` 状态的报名，并以 `join_klass(..., reinstate: true)` 恢复在班）。
 
 ### 5. 退课 / 转出的级联
 
@@ -142,10 +143,10 @@ stateDiagram-v2
 
 - **后续所有课次**（`seq > 当前课次`）自动生成/更新考勤为 `quit` 或 `transfer`
 - 对应的 `KlassStudent` 转为 `out`（退班）或 `transfer`（转出）
-- 之后对该学员执行 `mark_rejoin`，当前及后续课次恢复 `normal`
-- 转出到目标班时，目标班在入班课次之前的课程沿用源班同序号课次的考勤状态（退课 / 转出不复制），而不是补记 `absent`
+- 之后对退课学员执行 `mark_rejoin`，当前及后续退课课次恢复 `normal`；转出不可撤销
+- 转出到目标班时，目标班在入班课次之前的课程沿用源班同序号课次的考勤状态（退课 / 转出不复制），而不是补记 `absent`；反向转回时只补缺失的考勤、覆盖原「转出」记录，不重写真实考勤
 
-`KlassStudent` 自身状态机：`in`（初始）→ `out` / `transfer`，`transfer` 与 `out` 之间可互相转换。
+`KlassStudent` 自身状态机：`in`（初始）→ `out` / `transfer`，`transfer` 与 `out` 之间可互相转换（班级页不再提供转出撤销）。
 
 ### 6. 班级报表
 

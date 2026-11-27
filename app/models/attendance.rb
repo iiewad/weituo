@@ -3,7 +3,7 @@ class Attendance < ApplicationRecord
   belongs_to :course
   belongs_to :klass_student
   belongs_to :marked_by, class_name: "User", optional: true
-  # 转出目标班；撤销转出时据此把学员从目标班移出
+  # 转出目标班；用于在原班提示学员去哪个班反向转出回来
   belongs_to :transfer_target_klass, class_name: "SemesterKlass", optional: true
   enum :status, [ :absent, :normal, :filled, :personal_leave, :sick_leave, :quit, :transfer ]
   # 校验一个学员一个课程只能有一个考勤记录
@@ -19,7 +19,7 @@ class Attendance < ApplicationRecord
     state :quit
     state :transfer
 
-    # 恢复正常：纠正误点的缺课 / 请假 / 补课；退课 / 转出走「重新加入」
+    # 恢复正常：纠正误点的缺课 / 请假 / 补课；退课走「重新加入」，转出不可撤销
     event :mark_normal do
       transitions from: [ :absent, :personal_leave, :sick_leave, :filled ], to: :normal, guard: STARTED_GUARD
     end
@@ -38,10 +38,10 @@ class Attendance < ApplicationRecord
 
     event :mark_rejoin do
       after do
-        # 从当前课次起恢复在班，之前缺的课保留退/转历史
+        # 从当前课次起恢复在班，之前缺的课保留退课历史
         klass_student.reinstate!
       end
-      transitions from: [ :quit, :transfer ], to: :normal, guard: STARTED_GUARD
+      transitions from: [ :quit ], to: :normal, guard: STARTED_GUARD
     end
 
     # 补课销假：只针对缺课/请假后补课。退课/转出学员回来上课应走「重新加入」，
@@ -57,14 +57,14 @@ class Attendance < ApplicationRecord
           semester_klass_id: course.semester_klass_id,
           student_id: klass_student.student_id
         )
-        ks.mark_out! if ks && ks.status.in?([ "in", "transfer" ])
+        ks.mark_out! if ks&.in?
         # 只同步已开课课次；未开课课次等开课时再按报名状态生成
         course.semester_klass.courses.where("seq > ? AND start_date IS NOT NULL", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
           attendance.update!(status: "quit")
         end
       end
-      transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :filled, :transfer ], to: :quit, guard: STARTED_GUARD
+      transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :filled ], to: :quit, guard: STARTED_GUARD
     end
 
     event :mark_transfer do

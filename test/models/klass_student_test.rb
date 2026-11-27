@@ -46,7 +46,7 @@ class KlassStudentTest < ActiveSupport::TestCase
     assert_equal ks, attendance.reload.klass_student
   end
 
-  test "reinstate removes the enrollment created by a transfer" do
+  test "reinstate leaves a transferred target class and transfer rows untouched" do
     source = klass_students(:ks_1)
     target_sk = semester_klasses(:sk_eng_1)
     target = KlassStudent.create!(semester_klass: target_sk, student: students(:student_7_1), status: "in")
@@ -62,8 +62,26 @@ class KlassStudentTest < ActiveSupport::TestCase
     source.reinstate!
 
     assert_equal "in", source.reload.status
-    assert_equal "normal", attendance.reload.status
-    assert_nil attendance.transfer_target_klass_id
-    assert target.reload.archived_at.present?
+    assert_equal "transfer", attendance.reload.status
+    assert_equal target_sk.id, attendance.transfer_target_klass_id
+    assert_nil target.reload.archived_at
+  end
+
+  test "reinstate only restores quit rows and keeps earlier transfer history" do
+    ks = klass_students(:ks_1)
+    first = courses(:sk_1_course_1)
+    second = courses(:sk_1_course_2)
+    [ first, second ].each(&:start!)
+    first_row = first.attendances.find_by!(klass_student_id: ks.id)
+    first_row.update!(status: "transfer")
+    second_row = second.attendances.find_by!(klass_student_id: ks.id)
+    second_row.update!(status: "quit")
+    ks.update!(status: :out)
+
+    ks.reinstate!
+
+    assert_equal "transfer", first_row.reload.status
+    assert_equal "normal", second_row.reload.status
+    assert_equal "in", ks.reload.status
   end
 end

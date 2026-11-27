@@ -80,8 +80,15 @@ class Admin::AttendancesController < AdminController
       redirect_to admin_semester_klass_path(@sk), alert: "请选择要转入的班级"
       return
     end
-    if KlassStudent.active.exists?(semester_klass_id: target.id, student_id: @student.id)
+    # 报名为 transfer 的目标班允许转入：学员已在原班转出，反向转出即可回班
+    existing_enrollment = KlassStudent.active.find_by(semester_klass_id: target.id, student_id: @student.id)
+    if existing_enrollment&.in?
       redirect_to admin_semester_klass_path(@sk), alert: "#{@student.identity_label} 已在 #{target.name} 中"
+      return
+    end
+    if existing_enrollment&.out?
+      redirect_to admin_semester_klass_path(@sk),
+        alert: "#{@student.identity_label} 曾在 #{target.name} 退课，请到该班点「重新加入」"
       return
     end
     unless @attendance.may_mark_transfer?
@@ -98,9 +105,9 @@ class Admin::AttendancesController < AdminController
 
     Attendance.transaction do
       @attendance.mark_transfer!
-      # 记录目标班，撤销转出时可据此把学员从目标班移出
+      # 记录目标班，供原班提示学员去哪个班反向转出回来
       @attendance.update!(marked_by: Current.user, transfer_target_klass_id: target.id)
-      @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false)
+      @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false, reinstate: true)
       @student.carry_over_attendances(@sk, target, before_seq: entry_seq)
     end
 
