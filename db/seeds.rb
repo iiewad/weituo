@@ -8,8 +8,8 @@ rng = Random.new(20261117)
 
 puts "清空现有数据…"
 [
-  Attendance, KlassStudent, Course, SemesterKlass,
-  Guardian, Student, Teacher, GradeSubject,
+  Attendance, Reservation, KlassStudent, Course, SemesterKlass,
+  StudentReferral, Guardian, Student, Teacher, GradeSubject,
   DaySchool, Semester,
   UserCampuse, Session, User,
   Campuse, School,
@@ -75,7 +75,10 @@ curriculum = {
   grades[2] => %w[数学 英语 物理 化学]
 }
 curriculum.each do |grade, subject_names|
-  subject_names.each { |name| GradeSubject.create!(school:, semester: current_semester, grade:, subject: subjects[name], times: 16) }
+  # 当前学期与下学期都配置年级科目，切换到下学期排班/生成班级时课次有默认值
+  [ current_semester, semesters[3] ].each do |semester|
+    subject_names.each { |name| GradeSubject.create!(school:, semester:, grade:, subject: subjects[name], times: 16) }
+  end
 end
 
 day_schools = campuses.to_h do |campuse|
@@ -294,11 +297,54 @@ end
 
 attendance_rows.each_slice(1_000) { |rows| Attendance.insert_all(rows) }
 
+# 从来源学期的班级学员生成目标学期预留；每 5 个班留一组已生成状态，每 4 个班留一组教师待定
+def seed_reservations(classes, rng, source_index:, target_semester:)
+  created = 0
+  generated = 0
+
+  classes.select { |_sk, semester_index| semester_index == source_index }.each_with_index do |(sk, _semester_index), class_index|
+    students = sk.klass_students.where(status: "in").includes(:student).map(&:student)
+    next if students.empty?
+
+    next_grade = Grade.find_by(level: sk.grade.level + 1) || sk.grade
+    target_klass = if (class_index % 5).zero?
+      SemesterKlass.find_by(campuse: sk.campuse, semester: target_semester, grade: next_grade, subject: sk.subject, genre: sk.genre)
+    end
+    teacher = target_klass&.teacher || (class_index % 4 == 3 ? nil : sk.teacher)
+
+    students.sample([ students.size, 4 ].min, random: rng).each do |student|
+      reservation = Reservation.find_or_initialize_by(
+        student_id: student.id, semester_id: target_semester.id, subject_id: sk.subject_id
+      )
+      next if reservation.persisted?
+
+      reservation.assign_attributes(
+        grade: next_grade, genre: sk.genre, teacher:,
+        source_semester: sk.semester, source_semester_klass: sk, semester_klass: target_klass
+      )
+      next unless reservation.save
+
+      created += 1
+      generated += 1 if target_klass
+    end
+  end
+
+  [ created, generated ]
+end
+
+puts "创建预留记录…"
+# 上学期 → 当前学期：默认进入预留表即可看到上学期登记的待分班数据
+# 当前学期 → 下学期：切换学期后查看/演示生成班级
+current_count, current_generated = seed_reservations(classes, rng, source_index: 1, target_semester: current_semester)
+next_count, next_generated = seed_reservations(classes, rng, source_index: 2, target_semester: semesters[3])
+
 puts <<~SUMMARY
   种子数据已生成：
     学校 #{School.count} 所 / 校区 #{Campuse.count} 个 / 学期 #{Semester.count} 个
     年级 #{Grade.count} 个 / 科目 #{Subject.count} 个 / 教师 #{Teacher.count} 名
     学员 #{Student.count} 名 / 监护人 #{Guardian.count} 名 / 推荐关系 #{StudentReferral.count} 条
     班级 #{SemesterKlass.count} 个 / 课次 #{Course.count} 节 / 考勤 #{Attendance.count} 条
+    预留 #{Reservation.count} 条（当前学期 #{current_count} 条、已生成 #{current_generated} 条；下学期 #{next_count} 条、已生成 #{next_generated} 条）
   账号：admin、user1、user2、user3（密码 password）；pending 为未授权账号。
+  提示：当前学期的预留表已有上学期登记的待分班数据；另有指向 #{semesters[3].name} 的预留，在顶栏切换学期后可查看并生成班级。
 SUMMARY
