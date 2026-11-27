@@ -44,4 +44,29 @@ class Admin::KlassStudentsControllerTest < ActionDispatch::IntegrationTest
     assert_nil ks.reload.archived_at
     assert_includes sk.klass_students.reload, ks
   end
+
+  test "remove_batch archives the selected enrollments" do
+    sk = semester_klasses(:sk_math_2)
+    ks = klass_students(:ks_2)
+    other = KlassStudent.create!(semester_klass: sk, student: students(:student_7_2), status: "in")
+
+    assert_no_difference -> { KlassStudent.unscoped.count } do
+      delete remove_batch_admin_semester_klass_klass_students_path(sk), params: { ids: [ ks.id, other.id ] }
+    end
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已移出 2 名学员", flash[:notice]
+    assert ks.reload.archived_at.present?
+    assert other.reload.archived_at.present?
+  end
+
+  test "remove_batch with no selection archives nothing" do
+    sk = semester_klasses(:sk_math_2)
+
+    delete remove_batch_admin_semester_klass_klass_students_path(sk), params: { ids: [] }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "请选择要移出的学员", flash[:alert]
+    assert_nil klass_students(:ks_2).reload.archived_at
+  end
 end

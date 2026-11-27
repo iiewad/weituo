@@ -33,11 +33,15 @@ class KlassManagementTest < ApplicationSystemTestCase
     sk = semester_klasses(:sk_math_2)
     visit admin_semester_klass_path(sk)
 
-    find("label[for='drawer-reserve']").click
+    find("input[data-attendance-select-target='rowCheckbox'][value='#{students(:student_7_1).id}']").check
+    click_button "预留"
 
-    within("form[action='#{reserve_admin_semester_klass_path(sk)}']") do
-      select "精英班", from: "班型"
-      click_button "确认预留"
+    within("dialog#reserve-modal") do
+      assert_selector "[data-attendance-select-target='reserveList']", text: students(:student_7_1).name
+      within("form[action='#{reserve_admin_semester_klass_path(sk)}']") do
+        select "精英班", from: "班型"
+        click_button "确认预留"
+      end
     end
 
     assert_text "已预留 1 名学员"
@@ -53,6 +57,89 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_equal grades(:grade_8), target.grade
     assert_equal grades(:grade_7), students(:student_7_1).reload.grade
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
+  end
+
+  test "考勤表勾选学员后批量移出" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    visit admin_semester_klass_path(sk)
+
+    find("input[data-attendance-select-target='rowCheckbox'][value='#{students(:student_7_1).id}']").check
+    click_button "移出"
+
+    within("dialog#remove-modal") do
+      assert_selector "[data-attendance-select-target='removeList']", text: students(:student_7_1).name
+      click_button "确认移出"
+    end
+
+    assert_text "已移出 1 名学员"
+    assert klass_students(:ks_2).reload.archived_at.present?
+    assert_text "已移出学员"
+  end
+
+  test "预留信息图标 hover 弹出卡片且不被遮挡" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    KlassStudent.create!(semester_klass: sk, student: students(:student_7_2), status: "in")
+    reservation = Reservation.create!(
+      student: students(:student_7_1), semester: semesters(:semester_next), subject: subjects(:math),
+      grade: grades(:grade_8), teacher: teachers(:math_teacher_1), genre: "JY",
+      source_semester: sk.semester, source_semester_klass: sk
+    )
+    visit admin_semester_klass_path(sk)
+
+    find("button[aria-label='预留信息']").hover
+    card = find("[data-card-kind='reservation'].flex")
+
+    # 卡片位于 sticky 姓名列内，需抬高所在单元格层级才不被后续行盖住
+    result = card.evaluate_script(<<~JS)
+      ((el) => {
+        const th = el.closest("th");
+        const probe = () => {
+          const r = el.getBoundingClientRect();
+          let occluded = 0;
+          for (let x = r.left + 30; x < r.right - 30; x += 40)
+            for (let y = r.top + 30; y < r.bottom - 30; y += 25)
+              if (!el.contains(document.elementFromPoint(x, y))) occluded++;
+          return occluded;
+        };
+        const fixed = probe();
+        th.style.zIndex = "10";
+        const withoutFix = probe();
+        th.style.zIndex = "";
+        return { fixed: fixed, withoutFix: withoutFix };
+      })(this)
+    JS
+    assert_operator result["withoutFix"], :>, 0, "探测方法无效：不抬层级时也未检测到遮挡"
+    assert_equal 0, result["fixed"], "预留卡片被其他单元格遮挡"
+
+    within(card) do
+      assert_selector "form[action='#{admin_reservation_path(reservation)}'] select[name='grade_id']"
+      assert_selector "button", text: "取消预留"
+    end
+
+    find("th.sticky", match: :first).click
+    assert_no_selector "[data-card-kind='reservation'].flex"
+  end
+
+  test "预留信息卡片内可直接修改预留" do
+    sign_in
+    sk = semester_klasses(:sk_math_2)
+    reservation = Reservation.create!(
+      student: students(:student_7_1), semester: semesters(:semester_next), subject: subjects(:math),
+      grade: grades(:grade_7), teacher: teachers(:math_teacher_1), genre: "TG",
+      source_semester: sk.semester, source_semester_klass: sk
+    )
+    visit admin_semester_klass_path(sk)
+
+    find("button[aria-label='预留信息']").hover
+    card = find("[data-card-kind='reservation'].flex")
+    within(card) do
+      select "精英班", from: "班型"
+      click_button "保存"
+    end
+    assert_text "已更新"
+    assert_equal "JY", reservation.reload.genre
   end
 
   test "开班搜索不到学员时可以快速添加并直接选中" do

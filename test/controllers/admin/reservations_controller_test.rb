@@ -12,7 +12,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
       teacher: teachers(:math_teacher_1), source: @sk)
     Reservation.create!(
       student: student, semester: semester, subject: subjects(:math), grade: grade,
-      teacher: teacher, genre: genre, source_semester_klass: source
+      teacher: teacher, genre: genre, source_semester: source.semester, source_semester_klass: source
     )
   end
 
@@ -57,11 +57,11 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "tbody tr", count: 0
 
-    get admin_reservations_path(q: { source_semester_klass_semester_id_eq: semesters(:semester_current).id })
+    get admin_reservations_path(q: { source_semester_id_eq: semesters(:semester_current).id })
 
     assert_select "tbody tr", count: 2
 
-    get admin_reservations_path(q: { source_semester_klass_semester_id_eq: semesters(:semester_previous).id })
+    get admin_reservations_path(q: { source_semester_id_eq: semesters(:semester_previous).id })
 
     assert_select "tbody tr", count: 0
 
@@ -176,7 +176,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     )
     Reservation.create!(
       student: @other, semester: semesters(:semester_next), subject: subjects(:math), grade: grades(:grade_7),
-      teacher: teachers(:math_teacher_1), genre: "JY", source_semester_klass: hidden
+      teacher: teachers(:math_teacher_1), genre: "JY", source_semester: hidden.semester, source_semester_klass: hidden
     )
 
     get admin_reservations_path
@@ -187,5 +187,82 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
       post generate_admin_reservations_path, params: group_params("JY")
     end
+  end
+
+  test "update changes the reservation target" do
+    reservation = reserve(@student, genre: "JY")
+
+    patch admin_reservation_path(reservation), params: {
+      grade_id: grades(:grade_7).id, genre: "TG", teacher_id: teachers(:math_teacher_2).id
+    }
+
+    assert_redirected_to admin_reservations_path
+    reservation.reload
+    assert_equal grades(:grade_7), reservation.grade
+    assert_equal "TG", reservation.genre
+    assert_equal teachers(:math_teacher_2), reservation.teacher
+  end
+
+  test "update can clear the teacher" do
+    reservation = reserve(@student, genre: "JY")
+
+    patch admin_reservation_path(reservation), params: { grade_id: reservation.grade_id, genre: reservation.genre, teacher_id: "" }
+
+    assert_nil reservation.reload.teacher
+  end
+
+  test "update rejects a teacher from another subject" do
+    reservation = reserve(@student, genre: "JY")
+
+    patch admin_reservation_path(reservation), params: {
+      grade_id: reservation.grade_id, genre: reservation.genre, teacher_id: teachers(:eng_teacher_1).id
+    }
+
+    assert_match "所选教师不是本科目的在任教师", flash[:alert]
+    assert_equal teachers(:math_teacher_1), reservation.reload.teacher
+  end
+
+  test "generated reservations cannot be updated or cancelled" do
+    reservation = reserve(@student, genre: "JY")
+    reservation.update!(semester_klass: semester_klasses(:sk_math_1))
+
+    patch admin_reservation_path(reservation), params: { grade_id: grades(:grade_7).id, genre: "TG" }
+
+    assert_match "已生成班级的预留不能修改", flash[:alert]
+    assert_equal "JY", reservation.reload.genre
+
+    assert_no_difference -> { Reservation.count } do
+      delete admin_reservation_path(reservation)
+    end
+    assert_match "已生成班级的预留不能取消", flash[:alert]
+  end
+
+  test "destroy cancels a pending reservation" do
+    reservation = reserve(@student, genre: "JY")
+
+    assert_difference -> { Reservation.count }, -1 do
+      delete admin_reservation_path(reservation)
+    end
+    assert_match "已取消", flash[:notice]
+  end
+
+  test "manager cannot update or cancel reservations outside their grades" do
+    sign_in_as users(:two)
+    hidden = SemesterKlass.create!(
+      campuse: campuses(:campuse_1), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      seq: 92, genre: "TG", grade: grades(:grade_7), semester: semesters(:semester_current), times: 1
+    )
+    reservation = Reservation.create!(
+      student: @other, semester: semesters(:semester_next), subject: subjects(:math), grade: grades(:grade_7),
+      teacher: teachers(:math_teacher_1), genre: "JY", source_semester: hidden.semester, source_semester_klass: hidden
+    )
+
+    patch admin_reservation_path(reservation), params: { grade_id: grades(:grade_7).id, genre: "TG" }
+    assert_response :not_found
+
+    assert_no_difference -> { Reservation.count } do
+      delete admin_reservation_path(reservation)
+    end
+    assert_response :not_found
   end
 end

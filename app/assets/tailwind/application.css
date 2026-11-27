@@ -208,6 +208,12 @@
   color: #fff;
 }
 
+/* 学员列 sticky th 会形成层叠上下文，处于其中的 fixed 浮卡会被下一行 sticky th 盖住；
+   卡片展开时抬高所在单元格层级。放在 @layer 外以覆盖 Tailwind 的 z-10。 */
+th:has([data-floating-card-target="card"].flex) {
+  z-index: 20;
+}
+
 /* 侧边栏紧凑模式（仅桌面）：收窄为图标条，保留切换入口。放在 @layer 外以覆盖 daisyUI 的 lg:drawer-open。 */
 @media (min-width: 64rem) {
   html.wt-sidebar-collapsed .wt-drawer {

@@ -19,13 +19,23 @@ class ReservationTest < ActiveSupport::TestCase
   end
 
   test "teacher is optional until a class is generated" do
-    reservation = build(teacher: nil, source_semester_klass: semester_klasses(:sk_math_1))
+    reservation = build(teacher: nil, source_semester: semesters(:semester_previous), source_semester_klass: semester_klasses(:sk_math_1))
 
     assert reservation.valid?
 
     reservation.save!
     assert_equal semesters(:semester_previous), reservation.source_semester
     assert_nil build.source_semester
+  end
+
+  test "source semester survives deleting the source class" do
+    reservation = build(source_semester: semesters(:semester_previous), source_semester_klass: semester_klasses(:sk_math_1))
+    reservation.save!
+
+    semester_klasses(:sk_math_1).destroy!
+
+    assert_nil reservation.reload.source_semester_klass
+    assert_equal semesters(:semester_previous), reservation.source_semester
   end
 
   test "rejects an unknown genre" do

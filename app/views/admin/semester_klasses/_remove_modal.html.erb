@@ -1,0 +1,21 @@
+<dialog id="remove-modal" class="modal" data-attendance-select-target="removeModal">
+  <div class="modal-box max-w-lg">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="关闭">✕</button>
+    </form>
+
+    <h3 class="text-base font-semibold">移出班级</h3>
+    <p class="mt-1 text-xs text-base-content/50">以下学员将移出 <%= @sk.name %>：</p>
+
+    <%= form_with url: remove_batch_admin_semester_klass_klass_students_path(@sk), method: :delete,
+          local: true, class: "mt-3 space-y-4" do |form| %>
+      <div class="flex flex-wrap gap-1" data-attendance-select-target="removeList"
+           data-input-name="ids[]" data-value-key="ks"></div>
+      <p class="text-[11px] leading-snug text-base-content/40">
+        移出后学员不再出现在考勤表，历史考勤会保留，可在页面下方「已移出学员」中恢复。
+      </p>
+      <%= form.submit "确认移出", class: "btn btn-error w-full", disabled: true, data: { attendance_select_target: "removeSubmit" } %>
+    <% end %>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>关闭</button></form>
+</dialog>

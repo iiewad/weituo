@@ -246,7 +246,7 @@ class Admin::SemesterKlassesController < AdminController
           next
         end
 
-        reservation.assign_attributes(grade: grade, genre: genre, teacher: teacher, source_semester_klass: @sk)
+        reservation.assign_attributes(grade: grade, genre: genre, teacher: teacher, source_semester: @sk.semester, source_semester_klass: @sk)
         if reservation.save
           reserved += 1
         else
@@ -287,6 +287,13 @@ class Admin::SemesterKlassesController < AdminController
     @active_student_count = @klass_students.count { |klass_student| klass_student.status == "in" }
     @next_semester = @sk.semester.related_next_semester
     @reserved_student_ids = @sk.reserve_students.map(&:id)
+    @reservations_by_student_id = if @next_semester
+      Reservation.where(semester_id: @next_semester.id, subject_id: @sk.subject_id, student_id: @klass_students.map(&:student_id))
+        .includes(:student, :grade, :teacher, :semester_klass).index_by(&:student_id)
+    else
+      {}
+    end
+    @placed_student_ids = @sk.next_semester_placed_student_ids
     @reserve_candidates = @sk.klass_students.where(status: "in").includes(:student)
       .reject { |klass_student| @reserved_student_ids.include?(klass_student.student_id) }
     @reserve_grade_ids = reserve_grade_ids

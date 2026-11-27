@@ -114,6 +114,15 @@ class SemesterKlass < ApplicationRecord
     students.where(klass_students: { status: "in" })
   end
 
+  # 已在下学期同科目班级就读的学员 ids
+  def next_semester_placed_student_ids
+    next_semester = semester.related_next_semester
+    return [] if next_semester.blank?
+
+    next_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
+      .flat_map { |klass| klass.current_active_students.ids }
+  end
+
   # 保留学生：下学期已登记预留，或已在下学期同科目班级就读的学员
   def reserve_students
     current_students = current_active_students
@@ -127,10 +136,8 @@ class SemesterKlass < ApplicationRecord
       semester_id: next_semester.id, subject_id: subject_id,
       student_id: current_students.select(:id)
     ).pluck(:student_id)
-    placed_ids = next_semester.semester_klasses.where(subject_id: subject_id, campuse_id: campuse_id)
-      .map(&:current_active_students).flatten.map(&:id)
 
-    current_students.where(id: reserved_ids | placed_ids).to_a
+    current_students.where(id: reserved_ids | next_semester_placed_student_ids).to_a
   end
 
   private

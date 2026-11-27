@@ -110,7 +110,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#drawer-transfer"
     assert_select "input[type='radio'][name='target_semester_klass_id'][value='#{semester_klasses(:sk_math_3).id}']"
     assert_select "[data-controller='student-multiselect'] input[data-student-multiselect-target='input']", minimum: 1
-    assert_select "[data-controller='attendance-search'] input[data-attendance-search-target='input'][placeholder='搜索学员姓名']"
+    assert_select "[data-controller~='attendance-search'] input[data-attendance-search-target='input'][placeholder='搜索学员姓名']"
     assert_select "tr[data-attendance-search-target='row'][data-search-text*='#{students(:student_7_1).name}']"
     assert_select "select#through_seq"
     assert_select "input[type='submit'][value='批量开课']"
@@ -140,9 +140,36 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "JY", reservation.genre
     assert_equal teachers(:math_teacher_1), reservation.teacher
     assert_equal sk, reservation.source_semester_klass
+    assert_equal sk.semester, reservation.source_semester
     assert_nil reservation.semester_klass
     # 预留不修改学员现年级
     assert_equal grades(:grade_7), student.reload.grade
+  end
+
+  test "show selects students on the attendance table for reserving" do
+    sk = semester_klasses(:sk_math_2)
+    student = students(:student_7_1)
+    KlassStudent.create!(semester_klass: sk, student: students(:student_7_2), status: "in")
+    reservation = Reservation.create!(
+      student: student, semester: semesters(:semester_next), subject: subjects(:math), grade: grades(:grade_8),
+      teacher: teachers(:math_teacher_1), genre: "JY", source_semester: sk.semester, source_semester_klass: sk
+    )
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    # 考勤表多选：所有学员可勾选（移出用），已预留学员不可预留
+    assert_select "[data-controller~='attendance-select']"
+    assert_select "input[data-attendance-select-target='selectAll']"
+    assert_select "input[data-attendance-select-target='rowCheckbox'][value='#{students(:student_7_2).id}'][data-reserve-eligible='true']"
+    assert_select "input[data-attendance-select-target='rowCheckbox'][value='#{student.id}'][data-reserve-eligible='false']"
+    assert_select "button[data-attendance-select-target='reserveButton'][data-action='attendance-select#openReserve']", text: "预留"
+    assert_select "button[data-attendance-select-target='removeButton'][data-action='attendance-select#openRemove']", text: "移出"
+    assert_select "tbody tr th form[action*='reserve']", count: 0
+    # 学员名旁信息图标 hover 弹卡，卡内展示 badge 并可修改 / 取消预留
+    assert_select "tbody tr th button[aria-label='预留信息'][data-floating-card-target='trigger']"
+    assert_select "tbody tr th [data-card-kind='reservation'] form[action='#{admin_reservation_path(reservation)}'] select[name='genre']"
+    assert_select "tbody tr th [data-card-kind='reservation'] form[action='#{admin_reservation_path(reservation)}'] button", text: "取消预留"
   end
 
   test "reserve rejects a teacher from another subject" do
@@ -202,20 +229,21 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_match "下学期尚未创建", flash[:alert]
   end
 
-  test "show renders the reserve form for next semester" do
+  test "show renders the reserve modal for next semester" do
     sk = semester_klasses(:sk_math_2)
 
     get admin_semester_klass_path(sk)
 
     assert_response :success
-    assert_select "input#drawer-reserve"
-    assert_select "form[action='#{reserve_admin_semester_klass_path(sk)}']" do
-      assert_select "input[type='checkbox'][name='student_ids[]']"
-      assert_select "select[name='new_grade_id']"
-      assert_select "select[name='new_genre']"
-      assert_select "select[name='new_teacher_id'] option", text: "暂不指定"
-      assert_select "input[name='new_times']", count: 0
-      assert_select "input[name='target_semester_klass_id']", count: 0
+    assert_select "dialog#reserve-modal" do
+      assert_select "form[action='#{reserve_admin_semester_klass_path(sk)}']" do
+        assert_select "select[name='new_grade_id']"
+        assert_select "select[name='new_genre']"
+        assert_select "select[name='new_teacher_id'] option", text: "暂不指定"
+        assert_select "input[name='new_times']", count: 0
+        assert_select "input[name='target_semester_klass_id']", count: 0
+      end
+      assert_select "[data-attendance-select-target='reserveList']"
     end
   end
 
@@ -293,7 +321,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-klass-times-target='teacher'] option[value='#{teachers(:math_teacher_1).id}']"
   end
 
-  test "show keeps the student removal action inside the name column" do
+  test "show removes students through the selection modal instead of per-row buttons" do
     sk = semester_klasses(:sk_math_2)
     ks = klass_students(:ks_2)
 
@@ -301,8 +329,11 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "thead th", text: "操作", count: 0
-    assert_select "tbody tr th .student-row-actions form[action='#{admin_semester_klass_klass_student_path(sk, ks)}']"
-    assert_select ".student-row-actions.opacity-0", count: 0
+    assert_select "tbody tr th form[action='#{admin_semester_klass_klass_student_path(sk, ks)}']", count: 0
+    assert_select "dialog#remove-modal form[action='#{remove_batch_admin_semester_klass_klass_students_path(sk)}']" do
+      assert_select "[data-attendance-select-target='removeList']"
+      assert_select "input[type='submit'][value='确认移出']"
+    end
   end
 
   test "class form quick adds students inline without a modal" do
@@ -631,7 +662,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a.menu-active[aria-current='page']", text: /#{sk.name}/
     assert_select "a[href='#{export_attendance_admin_semester_klass_path(sk)}']", text: /导出考勤/
-    assert_select "[data-turbo-confirm*='历史考勤会保留']"
+    assert_select "dialog#remove-modal", text: /历史考勤会保留/
     assert_select "summary", text: /七年级/
     assert_select "summary", text: /数学/
     # 同年级同科目下的其他班级也出现在菜单里，便于切换

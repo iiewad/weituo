@@ -5,6 +5,7 @@ class Reservation < ApplicationRecord
   belongs_to :grade
   # 预留时可以不指定教师，生成分班时再选
   belongs_to :teacher, optional: true
+  belongs_to :source_semester, class_name: "Semester", optional: true
   belongs_to :source_semester_klass, class_name: "SemesterKlass", optional: true
   belongs_to :semester_klass, class_name: "SemesterKlass", optional: true
 
@@ -22,20 +23,26 @@ class Reservation < ApplicationRecord
   validates :student_id, uniqueness: { scope: [ :semester_id, :subject_id ], message: "该学员已预留该学期同科目" }
 
   def self.ransackable_attributes(auth_object = nil)
-    [ "semester_id", "grade_id", "subject_id", "genre", "teacher_id" ]
+    [ "semester_id", "source_semester_id", "grade_id", "subject_id", "genre", "teacher_id" ]
   end
 
   def self.ransackable_associations(auth_object = nil)
-    [ "student", "source_semester_klass" ]
-  end
-
-  # 源学期：预留来自哪个学期的班级；来源班级被删除后为空
-  def source_semester
-    source_semester_klass&.semester
+    [ "student" ]
   end
 
   def generated?
     semester_klass_id.present?
+  end
+
+  # 可修改的目标年级：来源班级还在时为来源年级或升一年级，否则不限
+  def editable_grades
+    source = source_semester_klass
+    return Grade.order(:level) if source.blank?
+
+    ids = [ source.grade_id ]
+    next_grade = Grade.find_by(level: source.grade.level + 1)
+    ids << next_grade.id if next_grade
+    Grade.where(id: ids).order(:level)
   end
 
   # 生成的班级沿用来源班级的阶段

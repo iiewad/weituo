@@ -14,7 +14,7 @@ class Admin::ReservationsController < AdminController
 
     @pending_count = scope.pending.count
     @reservations = scope
-      .includes(:student, :grade, :subject, :teacher, :semester_klass, source_semester_klass: [ :semester, :grade, :teacher ])
+      .includes(:student, :grade, :subject, :teacher, :semester_klass, :source_semester, :source_semester_klass)
       .page(params[:page])
     # 「生成班级」作用于整个分组，按钮上要提示该组人数
     @group_sizes = visible_reservations.pending.includes(:source_semester_klass)
@@ -76,6 +76,45 @@ class Admin::ReservationsController < AdminController
     redirect_to back, notice: "已生成班级 #{klass.name}，加入 #{reservations.size} 名预留学员"
   rescue ActiveRecord::RecordInvalid => e
     redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
+  end
+
+  # 修改预留目标（年级 / 班型 / 教师）；已生成班级的预留不可改
+  def update
+    reservation = visible_reservations.find(params[:id])
+    if reservation.generated?
+      redirect_back_or_to admin_reservations_path, alert: "已生成班级的预留不能修改，请在对应班级中调整"
+      return
+    end
+
+    grade = Grade.find_by(id: params[:grade_id])
+    genre = params[:genre]
+    teacher = reservation.student.campuse.teachers.active.find_by(id: params[:teacher_id], subject_id: reservation.subject_id) if params[:teacher_id].present?
+
+    if grade.blank? || !reservation.editable_grades.exists?(grade.id) || !SemesterKlass::GENRE_MAP.value?(genre)
+      redirect_back_or_to admin_reservations_path, alert: "请选择目标年级和班型"
+      return
+    end
+    if params[:teacher_id].present? && teacher.blank?
+      redirect_back_or_to admin_reservations_path, alert: "所选教师不是本科目的在任教师"
+      return
+    end
+
+    reservation.update!(grade: grade, genre: genre, teacher: teacher)
+    redirect_back_or_to admin_reservations_path, notice: "已更新 #{reservation.student.name} 的预留"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_back_or_to admin_reservations_path, alert: "更新预留失败：#{e.record.errors.full_messages.join("；")}"
+  end
+
+  # 取消预留；已生成班级的预留不可取消
+  def destroy
+    reservation = visible_reservations.find(params[:id])
+    if reservation.generated?
+      redirect_back_or_to admin_reservations_path, alert: "已生成班级的预留不能取消，请在对应班级中移出学员"
+      return
+    end
+
+    reservation.destroy!
+    redirect_back_or_to admin_reservations_path, notice: "已取消 #{reservation.student.name} 的预留"
   end
 
   private

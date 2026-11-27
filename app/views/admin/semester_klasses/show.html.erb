@@ -8,9 +8,6 @@
 <% content_for :page_actions do %>
   <%= render "admin/shared/drawer", item: SemesterKlass.new, drawer_id: "drawer-klass-new", button_name: "开班", drawer_width: "240", drawer_content: "admin/semester_klasses/form" %>
   <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-klass-show", button_name: "班级详情", drawer_width: "180", drawer_content: "admin/semester_klasses/form" %>
-  <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-reserve", button_name: "预留",
-        button_class: "btn btn-xs btn-outline btn-primary", drawer_width: "260",
-        drawer_content: "admin/semester_klasses/reserve_form" %>
   <% if @next_semester %>
     <%= render "admin/shared/drawer", item: @sk, drawer_id: "drawer-copy", button_name: "复制",
           button_class: "btn btn-xs btn-outline btn-primary", drawer_width: "240",
@@ -43,7 +40,7 @@
   <span class="badge badge-outline <%= @sk.genre_badge_class %> badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
-<div data-controller="transfer-drawer">
+<div data-controller="transfer-drawer attendance-select">
 <div class="flex flex-col gap-4 lg:flex-row">
   <div class="wt-surface shrink-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-56 lg:self-start lg:overflow-y-auto">
     <p class="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-base-content/40">班级切换</p>
@@ -70,6 +67,15 @@
                  data-action="input->attendance-search#apply keydown.esc->attendance-search#clear">
         </label>
         <span class="text-xs text-base-content/50" data-attendance-search-target="count"></span>
+        <% if @klass_students.any? %>
+          <span class="text-xs text-base-content/50" data-attendance-select-target="count"></span>
+          <% if @next_semester && @reserve_candidates.any? %>
+            <button type="button" class="btn btn-sm btn-outline btn-primary whitespace-nowrap"
+                    data-attendance-select-target="reserveButton" data-action="attendance-select#openReserve" disabled>预留</button>
+          <% end %>
+          <button type="button" class="btn btn-sm btn-outline btn-error whitespace-nowrap"
+                  data-attendance-select-target="removeButton" data-action="attendance-select#openRemove" disabled>移出</button>
+        <% end %>
         <% if @next_course %>
           <%= button_to "开第 #{@next_course.seq} 课", start_admin_semester_klass_course_path(@sk, @next_course), method: :put,
                 class: "btn btn-sm btn-primary whitespace-nowrap" %>
@@ -92,6 +98,10 @@
     <table class="table table-xs">
       <thead class="bg-base-200/60 text-xs uppercase tracking-wide text-base-content/60">
         <tr>
+          <th>
+            <input type="checkbox" class="checkbox checkbox-xs" aria-label="全选学员"
+                   data-attendance-select-target="selectAll" data-action="change->attendance-select#toggleAll">
+          </th>
           <th class="sticky left-0 z-10 bg-base-200/60">学员</th>
           <% @courses.each do |course| %>
             <th class="whitespace-nowrap text-center">
@@ -107,6 +117,13 @@
         <% @klass_students.each do |ks| %>
           <tr class="hover:bg-base-200/40" data-attendance-search-target="row"
               data-search-text="<%= [ ks.student.name, ks.student.identity_suffix ].compact.join(" ") %>">
+            <td class="text-center">
+              <input type="checkbox" class="checkbox checkbox-xs" value="<%= ks.student_id %>"
+                     aria-label="选择 <%= ks.student.name %>" data-student-name="<%= ks.student.identity_label %>"
+                     data-ks-id="<%= ks.id %>"
+                     data-reserve-eligible="<%= ks.status == "in" && @next_semester.present? && !@reserved_student_ids.include?(ks.student_id) %>"
+                     data-attendance-select-target="rowCheckbox" data-action="change->attendance-select#refresh">
+            </td>
             <th class="sticky left-0 z-10 bg-base-100 font-medium">
               <div class="flex items-center gap-1">
                 <div class="whitespace-nowrap">
@@ -115,15 +132,12 @@
                     <span class="block text-[11px] font-normal text-base-content/40"><%= ks.student.identity_suffix %></span>
                   <% end %>
                 </div>
-                <div class="student-row-actions shrink-0">
-                  <%= button_to admin_semester_klass_klass_student_path(@sk, ks), method: :delete,
-                        data: { turbo_confirm: "确定将 #{ks.student.identity_label} 移出本班吗？
-
-移出后该学员不再出现在考勤表，历史考勤会保留，可在「已移出学员」中恢复。" },
-                        class: "btn btn-xs btn-square btn-ghost text-base-content/40 hover:text-error", title: "移出班级", aria: { label: "移出班级" } do %>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <% if ks.status == "in" && @next_semester %>
+                  <% reservation = @reservations_by_student_id[ks.student_id] %>
+                  <% if reservation || @placed_student_ids.include?(ks.student_id) %>
+                    <%= render "admin/semester_klasses/reservation_card", student: ks.student, reservation: reservation %>
                   <% end %>
-                </div>
+                <% end %>
               </div>
             </th>
             <% @courses.each do |course| %>
@@ -138,7 +152,7 @@
           </tr>
         <% end %>
         <tr class="hidden" data-attendance-search-target="empty">
-          <td colspan="<%= @courses.size + 1 %>" class="py-8 text-center text-sm text-base-content/50">没有匹配的学员</td>
+          <td colspan="<%= @courses.size + 2 %>" class="py-8 text-center text-sm text-base-content/50">没有匹配的学员</td>
         </tr>
       </tbody>
     </table>
@@ -151,6 +165,8 @@
 <% if @transfer_target_klasses.any? %>
   <%= render "admin/semester_klasses/transfer_drawer", target_klasses: @transfer_target_klasses, target_counts: @transfer_target_counts %>
 <% end %>
+<%= render "admin/semester_klasses/reserve_modal" %>
+<%= render "admin/semester_klasses/remove_modal" %>
 </div>
 
 <% if @left_klass_students.any? %>

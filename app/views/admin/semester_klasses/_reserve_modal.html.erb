@@ -1,0 +1,109 @@
+<dialog id="reserve-modal" class="modal" data-attendance-select-target="reserveModal">
+  <div class="modal-box max-w-2xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="关闭">✕</button>
+    </form>
+
+    <% if @next_semester.blank? %>
+      <h3 class="text-base font-semibold">预留下学期</h3>
+      <p class="mt-2 text-sm text-base-content/60">下学期尚未创建，请先到学校管理中创建学期。</p>
+    <% else %>
+      <h3 class="text-base font-semibold">预留下学期 · <%= @next_semester.name %></h3>
+      <p class="mt-1 text-xs text-base-content/50"><%= @sk.name %> · <%= @sk.grade.name %> · <%= @sk.subject.name %></p>
+
+      <%= form_with url: reserve_admin_semester_klass_path(@sk), method: :post,
+            namespace: "reserve", local: true, class: "mt-4 space-y-4" do |form| %>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <%= form.label :new_grade_id, "目标年级", class: "mb-1 block text-xs text-base-content/60" %>
+            <%= form.select :new_grade_id, @reserve_grades.map { |grade| [ grade.name, grade.id ] },
+                  { selected: @reserve_default_grade.id }, { class: "select select-sm w-full" } %>
+          </div>
+          <div>
+            <%= form.label :new_genre, "班型", class: "mb-1 block text-xs text-base-content/60" %>
+            <%= form.select :new_genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+                  { selected: @sk.genre }, { class: "select select-sm w-full" } %>
+          </div>
+          <div>
+            <%= form.label :new_teacher_id, "教师（可不选）", class: "mb-1 block text-xs text-base-content/60" %>
+            <%= form.select :new_teacher_id, @reserve_teachers.map { |teacher| [ teacher.name, teacher.id ] },
+                  { include_blank: "暂不指定", selected: @sk.teacher_id }, { class: "select select-sm w-full" } %>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-base-content/60">已选学员</p>
+          <div class="mt-1 flex flex-wrap gap-1" data-attendance-select-target="reserveList" data-input-name="student_ids[]" data-value-key="student"></div>
+          <p class="mt-1 text-[11px] text-base-content/40" data-attendance-select-target="reserveEmpty">在考勤表勾选学员后点「预留」。</p>
+          <p class="mt-1 text-[11px] text-warning" data-attendance-select-target="reserveSkipped"></p>
+        </div>
+
+        <p class="text-[11px] leading-snug text-base-content/40">
+          预留只写入预留表，不会直接加入下学期班级，也不修改学员现年级；下学期在「预留表」中按分组生成班级并加入学员，未指定教师的在生成时再选。
+        </p>
+
+        <%= form.submit "确认预留", class: "btn btn-primary w-full", disabled: true, data: { attendance_select_target: "reserveSubmit" } %>
+      <% end %>
+
+      <% reservations = @reservations_by_student_id.values.sort_by { |reservation| reservation.student.name } %>
+      <% if reservations.any? %>
+        <div class="mt-5 border-t border-base-300 pt-4">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold">已预留 · <%= @next_semester.name %></h3>
+            <span class="text-xs text-base-content/50"><%= reservations.size %> 人</span>
+          </div>
+          <p class="mt-1 text-xs text-base-content/50">展开可修改目标年级 / 班型 / 教师，或取消预留；已生成班级的不可改。</p>
+          <div class="mt-2 max-h-64 space-y-1 overflow-y-auto">
+            <% reservations.each do |reservation| %>
+              <% if reservation.generated? %>
+                <div class="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+                  <span class="font-medium"><%= reservation.student.identity_label %></span>
+                  <span class="badge badge-soft badge-success badge-xs ml-auto">已生成 · <%= reservation.semester_klass.name %></span>
+                </div>
+              <% else %>
+                <details class="rounded-box px-2.5 py-1.5 text-xs hover:bg-base-200/60">
+                  <summary class="flex cursor-pointer items-center gap-2">
+                    <span class="font-medium"><%= reservation.student.identity_label %></span>
+                    <span class="ml-auto text-[10px] text-base-content/50">
+                      <%= reservation.grade.name %> · <%= SemesterKlass::GENRE_MAP_REVERSE[reservation.genre] %> · <%= reservation.teacher&.name || "教师待定" %>
+                    </span>
+                  </summary>
+                  <div class="mt-2 space-y-2">
+                    <% grades = reservation.source_semester_klass_id == @sk.id ? @reserve_grades : reservation.editable_grades %>
+                    <%= form_with url: admin_reservation_path(reservation), method: :patch,
+                          namespace: "reservation_#{reservation.id}", local: true, class: "space-y-2" do |form| %>
+                      <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <div>
+                          <%= form.label :grade_id, "目标年级", class: "mb-1 block text-[10px] text-base-content/60" %>
+                          <%= form.select :grade_id, grades.map { |grade| [ grade.name, grade.id ] },
+                                { selected: reservation.grade_id }, { class: "select select-xs w-full" } %>
+                        </div>
+                        <div>
+                          <%= form.label :genre, "班型", class: "mb-1 block text-[10px] text-base-content/60" %>
+                          <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+                                { selected: reservation.genre }, { class: "select select-xs w-full" } %>
+                        </div>
+                        <div>
+                          <%= form.label :teacher_id, "教师", class: "mb-1 block text-[10px] text-base-content/60" %>
+                          <%= form.select :teacher_id, @reserve_teachers.map { |teacher| [ teacher.name, teacher.id ] },
+                                { include_blank: "暂不指定", selected: reservation.teacher_id }, { class: "select select-xs w-full" } %>
+                        </div>
+                      </div>
+                      <div class="flex items-center justify-end gap-2">
+                        <%= form.submit "保存", class: "btn btn-xs btn-primary" %>
+                      </div>
+                    <% end %>
+                    <%= button_to "取消预留", admin_reservation_path(reservation), method: :delete,
+                          class: "btn btn-xs btn-ghost text-error",
+                          data: { turbo_confirm: "确定取消 #{reservation.student.identity_label} 的下学期预留吗？" } %>
+                  </div>
+                </details>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>关闭</button></form>
+</dialog>

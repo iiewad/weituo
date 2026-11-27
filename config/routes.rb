@@ -22,6 +22,9 @@ Rails.application.routes.draw do
           put :restore
           put :reinstate
         end
+        collection do
+          delete :remove_batch
+        end
       end
       resources :courses do
         member do
@@ -47,7 +50,7 @@ Rails.application.routes.draw do
         post :import
       end
     end
-    resources :reservations, only: [ :index ] do
+    resources :reservations, only: [ :index, :update, :destroy ] do
       collection do
         post :generate
       end

@@ -1,0 +1,72 @@
+<%# 学员名旁的信息图标：hover 弹出浮卡，展示预留 badge 并可修改 / 取消预留。 %>
+<% if reservation&.generated? %>
+  <% icon_color = "text-success" %>
+<% elsif reservation %>
+  <% icon_color = "text-primary" %>
+<% else %>
+  <% icon_color = "text-base-content/40" %>
+<% end %>
+
+<div class="relative inline-block" data-controller="floating-card">
+  <button type="button" tabindex="0" data-floating-card-target="trigger"
+          data-action="mouseenter->floating-card#hoverOpen mouseleave->floating-card#scheduleClose click->floating-card#hoverOpen keydown.enter->floating-card#hoverOpen keydown.space->floating-card#hoverOpen"
+          class="<%= icon_color %> cursor-pointer" aria-label="预留信息">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+  </button>
+
+  <div data-floating-card-target="card" data-card-kind="reservation"
+       data-action="mouseenter->floating-card#cancelClose mouseleave->floating-card#scheduleClose click->floating-card#pin focusin->floating-card#pin"
+       class="card fixed z-50 hidden w-72 flex-col gap-2.5 rounded-box border border-base-300/70 bg-base-100 p-3 shadow-xl">
+    <div class="flex items-start justify-between gap-2">
+      <p class="truncate text-xs font-semibold"><%= student.name %><% if student.identity_suffix.present? %> <span class="font-normal text-base-content/40"><%= student.identity_suffix %></span><% end %></p>
+      <% if reservation&.generated? %>
+        <span class="badge badge-soft badge-success badge-xs shrink-0">已生成</span>
+      <% elsif reservation %>
+        <span class="badge badge-soft badge-primary badge-xs shrink-0">已预留</span>
+      <% else %>
+        <span class="badge badge-soft badge-neutral badge-xs shrink-0">下学期已就读</span>
+      <% end %>
+    </div>
+
+    <% if reservation %>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ghost badge-xs"><%= reservation.grade.name %></span>
+        <span class="badge badge-ghost badge-xs"><%= SemesterKlass::GENRE_MAP_REVERSE[reservation.genre] %></span>
+        <span class="badge badge-ghost badge-xs"><%= reservation.teacher&.name || "教师待定" %></span>
+        <% if reservation.generated? %>
+          <span class="badge badge-soft badge-success badge-xs"><%= reservation.semester_klass.name %></span>
+        <% end %>
+      </div>
+
+      <% if reservation.generated? %>
+        <p class="text-[11px] leading-snug text-base-content/50">已生成下学期班级，如需调整请到对应班级中操作。</p>
+      <% else %>
+        <% grades = reservation.source_semester_klass_id == @sk.id ? @reserve_grades : reservation.editable_grades %>
+        <%= form_with url: admin_reservation_path(reservation), method: :patch,
+              namespace: "card_#{reservation.id}", class: "space-y-2" do |form| %>
+          <div>
+            <%= form.label :grade_id, "目标年级", class: "mb-0.5 block text-[10px] text-base-content/60" %>
+            <%= form.select :grade_id, grades.map { |grade| [ grade.name, grade.id ] },
+                  { selected: reservation.grade_id }, { class: "select select-xs w-full" } %>
+          </div>
+          <div>
+            <%= form.label :genre, "班型", class: "mb-0.5 block text-[10px] text-base-content/60" %>
+            <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
+                  { selected: reservation.genre }, { class: "select select-xs w-full" } %>
+          </div>
+          <div>
+            <%= form.label :teacher_id, "教师", class: "mb-0.5 block text-[10px] text-base-content/60" %>
+            <%= form.select :teacher_id, @reserve_teachers.map { |teacher| [ teacher.name, teacher.id ] },
+                  { include_blank: "暂不指定", selected: reservation.teacher_id }, { class: "select select-xs w-full" } %>
+          </div>
+          <%= form.submit "保存", class: "btn btn-xs btn-primary w-full" %>
+        <% end %>
+        <%= button_to "取消预留", admin_reservation_path(reservation), method: :delete,
+              class: "btn btn-xs btn-ghost text-error w-full",
+              data: { turbo_confirm: "确定取消 #{student.identity_label} 的下学期预留吗？" } %>
+      <% end %>
+    <% else %>
+      <p class="text-[11px] leading-snug text-base-content/50">该学员已在下学期同科目班级就读，无需预留。</p>
+    <% end %>
+  </div>
+</div>
