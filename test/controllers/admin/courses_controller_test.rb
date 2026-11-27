@@ -53,6 +53,50 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 3, sk.courses.where.not(start_date: nil).count
   end
 
+  test "start_through accumulates custom start dates by interval" do
+    sk = semester_klasses(:sk_math_2)
+
+    put start_through_admin_semester_klass_courses_path(sk),
+      params: { through_seq: 3, start_date: "2026-03-01", interval_days: 5 }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "已开第 1–3 课（03-01 ~ 03-11）", flash[:notice]
+    assert_equal [ Date.new(2026, 3, 1), Date.new(2026, 3, 6), Date.new(2026, 3, 11) ],
+      sk.courses.where(seq: 1..3).order(:seq).pluck(:start_date)
+  end
+
+  test "start_through defaults to today with a weekly interval" do
+    sk = semester_klasses(:sk_math_2)
+
+    put start_through_admin_semester_klass_courses_path(sk), params: { through_seq: 2 }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal [ Date.today, Date.today + 7 ],
+      sk.courses.where(seq: 1..2).order(:seq).pluck(:start_date)
+  end
+
+  test "start_through falls back to defaults for blank or invalid input" do
+    sk = semester_klasses(:sk_math_2)
+
+    put start_through_admin_semester_klass_courses_path(sk),
+      params: { through_seq: 2, start_date: "不是日期", interval_days: "" }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal [ Date.today, Date.today + 7 ],
+      sk.courses.where(seq: 1..2).order(:seq).pluck(:start_date)
+  end
+
+  test "start_through clamps the interval into range" do
+    sk = semester_klasses(:sk_math_2)
+
+    put start_through_admin_semester_klass_courses_path(sk),
+      params: { through_seq: 2, start_date: "2026-03-01", interval_days: 9999 }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_equal [ Date.new(2026, 3, 1), Date.new(2026, 3, 1) + 365 ],
+      sk.courses.where(seq: 1..2).order(:seq).pluck(:start_date)
+  end
+
   test "start_through rejects a lesson that is already open" do
     sk = semester_klasses(:sk_math_2)
     sk.courses.find_by!(seq: 1).start!

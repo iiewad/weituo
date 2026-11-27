@@ -412,6 +412,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[action='#{start_through_admin_semester_klass_courses_path(sk)}']" do
       assert_select "select[name='through_seq'] option[selected]", text: "第 1 课"
+      assert_select "input[name='start_date'][value='#{Date.today}']"
+      assert_select "input[name='interval_days'][value='7']"
     end
     assert_select "button", text: /开第 \d+ 课/, count: 0
     assert_select "thead th", text: /未开课/, minimum: 1
