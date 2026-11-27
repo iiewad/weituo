@@ -70,20 +70,15 @@
                   data-attendance-select-target="removeButton" data-action="attendance-select#openRemove" disabled>移出</button>
         <% end %>
         <% if @next_course %>
-          <%= button_to "开第 #{@next_course.seq} 课", start_admin_semester_klass_course_path(@sk, @next_course), method: :put,
-                data: { turbo_frame: "_top" },
-                class: "btn btn-sm btn-primary whitespace-nowrap" %>
           <% unstarted_courses = @courses.reject(&:started?) %>
-          <% if unstarted_courses.size > 1 %>
-            <%= form_with url: start_through_admin_semester_klass_courses_path(@sk), method: :put,
-                  data: { turbo_frame: "_top" },
-                  class: "flex items-center gap-1" do |form| %>
-              <label for="through_seq" class="whitespace-nowrap text-xs text-base-content/60">开课到</label>
-              <%= select_tag :through_seq,
-                    options_for_select(unstarted_courses.map { |course| [ "第 #{course.seq} 课", course.seq ] }, unstarted_courses.first.seq),
-                    id: "through_seq", class: "select select-sm w-28" %>
-              <%= form.submit "批量开课", class: "btn btn-sm btn-outline btn-primary whitespace-nowrap" %>
-            <% end %>
+          <%= form_with url: start_through_admin_semester_klass_courses_path(@sk), method: :put,
+                data: { turbo_frame: "_top" },
+                class: "flex items-center gap-1" do |form| %>
+            <label for="through_seq" class="whitespace-nowrap text-xs text-base-content/60">开课到</label>
+            <%= select_tag :through_seq,
+                  options_for_select(unstarted_courses.map { |course| [ "第 #{course.seq} 课", course.seq ] }, unstarted_courses.first.seq),
+                  id: "through_seq", class: "select select-sm w-28" %>
+            <%= form.submit "批量开课", class: "btn btn-sm btn-outline btn-primary whitespace-nowrap" %>
           <% end %>
         <% else %>
           <span class="badge badge-success badge-sm">全部课次已开课</span>

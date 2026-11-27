@@ -116,7 +116,6 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "show renders the attendance content inside the klass_detail frame" do
     sk = semester_klasses(:sk_math_2)
-    first = sk.courses.find_by!(seq: 1)
 
     get admin_semester_klass_path(sk), headers: { "Turbo-Frame" => "klass_detail" }
 
@@ -127,7 +126,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr#klass_student_#{klass_students(:ks_2).id}[data-attendance-search-target='row']"
     # 切换班级要整页导航，标题 / 面包屑 / 操作按钮才会跟着换
     assert_select "turbo-frame#klass_detail a[data-turbo-frame='_top']", minimum: 1
-    assert_select "turbo-frame#klass_detail form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button[data-turbo-frame='_top']"
+    assert_select "turbo-frame#klass_detail form[action='#{start_through_admin_semester_klass_courses_path(sk)}'][data-turbo-frame='_top']"
   end
 
   test "show renders the transfer-in cell detail for a transferred student" do
@@ -405,16 +404,16 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 16, times["7-1"]
   end
 
-  test "show only offers the first unstarted course to start" do
+  test "show offers batch start defaulting to the first unstarted course" do
     sk = semester_klasses(:sk_math_2)
-    first = sk.courses.find_by!(seq: 1)
-    second = sk.courses.find_by!(seq: 2)
 
     get admin_semester_klass_path(sk)
 
     assert_response :success
-    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, first)}'] button", text: "开第 1 课"
-    assert_select "form[action='#{start_admin_semester_klass_course_path(sk, second)}'] button", count: 0
+    assert_select "form[action='#{start_through_admin_semester_klass_courses_path(sk)}']" do
+      assert_select "select[name='through_seq'] option[selected]", text: "第 1 课"
+    end
+    assert_select "button", text: /开第 \d+ 课/, count: 0
     assert_select "thead th", text: /未开课/, minimum: 1
   end
 
