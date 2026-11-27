@@ -1,6 +1,4 @@
 class AttendanceSheet
-  TITLE_ROW = 1
-  LEGEND_ROW = 3
   HEADER_ROW = 4
   DATA_START_ROW = 5
 
@@ -21,21 +19,21 @@ class AttendanceSheet
     styles = workbook.styles
 
     {
-      title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }),
-      label: styles.add_style(b: true, fg_color: "475569"),
-      value: styles.add_style({}),
+      title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }, **XlsxStyle::BORDER),
+      label: styles.add_style(b: true, fg_color: "475569", **XlsxStyle::BORDER),
+      value: styles.add_style(**XlsxStyle::BORDER),
       header: styles.add_style(
         b: true,
         bg_color: "F1F5F9",
         alignment: { horizontal: :center, vertical: :center, wrap_text: true },
-        border: { style: :thin, color: "CBD5E1" }
+        **XlsxStyle::BORDER
       ),
-      name: styles.add_style(alignment: { horizontal: :left }),
-      cell: styles.add_style(alignment: { horizontal: :center }),
-      muted: styles.add_style(fg_color: "94A3B8", alignment: { horizontal: :center }),
-      legend: styles.add_style(fg_color: "64748B", sz: 9),
+      name: styles.add_style(alignment: { horizontal: :left }, **XlsxStyle::BORDER),
+      cell: styles.add_style(alignment: { horizontal: :center }, **XlsxStyle::BORDER),
+      muted: styles.add_style(fg_color: "94A3B8", alignment: { horizontal: :center }, **XlsxStyle::BORDER),
+      legend: styles.add_style(fg_color: "64748B", sz: 9, **XlsxStyle::BORDER),
       status: STATUS_FILLS.transform_values { |fill|
-        styles.add_style(bg_color: fill, alignment: { horizontal: :center })
+        styles.add_style(bg_color: fill, alignment: { horizontal: :center }, **XlsxStyle::BORDER)
       }
     }
   end
@@ -77,8 +75,7 @@ class AttendanceSheet
 
   private
     def build_header(sheet, styles)
-      sheet.add_row([ "#{@semester_klass.name} · 考勤表" ], style: styles[:title])
-      sheet.merge_cells("A#{TITLE_ROW}:#{last_column}#{TITLE_ROW}")
+      XlsxStyle.merged_row(sheet, "#{@semester_klass.name} · 考勤表", styles[:title], columns)
 
       info = [
         "学期", @semester_klass.semester.name,
@@ -87,10 +84,9 @@ class AttendanceSheet
         "班型", SemesterKlass::GENRE_MAP_REVERSE[@semester_klass.genre],
         "在班", "#{@active_count} 人"
       ]
-      sheet.add_row(info, style: [ styles[:label], styles[:value] ] * 5)
+      XlsxStyle.full_row(sheet, info, [ styles[:label], styles[:value] ] * 5, columns)
 
-      sheet.add_row([ LEGEND ], style: styles[:legend])
-      sheet.merge_cells("A#{LEGEND_ROW}:#{last_column}#{LEGEND_ROW}")
+      XlsxStyle.merged_row(sheet, LEGEND, styles[:legend], columns)
 
       headers = [ "学员" ] + @courses.map { |course| course_header(course) }
       sheet.add_row(headers, style: styles[:header])
@@ -144,8 +140,12 @@ class AttendanceSheet
       "第#{course.seq}课\n#{state}"
     end
 
+    def columns
+      1 + @courses.size
+    end
+
     def last_column
-      Axlsx.col_ref(1 + @courses.size - 1)
+      Axlsx.col_ref(columns - 1)
     end
 
     def sheet_name

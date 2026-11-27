@@ -1,6 +1,5 @@
 class ReferralSheet
-  DETAIL_TITLE_ROW = 1
-  DETAIL_FILTER_ROW = 2
+  SUMMARY_COLUMNS = 8
   DETAIL_HEADER_ROW = 3
   DETAIL_DATA_START_ROW = 4
   DETAIL_HEADERS = %w[被推荐学员 年级 推荐人 推荐人年级 推荐时间]
@@ -47,74 +46,59 @@ class ReferralSheet
       styles = workbook.styles
 
       {
-        title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }),
-        section: styles.add_style(b: true, sz: 12, fg_color: "334155"),
-        label: styles.add_style(b: true, fg_color: "475569"),
-        value: styles.add_style({}),
+        title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }, **XlsxStyle::BORDER),
+        section: styles.add_style(b: true, sz: 12, fg_color: "334155", **XlsxStyle::BORDER),
+        label: styles.add_style(b: true, fg_color: "475569", **XlsxStyle::BORDER),
+        value: styles.add_style(**XlsxStyle::BORDER),
         header: styles.add_style(
           b: true,
           bg_color: "F1F5F9",
           alignment: { horizontal: :center, vertical: :center, wrap_text: true },
-          border: { style: :thin, color: "CBD5E1" }
+          **XlsxStyle::BORDER
         ),
-        name: styles.add_style(alignment: { horizontal: :left }),
-        cell: styles.add_style(alignment: { horizontal: :center })
+        name: styles.add_style(alignment: { horizontal: :left }, **XlsxStyle::BORDER),
+        cell: styles.add_style(alignment: { horizontal: :center }, **XlsxStyle::BORDER)
       }
     end
 
-    # 汇总表各小节行数动态，逐行记录当前行号用于合并单元格
+    # 汇总表各小节行数动态，合并与铺宽统一按当前实际行号处理
     def build_summary(sheet, styles)
-      row = 0
+      XlsxStyle.merged_row(sheet, "#{@campuse.name} · 推荐看板", styles[:title], SUMMARY_COLUMNS)
 
-      row += 1
-      sheet.add_row([ "#{@campuse.name} · 推荐看板" ], style: styles[:title])
-      sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
-
-      row += 1
-      sheet.add_row(
+      XlsxStyle.full_row(
+        sheet,
         [ "推荐总数", "#{@referral_count} 条", "推荐人", "#{@referrer_count} 人",
           "本月新增", "#{@this_month_count} 条", "人均推荐", "#{@average_per_referrer} 条/人" ],
-        style: [ styles[:label], styles[:value] ] * 4
+        [ styles[:label], styles[:value] ] * 4,
+        SUMMARY_COLUMNS
       )
 
-      row += 1
-      sheet.add_row([ "筛选条件：#{@filter_summary}" ], style: styles[:value])
-      sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
+      XlsxStyle.merged_row(sheet, "筛选条件：#{@filter_summary}", styles[:value], SUMMARY_COLUMNS)
 
-      row += 2
-      sheet.add_row([ "推荐排行（前10）" ], style: styles[:section])
-      sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
+      XlsxStyle.merged_row(sheet, "推荐排行（前10）", styles[:section], SUMMARY_COLUMNS)
 
-      row += 1
       sheet.add_row(RANKING_HEADERS, style: styles[:header])
       if @top_referrers.empty?
-        row += 1
-        sheet.add_row([ "当前筛选条件下没有推荐记录" ], style: styles[:cell])
-        sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
+        XlsxStyle.merged_row(sheet, "当前筛选条件下没有推荐记录", styles[:cell], SUMMARY_COLUMNS)
       else
         @top_referrers.each.with_index(1) do |student, index|
-          row += 1
-          sheet.add_row(
+          XlsxStyle.full_row(
+            sheet,
             [ index, student.identity_label, student.grade&.name || "—", @counts_by_referrer[student.id].to_i ],
-            style: [ styles[:cell], styles[:name], styles[:cell], styles[:cell] ]
+            [ styles[:cell], styles[:name], styles[:cell], styles[:cell] ],
+            SUMMARY_COLUMNS
           )
         end
       end
 
-      row += 2
-      sheet.add_row([ "被推荐学员年级分布" ], style: styles[:section])
-      sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
+      XlsxStyle.merged_row(sheet, "被推荐学员年级分布", styles[:section], SUMMARY_COLUMNS)
 
-      row += 1
       sheet.add_row(DISTRIBUTION_HEADERS, style: styles[:header])
       if @grade_distribution.empty?
-        row += 1
-        sheet.add_row([ "当前筛选条件下没有推荐记录" ], style: styles[:cell])
-        sheet.merge_cells("A#{row}:#{summary_last_column}#{row}")
+        XlsxStyle.merged_row(sheet, "当前筛选条件下没有推荐记录", styles[:cell], SUMMARY_COLUMNS)
       else
         @grade_distribution.each do |grade, count|
-          row += 1
-          sheet.add_row([ grade.name, count ], style: [ styles[:name], styles[:cell] ])
+          XlsxStyle.full_row(sheet, [ grade.name, count ], [ styles[:name], styles[:cell] ], SUMMARY_COLUMNS)
         end
       end
 
@@ -123,19 +107,16 @@ class ReferralSheet
     end
 
     def build_detail_header(sheet, styles)
-      sheet.add_row([ "推荐明细" ], style: styles[:title])
-      sheet.merge_cells("A#{DETAIL_TITLE_ROW}:#{detail_last_column}#{DETAIL_TITLE_ROW}")
+      XlsxStyle.merged_row(sheet, "推荐明细", styles[:title], DETAIL_HEADERS.size)
 
-      sheet.add_row([ "筛选条件：#{detail_filter_summary}" ], style: styles[:value])
-      sheet.merge_cells("A#{DETAIL_FILTER_ROW}:#{detail_last_column}#{DETAIL_FILTER_ROW}")
+      XlsxStyle.merged_row(sheet, "筛选条件：#{detail_filter_summary}", styles[:value], DETAIL_HEADERS.size)
 
       sheet.add_row(DETAIL_HEADERS, style: styles[:header])
     end
 
     def build_detail_rows(sheet, styles)
       if @records.empty?
-        sheet.add_row([ "当前筛选条件下没有推荐记录" ], style: styles[:cell])
-        sheet.merge_cells("A#{DETAIL_DATA_START_ROW}:#{detail_last_column}#{DETAIL_DATA_START_ROW}")
+        XlsxStyle.merged_row(sheet, "当前筛选条件下没有推荐记录", styles[:cell], DETAIL_HEADERS.size)
         return
       end
 
@@ -179,9 +160,5 @@ class ReferralSheet
       return @filter_summary if @name_query.blank?
 
       "#{@filter_summary} · 姓名搜索：#{@name_query}"
-    end
-
-    def summary_last_column
-      "H"
     end
 end

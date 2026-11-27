@@ -1,14 +1,9 @@
 class StatementSheet
-  TITLE_ROW = 1
-  INFO_ROW = 2
-  FILTER_ROW = 3
   HEADER_ROW = 4
   DATA_START_ROW = 5
 
   HEADERS = %w[学期 年级 科目 教师 班型 班级 在班 预留 预留率(%)]
 
-  DETAIL_TITLE_ROW = 1
-  DETAIL_FILTER_ROW = 2
   DETAIL_HEADER_ROW = 3
   DETAIL_DATA_START_ROW = 4
   DETAIL_HEADERS = %w[学期 年级 班级 科目 教师 类型 学员 说明]
@@ -47,23 +42,22 @@ class StatementSheet
       styles = workbook.styles
 
       {
-        title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }),
-        label: styles.add_style(b: true, fg_color: "475569"),
-        value: styles.add_style({}),
+        title: styles.add_style(sz: 14, b: true, alignment: { vertical: :center }, **XlsxStyle::BORDER),
+        label: styles.add_style(b: true, fg_color: "475569", **XlsxStyle::BORDER),
+        value: styles.add_style(**XlsxStyle::BORDER),
         header: styles.add_style(
           b: true,
           bg_color: "F1F5F9",
           alignment: { horizontal: :center, vertical: :center, wrap_text: true },
-          border: { style: :thin, color: "CBD5E1" }
+          **XlsxStyle::BORDER
         ),
-        name: styles.add_style(alignment: { horizontal: :left }),
-        cell: styles.add_style(alignment: { horizontal: :center })
+        name: styles.add_style(alignment: { horizontal: :left }, **XlsxStyle::BORDER),
+        cell: styles.add_style(alignment: { horizontal: :center }, **XlsxStyle::BORDER)
       }
     end
 
     def build_header(sheet, styles)
-      sheet.add_row([ "#{@semester.name} · 班级预留报表" ], style: styles[:title])
-      sheet.merge_cells("A#{TITLE_ROW}:#{last_column}#{TITLE_ROW}")
+      XlsxStyle.merged_row(sheet, "#{@semester.name} · 班级预留报表", styles[:title], HEADERS.size)
 
       info = [
         "校区", @campuse.name,
@@ -71,18 +65,16 @@ class StatementSheet
         "在班", "#{@summary[:active_count]} 人次",
         "平均预留", "#{@summary[:reserve_rate]}%"
       ]
-      sheet.add_row(info, style: [ styles[:label], styles[:value] ] * 4)
+      XlsxStyle.full_row(sheet, info, [ styles[:label], styles[:value] ] * 4, HEADERS.size)
 
-      sheet.add_row([ "筛选条件：#{@filter_summary}" ], style: styles[:value])
-      sheet.merge_cells("A#{FILTER_ROW}:#{last_column}#{FILTER_ROW}")
+      XlsxStyle.merged_row(sheet, "筛选条件：#{@filter_summary}", styles[:value], HEADERS.size)
 
       sheet.add_row(HEADERS, style: styles[:header])
     end
 
     def build_rows(sheet, styles)
       if @rows.empty?
-        sheet.add_row([ "当前筛选条件下没有班级数据" ], style: styles[:cell])
-        sheet.merge_cells("A#{DATA_START_ROW}:#{last_column}#{DATA_START_ROW}")
+        XlsxStyle.merged_row(sheet, "当前筛选条件下没有班级数据", styles[:cell], HEADERS.size)
         return
       end
 
@@ -109,11 +101,9 @@ class StatementSheet
     end
 
     def build_detail_header(sheet, styles)
-      sheet.add_row([ "预留学员明细" ], style: styles[:title])
-      sheet.merge_cells("A#{DETAIL_TITLE_ROW}:#{detail_last_column}#{DETAIL_TITLE_ROW}")
+      XlsxStyle.merged_row(sheet, "预留学员明细", styles[:title], DETAIL_HEADERS.size)
 
-      sheet.add_row([ "筛选条件：#{@filter_summary}" ], style: styles[:value])
-      sheet.merge_cells("A#{DETAIL_FILTER_ROW}:#{detail_last_column}#{DETAIL_FILTER_ROW}")
+      XlsxStyle.merged_row(sheet, "筛选条件：#{@filter_summary}", styles[:value], DETAIL_HEADERS.size)
 
       sheet.add_row(DETAIL_HEADERS, style: styles[:header])
     end
@@ -142,8 +132,7 @@ class StatementSheet
       end
 
       if detail_rows.empty?
-        sheet.add_row([ "当前筛选条件下没有学员明细" ], style: styles[:cell])
-        sheet.merge_cells("A#{DETAIL_DATA_START_ROW}:#{detail_last_column}#{DETAIL_DATA_START_ROW}")
+        XlsxStyle.merged_row(sheet, "当前筛选条件下没有学员明细", styles[:cell], DETAIL_HEADERS.size)
         return
       end
 
