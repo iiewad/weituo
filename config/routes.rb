@@ -52,7 +52,6 @@ Rails.application.routes.draw do
     end
     resources :reservations, only: [ :index, :update, :destroy ] do
       collection do
-        post :generate
         post :batch_enroll
       end
     end

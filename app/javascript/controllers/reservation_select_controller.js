@@ -1,11 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="reservation-select"
-// 预留表勾选学员后，工具栏「批量进班」把勾选学员带入弹窗，按分组生成新班级或加入已有班级。
+// 预留表勾选学员后，工具栏「批量进班」把勾选学员带入抽屉，按分组生成新班级或加入已有班级。
 export default class extends Controller {
   static targets = [
-    "rowCheckbox", "selectAll", "count", "batchButton", "modal",
-    "idList", "modalCount", "groupRow", "groupCount", "generatePane", "joinPane", "generateEmpty"
+    "rowCheckbox", "selectAll", "count", "batchButton", "drawerToggle",
+    "idList", "modalCount", "groupRow", "groupCount", "groupNames", "generatePane", "joinPane", "generateEmpty"
   ]
 
   connect() {
@@ -34,7 +34,7 @@ export default class extends Controller {
   }
 
   openBatch() {
-    if (!this.hasModalTarget) return
+    if (!this.hasDrawerToggleTarget) return
 
     const selected = this.selected()
     if (selected.length === 0) return
@@ -51,9 +51,11 @@ export default class extends Controller {
     if (this.hasModalCountTarget) this.modalCountTarget.textContent = selected.length
 
     const counts = new Map()
+    const names = new Map()
     selected.forEach((checkbox) => {
       const key = checkbox.dataset.groupKey
       counts.set(key, (counts.get(key) || 0) + 1)
+      names.set(key, [ ...(names.get(key) || []), checkbox.dataset.studentName ])
     })
 
     this.groupRowTargets.forEach((row) => {
@@ -61,10 +63,13 @@ export default class extends Controller {
       row.dataset.selectedCount = count
       const label = row.querySelector('[data-reservation-select-target="groupCount"]')
       if (label) label.textContent = count > 0 ? `选中 ${count} 人` : ""
+      const namesLabel = row.querySelector('[data-reservation-select-target="groupNames"]')
+      const list = names.get(row.dataset.batchGroup) || []
+      if (namesLabel) namesLabel.textContent = list.length > 0 ? `学员：${list.join("、")}` : ""
     })
 
     this.applyMode()
-    this.modalTarget.showModal()
+    this.drawerToggleTarget.checked = true
   }
 
   switchMode() {

@@ -1,0 +1,108 @@
+<%# 批量进班抽屉：把勾选的待分班预留学员按分组生成新班级，或加入已有班级；每个分组列出选中的学员姓名 %>
+<% klass_options = @batch_klasses.group_by { |klass| "#{klass.semester.name} · #{klass.subject.name}" }
+      .map { |label, klasses| [ label, klasses.map { |klass| [ "#{klass.name}（#{klass.teacher.name}）", klass.id ] } ] } %>
+
+<div class="drawer drawer-end">
+  <input id="drawer-batch-enroll" type="checkbox" class="drawer-toggle" data-reservation-select-target="drawerToggle" />
+  <div class="drawer-content"></div>
+  <div class="drawer-side z-50">
+    <label for="drawer-batch-enroll" aria-label="close sidebar" class="drawer-overlay"></label>
+    <div id="batch-enroll-drawer" class="bg-base-200 min-h-full overflow-y-auto p-4 sm:p-6"
+         style="width: min(calc(var(--spacing) * 200), 92vw)">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h2 class="text-base font-semibold">批量进班</h2>
+          <p class="mt-1 text-xs text-base-content/50">
+            已选 <span class="font-medium text-base-content/70" data-reservation-select-target="modalCount">0</span> 名待分班学员
+          </p>
+        </div>
+        <label for="drawer-batch-enroll" class="btn btn-sm btn-circle btn-ghost" aria-label="关闭">✕</label>
+      </div>
+
+      <%= form_with url: batch_enroll_admin_reservations_path, method: :post, local: true, class: "mt-3 space-y-4" do %>
+        <div class="hidden" data-reservation-select-target="idList"></div>
+
+        <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+          <label class="flex items-center gap-1.5">
+            <%= radio_button_tag :mode, "generate", true, data: { action: "change->reservation-select#switchMode" } %>
+            <span>按分组生成新班级</span>
+          </label>
+          <label class="flex items-center gap-1.5">
+            <%= radio_button_tag :mode, "join", false, data: { action: "change->reservation-select#switchMode" } %>
+            <span>加入已有班级</span>
+          </label>
+        </div>
+
+        <div class="space-y-2" data-reservation-select-target="generatePane">
+          <p class="text-[11px] leading-snug text-base-content/50">
+            同一分组的学员会进入同一个新班级；可在下方逐个分组调整年级、班型、阶段、教师与课次。
+          </p>
+          <% @batch_groups.each do |group| %>
+            <div class="hidden space-y-2 rounded-field border border-base-200 bg-base-100 p-2"
+                 data-batch-group="<%= group[:key] %>" data-reservation-select-target="groupRow">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-medium"><%= group[:label] %></span>
+                <span class="shrink-0 text-xs text-base-content/50" data-reservation-select-target="groupCount"></span>
+              </div>
+              <p class="text-[11px] leading-snug text-base-content/50">
+                目标学期：<%= group[:semester_name] %> · 科目：<%= group[:subject_name] %>
+              </p>
+              <p class="text-[11px] leading-snug text-base-content/60" data-reservation-select-target="groupNames"></p>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <label class="block">
+                  <span class="mb-0.5 block text-[11px] text-base-content/50">年级</span>
+                  <%= select_tag "groups[#{group[:key]}][grade_id]",
+                        options_for_select(@grade_options.map { |grade| [ grade.name, grade.id ] }, group[:grade_id]),
+                        class: "select select-sm w-full", aria: { label: "年级" } %>
+                </label>
+                <label class="block">
+                  <span class="mb-0.5 block text-[11px] text-base-content/50">班型</span>
+                  <%= select_tag "groups[#{group[:key]}][genre]",
+                        options_for_select(SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] }, group[:genre]),
+                        class: "select select-sm w-full", aria: { label: "班型" } %>
+                </label>
+                <label class="block">
+                  <span class="mb-0.5 block text-[11px] text-base-content/50">阶段</span>
+                  <%= select_tag "groups[#{group[:key]}][phase]",
+                        options_for_select(SemesterKlass::PHASE_MAP.map { |value, label| [ label, value ] }, group[:phase]),
+                        class: "select select-sm w-full", aria: { label: "阶段" } %>
+                </label>
+                <label class="block">
+                  <span class="mb-0.5 block text-[11px] text-base-content/50">课次</span>
+                  <%= number_field_tag "groups[#{group[:key]}][times]", group[:times], min: 1,
+                        class: "input input-sm w-full", aria: { label: "课次" } %>
+                </label>
+              </div>
+              <label class="block">
+                <span class="mb-0.5 block text-[11px] text-base-content/50">教师</span>
+                <select name="groups[<%= group[:key] %>][teacher_id]" class="select select-sm w-full" aria-label="教师">
+                  <option value="">选择教师</option>
+                  <% group[:teachers].each do |teacher| %>
+                    <option value="<%= teacher.id %>" <%= "selected" if teacher.id == group[:teacher_id] %>><%= teacher.name %></option>
+                  <% end %>
+                </select>
+              </label>
+            </div>
+          <% end %>
+          <p class="hidden text-xs text-base-content/50" data-reservation-select-target="generateEmpty">
+            当前选中的学员没有可按分组生成的待分班预留。
+          </p>
+        </div>
+
+        <div class="hidden space-y-2" data-reservation-select-target="joinPane">
+          <% if @batch_klasses.any? %>
+            <%= select_tag :klass_id, grouped_options_for_select(klass_options, nil, prompt: "选择班级"),
+                  class: "select select-sm w-full", aria: { label: "已有班级" } %>
+            <p class="text-[11px] leading-snug text-base-content/50">
+              加入已有班级要求所选学员属于同一目标学期与科目，且与所选班级一致；年级不同也可加入。
+            </p>
+          <% else %>
+            <p class="text-xs text-base-content/50">暂无可加入的下学期班级。</p>
+          <% end %>
+        </div>
+
+        <%= submit_tag "确认进班", class: "btn btn-primary w-full" %>
+      <% end %>
+    </div>
+  </div>
+</div>

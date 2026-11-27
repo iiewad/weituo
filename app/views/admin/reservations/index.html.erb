@@ -1,6 +1,5 @@
 <% content_for :page_title, "预留表" %>
 <% content_for :page_subtitle, [ Current.semester&.name, Current.campuse&.name ].compact.join(" · ") %>
-<% index_params = { q: params[:q]&.to_unsafe_h, status: params[:status] }.compact %>
 
 <%= turbo_frame_tag "reservations_content" do %>
   <%= render "admin/shared/alert" if turbo_frame_request? %>
@@ -39,7 +38,6 @@
             <th>班型</th>
             <th>教师</th>
             <th>状态</th>
-            <th class="text-right">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -77,11 +75,6 @@
                   <span class="badge badge-soft badge-warning badge-sm">待分班</span>
                 <% end %>
               </td>
-              <td class="text-right">
-                <% unless reservation.generated? %>
-                  <%= render "generate_action", reservation: reservation, index_params: index_params %>
-                <% end %>
-              </td>
             </tr>
           <% end %>
         </tbody>
@@ -98,7 +91,7 @@
           aria_label: "预留分页" %>
 
     <% if @batch_groups.any? %>
-      <%= render "batch_enroll_modal" %>
+      <%= render "batch_enroll_drawer" %>
     <% end %>
   </div>
 <% end %>

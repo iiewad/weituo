@@ -17,10 +17,7 @@ class Admin::ReservationsController < AdminController
     @reservations = scope
       .includes(:student, :grade, :subject, :teacher, :semester_klass, :source_semester, :source_semester_klass)
       .page(params[:page])
-    # 「生成班级」作用于整个分组，按钮上要提示该组人数
-    @group_sizes = visible_reservations.pending.includes(:source_semester_klass)
-      .group_by(&:group_key).transform_values(&:size)
-    # 预留未指定教师（或教师已存档）的分组，生成班级时在这里选
+    # 预留未指定教师（或教师已存档）的分组，批量进班时在这里选
     @teachers_by_subject = @teachers.reject(&:archived?).group_by(&:subject_id)
 
     # 批量进班：当前页待分班预留的分组（含可调整的班级信息）与可加入的已有班级
@@ -51,65 +48,6 @@ class Admin::ReservationsController < AdminController
       .includes(:semester, :subject, :grade, :teacher)
       .to_a
       .sort_by(&:display_order_key)
-  end
-
-  # 按分组生成下学期班级，并把该组待分班的预留学员加入班级。
-  # 预留未指定教师的分组，由 teacher_id 指定新班级的教师；group_teacher_id 是分组本身的教师
-  def generate
-    semester = Current.school.semesters.find_by(id: params[:semester_id])
-    grade = Grade.find_by(id: params[:grade_id])
-    subject = Subject.find_by(id: params[:subject_id])
-    group_teacher_id = params[:group_teacher_id].presence
-    teacher = Current.campuse.teachers.active.find_by(id: params[:teacher_id], subject_id: subject&.id)
-    genre = params[:genre]
-    phase = params[:phase].to_i
-
-    back = admin_reservations_path(**index_params)
-    unless semester && grade && subject &&
-           SemesterKlass::GENRE_MAP.value?(genre) && SemesterKlass::PHASE_PREFIX.key?(phase)
-      redirect_to back, alert: "预留信息不完整，无法生成班级"
-      return
-    end
-
-    unless teacher
-      redirect_to back, alert: "请选择本科目的在任教师后再生成班级"
-      return
-    end
-
-    reservations = visible_reservations.pending
-      .where(semester_id: semester.id, grade_id: grade.id, subject_id: subject.id, genre: genre, teacher_id: group_teacher_id)
-      .to_a
-      .select { |reservation| reservation.phase == phase }
-
-    if reservations.empty?
-      redirect_to back, alert: "该分组没有待分班的预留学员"
-      return
-    end
-
-    # 学员年级与班级年级一致才可进班：须先升级到目标年级，未升级的预留保持待分班
-    if reservations.none? { |reservation| reservation.student.grade_id == grade.id }
-      redirect_to back, alert: "该分组学员尚未升级到 #{grade.name}，请先在「学员管理」批量升级后再生成班级"
-      return
-    end
-
-    klass = nil
-    enrolled = 0
-    grade_skipped = 0
-    subject_skipped = 0
-    ActiveRecord::Base.transaction do
-      klass = create_klass_for(
-        semester: semester, grade: grade, subject: subject,
-        genre: genre, phase: phase, teacher: teacher
-      )
-      enrolled, grade_skipped, subject_skipped = enroll(klass, reservations)
-    end
-
-    notice = "已生成班级 #{klass.name}，加入 #{enrolled} 名预留学员"
-    notice += "（另有 #{grade_skipped} 名未升级到 #{grade.name}，已跳过，升级后可再次生成）" if grade_skipped.positive?
-    notice += "（另有 #{subject_skipped} 名已在同学期同科目其他班，已跳过）" if subject_skipped.positive?
-    redirect_to back, notice: notice
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to back, alert: "生成班级失败：#{e.record.errors.full_messages.join("；")}"
   end
 
   # 批量进班：把选中的待分班预留学员按分组生成新班级（generate），或加入已有班级（join）

@@ -16,13 +16,6 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  def group_params(genre)
-    {
-      semester_id: semesters(:semester_next).id, grade_id: grades(:grade_8).id, subject_id: subjects(:math).id,
-      genre: genre, phase: 1, group_teacher_id: teachers(:math_teacher_1).id, teacher_id: teachers(:math_teacher_1).id
-    }
-  end
-
   # 预留表只列出当前所选学期的预留；切换学期后其它学期的预留才会出现
   def switch_to_semester(semester)
     get switch_thread_semester_admin_school_semester_path(schools(:school_1), semester)
@@ -46,7 +39,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
     # 首列为勾选框：第 2 列学员，第 3 列源学期
     assert_select "tbody tr td:nth-child(3)", text: semesters(:semester_previous).name
     assert_select "td", text: /待分班/, count: 2
-    assert_select "form[action^='#{generate_admin_reservations_path}']", count: 2
+    # 单个学员不再提供「生成班级」操作，统一走批量进班
+    assert_select "th", text: "操作", count: 0
   end
 
   test "index only shows reservations targeting the current semester" do
@@ -93,124 +87,6 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "tbody tr", count: 1
     assert_select "td", text: /已生成 · #{semester_klasses(:sk_math_1).name}/
-    assert_select "form[action^='#{generate_admin_reservations_path}']", count: 0
-  end
-
-  test "generate creates a next semester class and enrolls the reserved students" do
-    # 学员年级与班级年级一致才可进班：须先升级到目标年级（八年级）
-    @student.update!(grade: grades(:grade_8))
-    @other.update!(grade: grades(:grade_8))
-    reserve(@student, genre: "JY")
-    reserve(@other, genre: "JY")
-
-    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
-      post generate_admin_reservations_path, params: group_params("JY")
-    end
-
-    assert_redirected_to admin_reservations_path
-    assert_match "加入 2 名预留学员", flash[:notice]
-
-    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
-    assert_equal grades(:grade_8), klass.grade
-    assert_equal "JY", klass.genre
-    assert_equal teachers(:math_teacher_1), klass.teacher
-    assert_equal [ @student.id, @other.id ].sort, klass.klass_students.pluck(:student_id).sort
-    assert Reservation.where(student: [ @student, @other ]).all? { |reservation| reservation.semester_klass == klass }
-    # 分班不改动学员年级
-    assert_equal grades(:grade_8), @student.reload.grade
-
-    # 已生成的分组不再重复生成
-    assert_no_difference -> { SemesterKlass.count } do
-      post generate_admin_reservations_path, params: group_params("JY")
-    end
-    assert_match "没有待分班的预留学员", flash[:alert]
-  end
-
-  test "generate refuses when no student has been promoted to the target grade" do
-    reserve(@student, genre: "JY") # 七年级学员，目标八年级，未升级
-
-    assert_no_difference -> { SemesterKlass.count } do
-      post generate_admin_reservations_path, params: group_params("JY")
-    end
-
-    assert_redirected_to admin_reservations_path
-    assert_match "尚未升级", flash[:alert]
-    assert Reservation.pending.exists?(student: @student)
-  end
-
-  test "generate enrolls promoted students and skips those not yet promoted" do
-    @student.update!(grade: grades(:grade_8)) # 已升级
-    reserve(@student, genre: "JY")
-    reserve(@other, genre: "JY") # 仍为七年级
-
-    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
-      post generate_admin_reservations_path, params: group_params("JY")
-    end
-
-    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
-    assert_equal [ @student.id ], klass.klass_students.pluck(:student_id)
-    assert_match "加入 1 名预留学员", flash[:notice]
-    assert_match "1 名未升级", flash[:notice]
-    # 未升级学员的预留保持待分班，升级后可再次生成
-    assert Reservation.pending.exists?(student: @other)
-  end
-
-  test "generate keeps the list filters" do
-    @student.update!(grade: grades(:grade_8))
-    reserve(@student, genre: "JY")
-
-    post generate_admin_reservations_path, params: group_params("JY").merge(q: { genre_eq: "JY" }, status: "pending")
-
-    assert_redirected_to admin_reservations_path(q: { genre_eq: "JY" }, status: "pending")
-  end
-
-  test "generate only moves its own group" do
-    @student.update!(grade: grades(:grade_8))
-    reserve(@student, genre: "JY")
-    reserve(@other, genre: "TG")
-
-    post generate_admin_reservations_path, params: group_params("JY")
-
-    assert_equal [ @student.id ], SemesterKlass.where(semester: semesters(:semester_next)).last.klass_students.pluck(:student_id)
-    assert Reservation.pending.exists?(student: @other)
-  end
-
-  test "generate with incomplete params creates nothing" do
-    reserve(@student, genre: "JY")
-
-    assert_no_difference -> { SemesterKlass.count } do
-      post generate_admin_reservations_path, params: group_params("JY").except(:subject_id)
-    end
-
-    assert_redirected_to admin_reservations_path
-    assert_match "预留信息不完整", flash[:alert]
-  end
-
-  test "reservations without a teacher pick it when generating" do
-    @student.update!(grade: grades(:grade_8))
-    @other.update!(grade: grades(:grade_8))
-    reserve(@student, genre: "JY", teacher: nil)
-    reserve(@other, genre: "JY", teacher: nil)
-    switch_to_semester(semesters(:semester_next))
-
-    get admin_reservations_path
-
-    assert_select "td", text: "待定", count: 2
-    assert_select "select[name='teacher_id']", count: 2
-
-    assert_no_difference -> { SemesterKlass.count } do
-      post generate_admin_reservations_path, params: group_params("JY").except(:teacher_id).merge(group_teacher_id: "")
-    end
-    assert_match "请选择本科目的在任教师", flash[:alert]
-
-    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
-      post generate_admin_reservations_path, params: group_params("JY").except(:group_teacher_id).merge(group_teacher_id: "", teacher_id: teachers(:math_teacher_2).id)
-    end
-
-    klass = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
-    assert_equal teachers(:math_teacher_2), klass.teacher
-    assert_equal [ @student.id, @other.id ].sort, klass.klass_students.pluck(:student_id).sort
-    assert_equal teachers(:math_teacher_2), Reservation.find_by!(student: @other).teacher
   end
 
   test "manager sees reservations from their own grade into the grade above" do
@@ -231,12 +107,6 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "tbody tr", count: 1
     assert_select "td", text: /#{@student.identity_label}/
-
-    # 升级到目标年级后才能生成进班
-    @student.update!(grade: grades(:grade_8))
-    assert_difference -> { SemesterKlass.where(semester: semesters(:semester_next)).count }, 1 do
-      post generate_admin_reservations_path, params: group_params("JY")
-    end
   end
 
   test "update changes the reservation target" do
@@ -326,7 +196,8 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_select "input[data-reservation-select-target='rowCheckbox'][value='#{pending.id}'][data-group-key]"
     assert_select "input[data-reservation-select-target='rowCheckbox'][value='#{generated.id}']", count: 0
-    assert_select "dialog#batch-enroll-modal form[action='#{batch_enroll_admin_reservations_path}']"
+    assert_select "#batch-enroll-drawer form[action='#{batch_enroll_admin_reservations_path}']"
+    assert_select "#batch-enroll-drawer [data-reservation-select-target='groupNames']"
     assert_select "form details", count: 0
     assert_select "form select[name='q[grade_id_eq]']"
     assert_select "form select[name='q[subject_id_eq]']"
