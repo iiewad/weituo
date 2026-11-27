@@ -131,6 +131,43 @@ class AttendanceTest < ActiveSupport::TestCase
     assert target.reload.archived_at.present?
   end
 
+  test "all transitions require a started course" do
+    course = courses(:sk_1_course_2)
+    attendance = course.attendances.create!(klass_student: klass_students(:ks_1))
+
+    %w[absent personal_leave sick_leave quit transfer].each do |status|
+      assert_raises(AASM::InvalidTransition) { attendance.public_send("mark_#{status}!") }
+    end
+    assert_equal "normal", attendance.reload.status
+  end
+
+  test "mark normal restores mistaken absence, leave and filled" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    %w[absent personal_leave sick_leave].each do |status|
+      attendance.public_send("mark_#{status}!")
+      attendance.mark_normal!
+      assert_equal "normal", attendance.status
+    end
+
+    attendance.mark_absent!
+    attendance.mark_filled!
+    attendance.mark_normal!
+    assert_equal "normal", attendance.status
+  end
+
+  test "mark normal is not allowed from quit or transfer" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_quit!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_normal! }
+    assert_equal "quit", attendance.reload.status
+  end
+
   test "mark rejoin only restores the trailing leave block" do
     first = courses(:sk_1_course_1)
     second = courses(:sk_1_course_2)

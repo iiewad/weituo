@@ -24,6 +24,55 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert attendance.updated_at.present?
   end
 
+  test "mark normal restores a mistaken absence" do
+    attendance = prepared_attendance
+    attendance.mark_absent!
+
+    mark(attendance, "normal")
+
+    assert_equal "normal", attendance.reload.status
+  end
+
+  test "mark quit survives an archived enrollment" do
+    attendance = prepared_attendance
+    klass_students(:ks_2).archive!
+
+    mark(attendance, "quit")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "quit", attendance.reload.status
+    assert klass_students(:ks_2).reload.archived_at.present?
+  end
+
+  test "mark rejects an unstarted course" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 2)
+    attendance = course.attendances.create!(klass_student: klass_students(:ks_2))
+
+    mark(attendance, "absent")
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "尚未开课", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+    assert_nil attendance.reload.marked_by
+  end
+
+  test "transfer rejects an unstarted source course" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 2)
+    attendance = course.attendances.create!(klass_student: klass_students(:ks_2))
+    target = semester_klasses(:sk_math_3)
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      sk, course, attendance, target_semester_klass_id: target.id
+    )
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "尚未开课", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
+  end
+
   test "mark filled after an absence" do
     attendance = prepared_attendance
     attendance.mark_absent!
@@ -174,6 +223,23 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
     target.courses.find_by!(seq: 3).start!
     assert_equal "normal", target.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: target_ks.id).status
+  end
+
+  test "transfer rejects a target class that has already finished" do
+    attendance = prepared_attendance
+    target = semester_klasses(:sk_math_3)
+    target.courses.update_all(start_date: Date.current)
+
+    put transfer_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance,
+      target_semester_klass_id: target.id
+    )
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "课程已全部开始", flash[:alert]
+    assert_equal "normal", attendance.reload.status
+    assert_equal "in", klass_students(:ks_2).reload.status
+    assert_not target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
   test "transfer requires an available target class" do

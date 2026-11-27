@@ -1,6 +1,6 @@
 class Admin::AttendancesController < AdminController
   # 可直接从考勤格切换的状态；转出必须走 #transfer 并选择目标班级
-  MARKABLE_STATUSES = %w[absent personal_leave sick_leave filled quit rejoin].freeze
+  MARKABLE_STATUSES = %w[normal absent personal_leave sick_leave filled quit rejoin].freeze
   STATUS_LABELS = Attendance::STATUS_META.transform_values { |meta| meta[:name] }
     .merge("rejoin" => "重新加入").freeze
 
@@ -16,6 +16,11 @@ class Admin::AttendancesController < AdminController
       return
     end
 
+    unless @course.started?
+      redirect_to admin_semester_klass_path(@sk), alert: "该课次尚未开课，无法修改考勤"
+      return
+    end
+
     # 状态迁移级联本就在 AASM 事务内；这里把操作人记录也纳入同一事务
     begin
       Attendance.transaction do
@@ -25,6 +30,10 @@ class Admin::AttendancesController < AdminController
     rescue AASM::InvalidTransition
       redirect_to admin_semester_klass_path(@sk),
         alert: "当前考勤状态无法改为「#{STATUS_LABELS.fetch(status, status)}」"
+      return
+    rescue ActiveRecord::RecordNotFound
+      redirect_to admin_semester_klass_path(@sk),
+        alert: "学员报名记录已变更，请刷新后重试"
       return
     end
 
@@ -37,6 +46,12 @@ class Admin::AttendancesController < AdminController
     @course = @sk.courses.find(params[:course_id])
     @attendance = @course.attendances.find(params[:id])
     @student = @attendance.klass_student.student
+
+    unless @course.started?
+      redirect_to admin_semester_klass_path(@sk), alert: "该课次尚未开课，无法转出"
+      return
+    end
+
     target = transfer_target_klasses.find_by(id: params[:target_semester_klass_id])
 
     if target.blank?
@@ -52,12 +67,17 @@ class Admin::AttendancesController < AdminController
       return
     end
 
+    # 转出从目标班首个未开课课次开始，之前课次不补缺课，改为带过来源班同课次的考勤状态
+    entry_seq = join_course_seq_for(target)
+    if entry_seq.nil?
+      redirect_to admin_semester_klass_path(@sk), alert: "#{target.name} 课程已全部开始，无法转入"
+      return
+    end
+
     Attendance.transaction do
       @attendance.mark_transfer!
       # 记录目标班，撤销转出时可据此把学员从目标班移出
       @attendance.update!(marked_by: Current.user, transfer_target_klass_id: target.id)
-      # 转出从目标班首个未开课课次开始，之前课次不补缺课，改为带过来源班同课次的考勤状态
-      entry_seq = join_course_seq_for(target)
       @student.join_klass(target, course_seq: entry_seq, mark_previous_absent: false)
       @student.carry_over_attendances(@sk, target, before_seq: entry_seq)
     end
@@ -76,9 +96,8 @@ class Admin::AttendancesController < AdminController
       ).where.not(id: @sk.id)
     end
 
-    # 转入后从目标班首个未开课课次开始；之前课次由 join_klass 补记为缺课
+    # 转入后从目标班首个未开课课次开始；没有未开课课次（已结课）时返回 nil，不允许转入
     def join_course_seq_for(target)
-      first_open = target.courses.where(start_date: nil).minimum(:seq) || target.times.to_i
-      [ first_open, 1 ].max
+      target.courses.where(start_date: nil).minimum(:seq)
     end
 end

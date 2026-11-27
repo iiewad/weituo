@@ -26,8 +26,21 @@
       <%
         action_groups =
           case attendance.status
-          when "normal", "filled"
+          when "normal"
             [
+              [
+                [ "缺课", "absent", "btn-error" ],
+                [ "事假", "personal_leave", "btn-info" ],
+                [ "病假", "sick_leave", "btn-warning" ]
+              ],
+              [
+                [ "退课", "quit", "btn-ghost" ],
+                [ "转出", "transfer", "btn-ghost" ]
+              ]
+            ]
+          when "filled"
+            [
+              [ [ "恢复正常", "normal", "btn-ghost" ] ],
               [
                 [ "缺课", "absent", "btn-error" ],
                 [ "事假", "personal_leave", "btn-info" ],
@@ -40,6 +53,7 @@
             ]
           when "absent"
             [
+              [ [ "恢复正常", "normal", "btn-ghost" ] ],
               [
                 [ "事假", "personal_leave", "btn-info" ],
                 [ "病假", "sick_leave", "btn-warning" ],
@@ -52,6 +66,7 @@
             ]
           when "personal_leave", "sick_leave"
             [
+              [ [ "恢复正常", "normal", "btn-ghost" ] ],
               [ [ "补课销假", "filled", "btn-success" ] ],
               [
                 [ "退课", "quit", "btn-ghost" ],
