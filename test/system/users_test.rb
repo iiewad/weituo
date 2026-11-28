@@ -20,10 +20,14 @@ class UsersTest < ApplicationSystemTestCase
         click_button "添加校区"
 
         within(all(".nested-fields").last) do
+          # 未选校区时不显示任何年级 chip（各校区存在同名年级，混排有歧义），只提示先选校区
+          assert_text "请先选择校区"
+          assert_no_selector "label.grades-chip", visible: :visible
+
           select "校1 · 区1", from: "校区"
-          # 选中区1后：其它校区的年级被禁用，区1 自己的年级（含九年级）可选
-          assert find("input[value='#{other_grade.id}']", visible: :all).disabled?
-          assert_not find("input[value='#{grades(:grade_9).id}']", visible: :all).disabled?
+          # 选中区1后：只显示区1自己的年级，其它校区的年级隐藏
+          assert_selector "label.grades-chip", text: grades(:grade_9).name, visible: :visible
+          assert_no_selector "label.grades-chip", text: other_grade.name, visible: :visible
 
           check "七年级"
           select "管理员", from: "角色"

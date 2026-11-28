@@ -43,13 +43,16 @@ export default class extends Controller {
     if (!campus || !grades) return
 
     const campuseId = campus.value
+    const hint = grades.querySelector("[data-grades-hint]")
+    if (hint) hint.classList.toggle("hidden", !!campuseId)
     grades.querySelectorAll("[data-grade-option]").forEach((chip) => {
       const checkbox = chip.querySelector("input[type='checkbox']")
-      const allowed = !campuseId || checkbox.dataset.campuseId === campuseId
+      // 只显示所选校区自己的年级：各校区存在同名年级，混排会产生歧义
+      const allowed = !!campuseId && checkbox.dataset.campuseId === campuseId
 
       checkbox.disabled = !allowed
       if (!allowed) checkbox.checked = false
-      chip.classList.toggle("opacity-40", !allowed)
+      chip.classList.toggle("hidden", !allowed)
     })
   }
 

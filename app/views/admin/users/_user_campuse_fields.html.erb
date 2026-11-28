@@ -21,10 +21,11 @@
 
     <fieldset>
       <legend class="mb-1 text-xs font-medium text-base-content/60">
-        授权年级 <span class="font-normal text-base-content/40">（不选则看不到该校区任何年级数据）</span>
+        授权年级 <span class="font-normal text-base-content/40">（先选择校区；不选年级则看不到该校区任何年级数据）</span>
       </legend>
       <%= form.hidden_field :grade_ids, value: "", multiple: true, id: nil %>
       <div class="flex flex-wrap gap-1.5" data-user-campuses-target="grades">
+        <span class="text-xs text-base-content/40" data-grades-hint>请先选择校区</span>
         <% @grades.each do |grade| %>
           <label class="grades-chip flex cursor-pointer items-center gap-1 rounded-full border border-base-300 px-2 py-1 text-xs text-base-content/70 transition hover:border-primary/50 has-checked:border-primary has-checked:bg-primary/10 has-checked:text-primary" data-grade-option>
             <%= form.check_box :grade_ids, { multiple: true, class: "checkbox checkbox-xs", data: { campuse_id: grade.campuse_id } }, grade.id, nil %>
