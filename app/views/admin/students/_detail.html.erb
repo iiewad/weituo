@@ -18,7 +18,7 @@
         <div class="mt-1 flex flex-wrap items-center gap-1">
           <span class="badge badge-outline badge-primary badge-sm"><%= item.grade&.name || "未设置年级" %></span>
           <% if gender.present? %><span class="badge badge-ghost badge-sm"><%= gender %></span><% end %>
-          <span class="badge badge-ghost badge-sm">入学 <%= item.in_date&.strftime("%Y-%m-%d") || "—" %></span>
+          <span class="badge badge-ghost badge-sm">入学 <%= item.in_semester&.name || "—" %></span>
         </div>
       </div>
     </div>

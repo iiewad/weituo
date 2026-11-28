@@ -87,10 +87,11 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "create" do
     assert_difference -> { Student.count }, 1 do
-      post admin_students_path, params: { student: { name: "新学员", campuse_id: campuses(:campuse_1).id, grade_id: grades(:grade_7).id, remark: "需要关注" } }
+      post admin_students_path, params: { student: { name: "新学员", campuse_id: campuses(:campuse_1).id, grade_id: grades(:grade_7).id, in_semester_id: semesters(:semester_current).id, remark: "需要关注" } }
     end
     assert_redirected_to admin_students_path
     assert_equal "需要关注", Student.find_by!(name: "新学员").remark
+    assert_equal semesters(:semester_current), Student.find_by!(name: "新学员").in_semester
   end
 
   test "manager cannot create a student in an unauthorized grade" do
@@ -113,6 +114,20 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_no_difference -> { Student.count } do
       post admin_students_path, params: { student: {
         name: "越权日校", grade_id: grades(:grade_7).id, day_school_id: other_day_school.id
+      } }
+    end
+
+    assert_redirected_to admin_students_path
+    assert_match "授权范围", flash[:alert]
+  end
+
+  test "cannot assign a semester from another school" do
+    other_school = School.create!(name: "其他学校")
+    other_semester = other_school.semesters.create!(name: "其他学期", seq: 1)
+
+    assert_no_difference -> { Student.count } do
+      post admin_students_path, params: { student: {
+        name: "跨校学员", grade_id: grades(:grade_7).id, in_semester_id: other_semester.id
       } }
     end
 
@@ -198,9 +213,9 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students and guardians from an xlsx file" do
     rows = [
-      [ "姓名", "性别", "生日", "年级", "层级", "入学日期", "日校", "家庭住址", "监护人1姓名", "监护人1电话", "监护人1关系", "监护人1职业" ],
-      [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中", "", "家长甲", "13800000001", "父亲" ],
-      [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, Date.new(2026, 1, 1), "三中" ]
+      [ "姓名", "性别", "生日", "年级", "层级", "入学学期", "日校", "家庭住址", "监护人1姓名", "监护人1电话", "监护人1关系", "监护人1职业" ],
+      [ "表格甲", "男", Date.new(2000, 1, 1), 7, 1, "current", "三中", "", "家长甲", "13800000001", "父亲" ],
+      [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, "current", "三中" ]
     ]
 
     assert_difference -> { Student.count }, 2 do
@@ -214,6 +229,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     student = Student.find_by!(name: "表格甲")
     assert_equal "male", student.gender
     assert_equal Date.new(2000, 1, 1), student.birthday
+    assert_equal semesters(:semester_current), student.in_semester
     assert_equal "家长甲", student.guardians.sole.name
   end
 

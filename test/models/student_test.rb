@@ -203,11 +203,11 @@ class StudentTest < ActiveSupport::TestCase
 
   test "import by text maps genders and reports created and skipped rows" do
     text = [
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲",
-      "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
-      "坏日校,男,2000-01-01,7,1,2026-01-01,不存在",
-      "未授权年级,男,2000-01-01,9,1,2026-01-01,三中",
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲"
+      "导入甲,男,2000-01-01,7,1,current,三中,,家长甲,13800000001,父亲",
+      "导入乙,女,2000-01-01,7,1,不存在学期,三中",
+      "坏日校,男,2000-01-01,7,1,current,不存在",
+      "未授权年级,男,2000-01-01,9,1,current,三中",
+      "导入甲,男,2000-01-01,7,1,current,三中,,家长甲,13800000001,父亲"
     ].join("\n")
 
     created, skipped = Student.add_by_text(
@@ -222,6 +222,8 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal "female", Student.find_by!(name: "导入乙").gender
     assert_equal grades(:grade_7), Student.find_by!(name: "导入甲").grade
     assert_equal day_schools(:one), Student.find_by!(name: "导入甲").day_school
+    assert_equal semesters(:semester_current), Student.find_by!(name: "导入甲").in_semester
+    assert_nil Student.find_by!(name: "导入乙").in_semester
 
     guardian = Student.find_by!(name: "导入甲").guardians.sole
     assert_equal "家长甲", guardian.name
@@ -232,8 +234,8 @@ class StudentTest < ActiveSupport::TestCase
 
   test "import by text stores the address and a nameless guardian's occupation" do
     text = [
-      "住址学员,男,2000-01-01,7,1,2026-01-01,三中,幸福路 1 号,,13900000000,,医生",
-      "无监护人学员,女,2000-02-02,7,1,2026-01-01,三中"
+      "住址学员,男,2000-01-01,7,1,current,三中,幸福路 1 号,,13900000000,,医生",
+      "无监护人学员,女,2000-02-02,7,1,current,三中"
     ].join("\n")
 
     created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
@@ -252,7 +254,7 @@ class StudentTest < ActiveSupport::TestCase
   end
 
   test "import by text creates multiple guardians from grouped columns" do
-    text = "多监护人,男,2000-01-01,7,1,2026-01-01,三中,,张建国,13800000000,父亲,工程师,李梅,13900000001,母亲,医生"
+    text = "多监护人,男,2000-01-01,7,1,current,三中,,张建国,13800000000,父亲,工程师,李梅,13900000001,母亲,医生"
 
     created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
 
@@ -271,8 +273,8 @@ class StudentTest < ActiveSupport::TestCase
     DaySchool.create!(name: "二中", campuse:)
 
     text = [
-      "跨届学员,男,2000-01-01,7,1,2026-01-01,三中",
-      "跨届学员,男,2000/1/1,8,2,2026-02-02,二中"
+      "跨届学员,男,2000-01-01,7,1,current,三中",
+      "跨届学员,男,2000/1/1,8,2,current previous,二中"
     ].join("\n")
 
     created, skipped = Student.add_by_text(campuse.id, text)
@@ -285,8 +287,8 @@ class StudentTest < ActiveSupport::TestCase
   test "import keeps same-name students with different birthdays apart" do
     campuse = campuses(:campuse_1)
     text = [
-      "同名不同人,男,2000-01-01,7,1,2026-01-01,三中",
-      "同名不同人,男,2001-01-01,7,1,2026-01-01,三中"
+      "同名不同人,男,2000-01-01,7,1,current,三中",
+      "同名不同人,男,2001-01-01,7,1,current,三中"
     ].join("\n")
 
     created, skipped = Student.add_by_text(campuse.id, text)
@@ -315,8 +317,8 @@ class StudentTest < ActiveSupport::TestCase
   test "import rolls back the whole batch when a row fails" do
     campuse = campuses(:campuse_1)
     text = [
-      "正常导入,男,2000-01-01,7,1,2026-01-01,三中",
-      "#{"超长" * 200},男,2000-01-02,7,1,2026-01-01,三中"
+      "正常导入,男,2000-01-01,7,1,current,三中",
+      "#{"超长" * 200},男,2000-01-02,7,1,current,三中"
     ].join("\n")
 
     assert_no_difference -> { Student.count } do
@@ -327,7 +329,7 @@ class StudentTest < ActiveSupport::TestCase
   end
 
   test "add by text imports only rows with a valid grade and day school" do
-    text = "新学员,男,2000-01-01,7,1,2026-01-01,三中\n坏年级,男,2000-01-01,99,1,2026-01-01,三中\n坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
+    text = "新学员,男,2000-01-01,7,1,current,三中\n坏年级,男,2000-01-01,99,1,current,三中\n坏日校,男,2000-01-01,7,1,current,不存在"
 
     assert_difference -> { Student.count }, 1 do
       Student.add_by_text(campuses(:campuse_1).id, text)

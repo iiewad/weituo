@@ -193,7 +193,7 @@ class GradeReport
         next unless student
 
         detail = [
-          student.in_date ? "入学 #{student.in_date.strftime("%Y-%m-%d")}" : nil,
+          @semesters_by_id[student.in_semester_id]&.name&.then { |name| "入学 #{name}" },
           student.day_school&.name,
           "历史学期无入班记录"
         ].compact.join(" · ")

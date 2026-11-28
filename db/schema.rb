@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_27_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_28_090000) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -165,7 +165,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_27_130000) do
     t.bigint "day_school_id"
     t.string "gender"
     t.bigint "grade_id"
-    t.date "in_date"
     t.integer "layer"
     t.string "name", null: false
     t.string "phone"
@@ -174,10 +173,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_27_130000) do
     t.integer "name_seq", default: 1, null: false
     t.string "address"
     t.datetime "deleted_at"
+    t.bigint "in_semester_id"
     t.index ["campuse_id", "name", "name_seq"], name: "index_students_on_campuse_id_and_name_and_name_seq", unique: true
     t.index ["campuse_id"], name: "index_students_on_campuse_id"
     t.index ["day_school_id"], name: "index_students_on_day_school_id"
     t.index ["grade_id"], name: "index_students_on_grade_id"
+    t.index ["in_semester_id"], name: "index_students_on_in_semester_id"
   end
 
   create_table "subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -253,6 +254,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_27_130000) do
   add_foreign_key "students", "campuses"
   add_foreign_key "students", "day_schools"
   add_foreign_key "students", "grades"
+  add_foreign_key "students", "semesters", column: "in_semester_id", on_delete: :nullify
   add_foreign_key "teachers", "campuses"
   add_foreign_key "teachers", "subjects"
   add_foreign_key "user_campuses", "campuses"

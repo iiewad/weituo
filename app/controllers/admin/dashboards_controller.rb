@@ -7,9 +7,9 @@ class Admin::DashboardsController < AdminController
 
     @students_scope = Student.active.where(campuse_id: @campuse.id, grade_id: grade_ids)
     @student_count = @students_scope.count
-    @new_students_this_month = @students_scope.where(in_date: Date.current.beginning_of_month..Date.current).count
+    @new_students_this_semester = @semester ? @students_scope.where(in_semester_id: @semester.id).count : 0
     @teacher_count = Teacher.where(campuse_id: @campuse.id).count
-    @recent_students = @students_scope.includes(:grade, :day_school).order(created_at: :desc).limit(5)
+    @recent_students = @students_scope.includes(:grade, :day_school, :in_semester).order(created_at: :desc).limit(5)
 
     if @semester
       @klasses_scope = SemesterKlass.where(campuse_id: @campuse.id, semester_id: @semester.id, grade_id: grade_ids)

@@ -9,7 +9,7 @@
   <div class="wt-surface p-4">
     <p class="text-xs text-base-content/50">学员总数</p>
     <p class="mt-1 text-2xl font-semibold"><%= @student_count %><span class="ml-1 text-sm font-normal text-base-content/50">人</span></p>
-    <p class="mt-1 text-xs text-base-content/40">本月新增 <%= @new_students_this_month %> 人</p>
+    <p class="mt-1 text-xs text-base-content/40">本学期新增 <%= @new_students_this_semester %> 人</p>
     <p class="mt-2 h-1 w-full rounded-full bg-primary/20"><span class="block h-1 w-full rounded-full bg-primary"></span></p>
   </div>
 
@@ -62,8 +62,8 @@
         <p class="mt-0.5 text-lg font-semibold"><%= @not_in_class_count %></p>
       </div>
       <div class="rounded-box bg-base-200/60 p-2.5">
-        <p class="text-[11px] text-base-content/50">本月新增</p>
-        <p class="mt-0.5 text-lg font-semibold"><%= @new_students_this_month %></p>
+        <p class="text-[11px] text-base-content/50">本学期新增</p>
+        <p class="mt-0.5 text-lg font-semibold"><%= @new_students_this_semester %></p>
       </div>
     </div>
   </div>
@@ -151,7 +151,7 @@
               </p>
             </div>
             <span class="ml-auto shrink-0 text-xs text-base-content/40">
-              <%= student.in_date&.strftime("%m-%d") || "—" %>
+              <%= student.in_semester&.name || "—" %>
             </span>
           </li>
         <% end %>

@@ -8,6 +8,7 @@ class Student < ApplicationRecord
   belongs_to :day_school, optional: true
   belongs_to :campuse
   belongs_to :grade, optional: true
+  belongs_to :in_semester, class_name: "Semester", optional: true
   has_many :guardians, dependent: :destroy
   has_many :klass_students, -> { active }
   has_many :all_klass_students, class_name: "KlassStudent", dependent: :destroy
@@ -126,7 +127,7 @@ class Student < ApplicationRecord
 
   IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
 
-  # 按 CSV 行导入学员：前 8 列为学员信息（姓名,性别,生日,年级level,层级,入学日期,日校,家庭住址），
+  # 按 CSV 行导入学员：前 8 列为学员信息（姓名,性别,生日,年级level,层级,入学学期,日校,家庭住址），
   # 之后每 4 列一位监护人（姓名,电话,关系,职业），可写多名；返回 [新增人数, 跳过行数]。
   IMPORT_STUDENT_COLUMNS = 8
   IMPORT_GUARDIAN_COLUMNS = 4
@@ -152,13 +153,15 @@ class Student < ApplicationRecord
         next if row.all? { |value| value.to_s.strip.blank? }
         next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
-        name, gender, birthday, grade_level, layer, in_date, day_school_name, address =
+        name, gender, birthday, grade_level, layer, in_semester_name, day_school_name, address =
           row.first(IMPORT_STUDENT_COLUMNS).map { |value| value.to_s.strip }
         guardian_rows = row.drop(IMPORT_STUDENT_COLUMNS).each_slice(IMPORT_GUARDIAN_COLUMNS).map do |group|
           group.map { |value| value.to_s.strip }
         end
         grade = Grade.find_by(level: grade_level)
         day_school = campuse.day_schools.find_by(name: day_school_name)
+        # 入学学期按名称匹配所在学校的学期；留空或匹配不到时不填，不影响建档
+        in_semester = campuse.school.semesters.find_by(name: in_semester_name) if in_semester_name.present?
 
         if name.blank? || grade.blank? || day_school.blank? || (grade_ids && !grade_ids.include?(grade.id))
           skipped += 1
@@ -176,7 +179,7 @@ class Student < ApplicationRecord
           birthday: birthday,
           grade_id: grade.id,
           layer: layer,
-          in_date: in_date,
+          in_semester_id: in_semester&.id,
           day_school_id: day_school.id,
           address: address.presence
         })
@@ -204,7 +207,7 @@ class Student < ApplicationRecord
   end
 
   # 导入去重键：校区 + 姓名 + 生日；生日缺失时退回 校区 + 姓名 + 年级。
-  # 年级、日校、入学日期等会变化的属性不参与比对，避免同一学员重复建档。
+  # 年级、日校、入学学期等会变化的属性不参与比对，避免同一学员重复建档。
   def self.import_student(campuse_id, attributes)
     scope = where(campuse_id: campuse_id, name: attributes[:name])
     scope = if attributes[:birthday].present?
@@ -217,10 +220,10 @@ class Student < ApplicationRecord
   end
   private_class_method :import_student
 
-  # xlsx 里生日/入学日期可能是 Date 或未格式化的 Excel 序列号。
+  # xlsx 里生日可能是 Date 或未格式化的 Excel 序列号。
   def self.normalize_import_row(row)
     row.each_with_index.map do |value, index|
-      index.in?([ 2, 5 ]) ? normalize_import_date(value) : normalize_import_value(value)
+      index == 2 ? normalize_import_date(value) : normalize_import_value(value)
     end
   end
 

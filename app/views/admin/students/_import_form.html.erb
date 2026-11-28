@@ -1,15 +1,16 @@
 <%= form_with url: import_admin_students_path, method: :post, local: true, multipart: true, class: "space-y-4" do |form| %>
   <div class="wt-surface p-4">
     <h3 class="text-sm font-semibold">批量导入学员</h3>
-    <p class="mt-1 text-xs text-base-content/50">支持上传 .xlsx 文件或直接粘贴文本，列顺序一致：前 8 列为学员信息（姓名、性别、生日、年级 level、层级、入学日期、日校、家庭住址）；之后每 4 列一位监护人（姓名、电话、关系、职业），可填写多名，不需要的整组留空。同时提供时以 Excel 文件为准。</p>
+    <p class="mt-1 text-xs text-base-content/50">支持上传 .xlsx 文件或直接粘贴文本，列顺序一致：前 8 列为学员信息（姓名、性别、生日、年级 level、层级、入学学期、日校、家庭住址）；之后每 4 列一位监护人（姓名、电话、关系、职业），可填写多名，不需要的整组留空。同时提供时以 Excel 文件为准。</p>
 
     <div class="mt-3 rounded-box border border-base-300 bg-base-200/50 p-3 font-mono text-[11px] leading-5 text-base-content/60">
-      张三,男,2013-05-01,7,3,2026-09-01,一中,和平路 88 号,张建国,13800000000,父亲,工程师,李梅,13900000000,母亲,医生<br>
-      李四,女,2012-11-20,8,2,2026-09-01,二中
+      张三,男,2013-05-01,7,3,2026秋季,一中,和平路 88 号,张建国,13800000000,父亲,工程师,李梅,13900000000,母亲,医生<br>
+      李四,女,2012-11-20,8,2,2026秋季,二中
     </div>
 
     <ul class="mt-2 space-y-1 text-[11px] leading-snug text-base-content/50">
       <li>· 年级填 level（如 7、8、9），日校必须是当前校区已有的名称。</li>
+      <li>· 入学学期填所在学校已有的学期名称，可留空；匹配不到时留空，不影响建档。</li>
       <li>· 性别支持 男 / 女，也支持 male / female。</li>
       <li>· 家庭住址选填，会写入学员档案。</li>
       <li>· 监护人按组填写，可写多名：填写电话即创建，姓名、关系（如父亲 / 母亲）、职业都可以留空。</li>
@@ -24,7 +25,7 @@
       <%= link_to "下载导入模板", template_admin_students_path,
             class: "btn btn-xs btn-ghost text-primary", data: { turbo: false } %>
     </div>
-    <p class="mt-1 text-xs text-base-content/50">支持 .xlsx；首行可以是表头，也可以直接是学员数据。生日、入学日期建议使用日期格式。</p>
+    <p class="mt-1 text-xs text-base-content/50">支持 .xlsx；首行可以是表头，也可以直接是学员数据。生日建议使用日期格式，入学学期填学期名称。</p>
     <%= form.file_field :students_file, accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           class: "file-input file-input-sm mt-3 w-full" %>
   </div>
@@ -39,7 +40,7 @@
     <%= form.label :students_text, "学员数据", class: "mb-1 block text-xs font-medium text-base-content/60" %>
     <%= form.text_area :students_text, value: params[:students_text],
           class: "textarea textarea-sm h-56 w-full font-mono text-xs leading-5",
-          placeholder: "张三,男,2013-05-01,7,3,2026-09-01,一中,和平路 88 号,张建国,13800000000,父亲,工程师,李梅,13900000000,母亲,医生\n李四,女,2012-11-20,8,2,2026-09-01,二中" %>
+          placeholder: "张三,男,2013-05-01,7,3,2026秋季,一中,和平路 88 号,张建国,13800000000,父亲,工程师,李梅,13900000000,母亲,医生\n李四,女,2012-11-20,8,2,2026秋季,二中" %>
   </div>
 
   <%= form.submit "开始导入", class: "btn btn-primary w-full" %>

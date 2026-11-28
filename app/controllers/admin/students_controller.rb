@@ -27,7 +27,7 @@ class Admin::StudentsController < AdminController
 
   def create
     unless student_scope_valid?
-      redirect_to admin_students_path, alert: "年级或日校不在当前校区授权范围内"
+      redirect_to admin_students_path, alert: "年级、日校或入学学期不在当前授权范围内"
       return
     end
 
@@ -167,7 +167,7 @@ class Admin::StudentsController < AdminController
 
   def update
     unless student_scope_valid?
-      redirect_to admin_students_path, alert: "年级或日校不在当前校区授权范围内"
+      redirect_to admin_students_path, alert: "年级、日校或入学学期不在当前授权范围内"
       return
     end
 
@@ -206,7 +206,7 @@ class Admin::StudentsController < AdminController
 
     def student_params
       params.require(:student).permit(
-        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_date, :grade_id, :address, :remark, :referrer_id,
+        :day_school_id, :name, :phone, :layer, :gender, :birthday, :in_semester_id, :grade_id, :address, :remark, :referrer_id,
         guardians_attributes: [ :id, :name, :phone, :relationship, :occupation, :_destroy ]
       )
     end
@@ -214,10 +214,12 @@ class Admin::StudentsController < AdminController
     def student_scope_valid?
       grade_id = params.dig(:student, :grade_id)
       day_school_id = params.dig(:student, :day_school_id)
+      in_semester_id = params.dig(:student, :in_semester_id)
       grade_ok = grade_id.blank? || Current.user.grades_by_campuse(Current.campuse.id).exists?(id: grade_id)
       day_school_ok = day_school_id.blank? || Current.campuse.day_schools.exists?(id: day_school_id)
+      in_semester_ok = in_semester_id.blank? || Current.school&.semesters&.exists?(id: in_semester_id)
 
-      grade_ok && day_school_ok
+      grade_ok && day_school_ok && in_semester_ok
     end
 
     # 当前学期内的报名记录，用于「在班 / 有退课 / 未入班」筛选与计数

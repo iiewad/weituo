@@ -18,6 +18,8 @@ class Semester < ApplicationRecord
   has_many :semester_klasses, dependent: :destroy
   # 学期删除后预留记录失去目标，一并删除，否则外键会拦住学校表单里的学期删除
   has_many :reservations, dependent: :destroy
+  # 学员的入学学期；学期删除时置空，不删学员
+  has_many :students, class_name: "Student", foreign_key: :in_semester_id, dependent: :nullify, inverse_of: :in_semester
 
   def self.ransackable_attributes(auth_object = nil)
     [ "id", "name", "seq" ]
