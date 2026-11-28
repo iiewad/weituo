@@ -6,6 +6,7 @@ class AdminController < ApplicationController
 
   private
     def require_admin
+      return if bootstrap_mode?
       return if Current.user&.has_role_by_campuse_id(Current.campuse&.id, "admin")
 
       redirect_to root_path, alert: "只有超级管理员可以执行此操作"
@@ -73,7 +74,15 @@ class AdminController < ApplicationController
     def require_campuse_access
       return if Current.campuse
 
-      terminate_session
-      redirect_to new_session_path, alert: "该账号尚未分配校区，请联系超级管理员"
+      unless bootstrap_mode?
+        terminate_session
+        redirect_to new_session_path, alert: "该账号尚未分配校区，请联系超级管理员"
+        return
+      end
+
+      # 引导模式：只放行学校管理，其余页面一律引导去创建校区
+      return if controller_path == "admin/schools"
+
+      redirect_to admin_schools_path, alert: "系统尚未配置校区，请先在学校管理中创建校区"
     end
 end

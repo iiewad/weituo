@@ -2,12 +2,13 @@ class Admin::SchoolsController < AdminController
   before_action :require_admin
 
   def index
-    @schools = School.where(id: Current.school.id)
-      .includes(:campuses, :semesters, :grade_subjects, :user_campuses)
+    # 引导模式（无校区）下没有当前学校上下文，列出全部学校供配置
+    scope = Current.school ? School.where(id: Current.school.id) : School.all
+    @schools = scope.includes(:campuses, :semesters, :grade_subjects, :user_campuses)
   end
 
   def update
-    @school = School.find(Current.school.id)
+    @school = Current.school ? School.find(Current.school.id) : School.find(params[:id])
     known_campus_ids = @school.campuses.pluck(:id)
 
     if @school.update(school_params)

@@ -47,6 +47,39 @@ class AdminControllerTest < ActionDispatch::IntegrationTest
     assert_match "尚未分配校区", flash[:alert]
   end
 
+  test "bootstrap mode redirects to school settings when no campus exists" do
+    sign_in_as users(:one)
+    campuses(:campuse_1).destroy!
+
+    get root_path
+
+    assert_redirected_to admin_schools_path
+    assert_match "尚未配置校区", flash[:alert]
+
+    get admin_schools_path
+    assert_response :success
+    assert_select "table", text: /学校/
+  end
+
+  test "bootstrap mode allows creating the first campus and restores context" do
+    user = users(:one)
+    sign_in_as user
+    campuses(:campuse_1).destroy!
+    assert_empty user.reload.campuses
+
+    put admin_school_path(schools(:school_1)), params: {
+      school: { campuses_attributes: { "0" => { name: "恢复校区" } } }
+    }
+
+    assert_redirected_to admin_schools_path
+    campuse = Campuse.find_by!(name: "恢复校区")
+    assert_includes user.reload.campuses, campuse
+
+    get root_path
+    assert_response :success
+    assert_equal campuse.id, session[:current_campuse_id]
+  end
+
   test "write actions require authentication" do
     post admin_students_path, params: { student: { name: "未登录" } }
     assert_redirected_to new_session_path
