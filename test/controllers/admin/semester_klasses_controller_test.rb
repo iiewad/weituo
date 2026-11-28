@@ -16,6 +16,23 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
+  test "index filters classes by student name" do
+    get admin_semester_klasses_path(q: { students_name_cont: "7_学生1" })
+
+    assert_response :success
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_2))}']", count: 1
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_3))}']", count: 0
+  end
+
+  test "index lists a class once when several of its students match the name" do
+    KlassStudent.create!(semester_klass: semester_klasses(:sk_math_2), student: students(:student_7_2), status: "in")
+
+    get admin_semester_klasses_path(q: { students_name_cont: "7_学生" })
+
+    assert_response :success
+    assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_2))}']", count: 1
+  end
+
   test "index shows the reserve rate on class cards" do
     campuses(:campuse_1).update!(reserve_min_attendances: 0)
     sk = semester_klasses(:sk_math_2)

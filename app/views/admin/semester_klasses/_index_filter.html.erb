@@ -1,5 +1,11 @@
 <div class="wt-surface mb-4 p-3">
   <%= search_form_with model: @q, url: admin_semester_klasses_path, method: :get, class: "flex flex-wrap items-end gap-2" do |f| %>
+    <div class="w-full sm:w-36">
+      <label class="mb-1 block text-xs font-medium text-base-content/50">学员姓名</label>
+      <%= f.search_field :students_name_cont, value: params[:q].try(:[], :students_name_cont),
+            placeholder: "输入姓名查找班级", class: "input input-sm w-full" %>
+    </div>
+
     <div class="w-full sm:w-32">
       <label class="mb-1 block text-xs font-medium text-base-content/50">年级</label>
       <%= f.collection_select :grade_id_eq, Current.user.grades_by_campuse(Current.campuse.id), :id, :name,

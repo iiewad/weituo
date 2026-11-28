@@ -61,7 +61,7 @@ class Admin::SemesterKlassesController < AdminController
       campuse_id: Current.campuse.id,
       semester_id: Current.semester.id,
       grade_id: allowed_grade_ids,
-    ).includes(:grade, :subject, :teacher, :courses).to_a
+    ).includes(:grade, :subject, :teacher, :courses).distinct.to_a
       .sort_by { |sk| [ sk.grade.level, sk.subject.name, *sk.display_order_key ] }
     @active_counts = KlassStudent.active.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
     @reserve_rates = StatementReport.new(@sks, campuse: Current.campuse).rows
