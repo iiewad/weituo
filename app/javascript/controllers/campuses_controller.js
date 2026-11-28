@@ -25,6 +25,10 @@ export default class extends Controller {
     if (!destroy || !id || !id.value) {
       row.remove();
     } else {
+      const name = row.querySelector("input[type=text]")?.value || "该校区";
+      if (!window.confirm(`删除「${name}」将同时删除该校区下所有学员、教师、日校、班级、课次与考勤数据，且不可恢复。保存后生效，确定删除吗？`)) {
+        return;
+      }
       destroy.value = "true";
       row.style.display = "none";
     }

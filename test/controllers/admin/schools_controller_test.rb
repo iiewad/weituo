@@ -62,6 +62,30 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "改名校区", campuse.reload.name
   end
 
+  test "update destroys a nested campus together with all its resources" do
+    campuse = campuses(:campuse_1)
+    student_ids = campuse.students.ids
+    klass_ids = campuse.semester_klasses.ids
+    assert klass_ids.any? && student_ids.any?
+
+    assert_difference -> { Campuse.count } => -1,
+      -> { Student.count } => -student_ids.size,
+      -> { SemesterKlass.count } => -klass_ids.size,
+      -> { KlassStudent.count } => -KlassStudent.count,
+      -> { Course.count } => -Course.count,
+      -> { Attendance.count } => -Attendance.count,
+      -> { Teacher.count } => -campuse.teachers.count,
+      -> { DaySchool.count } => -campuse.day_schools.count,
+      -> { UserCampuse.count } => -campuse.user_campuses.count do
+      put admin_school_path(schools(:school_1)), params: {
+        school: { campuses_attributes: { "0" => { id: campuse.id, _destroy: "true" } } }
+      }
+    end
+
+    assert_redirected_to admin_schools_path
+    assert_nil Campuse.find_by(id: campuse.id)
+  end
+
   test "update adds a nested semester" do
     assert_difference -> { Semester.count }, 1 do
       put admin_school_path(schools(:school_1)), params: {

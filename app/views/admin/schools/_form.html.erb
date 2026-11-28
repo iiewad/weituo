@@ -37,7 +37,8 @@
         添加校区
       </button>
       <p class="mt-2 text-[11px] leading-tight text-base-content/40">
-        新增校区会自动为当前账号开通该校区的超级管理员权限（全部年级）；其他账号的校区授权请在「用户管理」中分配。
+        新增校区会自动为当前账号开通该校区的超级管理员权限（全部年级）；其他账号的校区授权请在「用户管理」中分配。<br>
+        删除校区会连同该校区下所有学员、教师、日校、班级、课次、考勤与预留数据一并删除，保存后不可恢复。
       </p>
       <template data-campuses-target="template">
         <%= form.fields_for :campuses, Campuse.new, child_index: "new_campus" do |campus_form| %>

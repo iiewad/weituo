@@ -15,6 +15,7 @@ class Student < ApplicationRecord
   has_one :referrer, through: :received_referral
   has_many :given_referrals, class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy, inverse_of: :referrer
   has_many :referred_students, through: :given_referrals, source: :referred
+  has_many :reservations, dependent: :destroy
   accepts_nested_attributes_for :guardians, reject_if: :all_blank, allow_destroy: true
 
   attr_writer :referrer_id
