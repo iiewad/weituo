@@ -1,0 +1,45 @@
+<%# 修改开课日期抽屉：由考勤表表头的已开课日期按钮打开 %>
+<div class="drawer drawer-end">
+  <input id="drawer-course-date" type="checkbox" class="drawer-toggle" data-course-date-target="toggle" />
+  <div class="drawer-content"></div>
+  <div class="drawer-side z-50">
+    <label for="drawer-course-date" aria-label="close sidebar" class="drawer-overlay"></label>
+    <div class="bg-base-200 min-h-full p-4 sm:p-6" style="width: min(calc(var(--spacing) * 220), 92vw)">
+      <%= form_with url: "#", method: :patch, class: "flex flex-col gap-4",
+            data: { course_date_target: "form", turbo_frame: "_top" } do |form| %>
+        <div>
+          <h2 class="text-base font-semibold">修改开课日期 · <span data-course-date-target="title">第 1 课</span></h2>
+          <p class="mt-1 text-xs text-base-content/60" data-course-date-target="current"></p>
+        </div>
+
+        <div class="wt-surface p-4">
+          <label for="course_date" class="mb-1 block text-xs text-base-content/60">开课日期</label>
+          <%= date_field_tag :start_date, nil, id: "course_date", class: "input input-sm w-full", required: true,
+                data: { course_date_target: "date", action: "input->course-date#updatePreview" } %>
+        </div>
+
+        <div class="wt-surface p-4" data-course-date-target="cascadeRow">
+          <label class="label cursor-pointer justify-start gap-2 p-0">
+            <%= check_box_tag :cascade, "1", false, id: "course_date_cascade", class: "checkbox checkbox-sm",
+                  data: { course_date_target: "cascade", action: "change->course-date#updatePreview" } %>
+            <span class="text-sm">后续已开课课次按间隔顺延</span>
+          </label>
+          <div class="mt-2 flex items-center gap-2">
+            <label for="course_date_interval" class="text-xs text-base-content/60">间隔天数</label>
+            <%= number_field_tag :interval_days, 7, id: "course_date_interval", min: 0, max: 365,
+                  class: "input input-sm w-20", data: { course_date_target: "interval", action: "input->course-date#updatePreview" } %>
+            <span class="text-[11px] text-base-content/50">从本课日期起逐课累加</span>
+          </div>
+        </div>
+
+        <div class="wt-surface p-4 text-xs text-base-content/60" data-course-date-target="cascadeEmpty">
+          该课之后还没有已开课的课次，只会修改本课日期。
+        </div>
+
+        <p class="rounded-box bg-base-100 px-3 py-2 text-xs text-base-content/60" data-course-date-target="preview"></p>
+
+        <%= form.submit "保存", class: "btn btn-sm btn-primary" %>
+      <% end %>
+    </div>
+  </div>
+</div>

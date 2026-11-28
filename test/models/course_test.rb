@@ -94,4 +94,28 @@ class CourseTest < ActiveSupport::TestCase
 
     assert_equal "absent", first.attendances.find_by!(klass_student_id: ks.id).status
   end
+
+  test "reschedule moves only the chosen course by default" do
+    sk = semester_klasses(:sk_math_1)
+    [ 1, 2, 3 ].each { |seq| sk.courses.find_by!(seq: seq).start!(Date.new(2026, 3, seq)) }
+
+    sk.courses.find_by!(seq: 1).reschedule!(Date.new(2026, 4, 1))
+
+    assert_equal [ Date.new(2026, 4, 1), Date.new(2026, 3, 2), Date.new(2026, 3, 3) ],
+      sk.courses.where(seq: 1..3).order(:seq).pluck(:start_date)
+  end
+
+  test "reschedule cascades over later started courses with the interval" do
+    sk = semester_klasses(:sk_math_1)
+    [ 1, 2, 3 ].each { |seq| sk.courses.find_by!(seq: seq).start!(Date.new(2026, 3, seq)) }
+    attendance_count = Attendance.where(course_id: sk.courses.ids).count
+
+    sk.courses.find_by!(seq: 1).reschedule!(Date.new(2026, 4, 1), cascade: true, interval_days: 10)
+
+    assert_equal [ Date.new(2026, 4, 1), Date.new(2026, 4, 11), Date.new(2026, 4, 21) ],
+      sk.courses.where(seq: 1..3).order(:seq).pluck(:start_date)
+    # 未开课课次不受影响，考勤记录也不变
+    assert_nil sk.courses.find_by!(seq: 4).start_date
+    assert_equal attendance_count, Attendance.where(course_id: sk.courses.ids).count
+  end
 end

@@ -101,6 +101,8 @@ flowchart LR
 - 为该班级**所有报名学员**生成 `Attendance`，初始状态 `normal`
 - 班级所有课次都有 `start_date` 时，`SemesterKlass#ended?` 为 true（结课）
 
+已开课课次的日期可改：`PATCH /admin/semester_klasses/:id/courses/:id/reschedule` → `Course#reschedule!`，参数 `start_date`、`cascade`、`interval_days`。默认只改当前课次；`cascade` 为真时把后面**已开课**的课次按「新日期 + 间隔 × 次序」顺延，未开课课次不动。只改日期，不触碰任何考勤记录。班级详情页点表头日期打开抽屉，可勾选「后续已开课课次按间隔顺延」，抽屉内实时预览顺延后的区间。
+
 班级详情页以「学员 × 课次」矩阵展示考勤，未开课的课次显示「未开课」。
 
 ### 4. 考勤状态流转

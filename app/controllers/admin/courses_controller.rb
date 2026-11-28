@@ -43,12 +43,49 @@ class Admin::CoursesController < AdminController
     redirect_to admin_semester_klass_path(@sk), alert: "开课发生冲突，请刷新后重试"
   end
 
+  # 修改已开课课次的开课日期：默认只改当前课次，
+  # 勾选「后续已开课课次按间隔顺延」时把后面已开课的课次按新日期逐个累加
+  def reschedule
+    @sk = campuse_semester_klasses.find(params[:semester_klass_id])
+    @course = @sk.courses.find(params[:id])
+
+    unless @course.started?
+      redirect_to admin_semester_klass_path(@sk), alert: "第 #{@course.seq} 课尚未开课，请先开课"
+      return
+    end
+
+    date = parse_date(params[:start_date])
+    if date.nil?
+      redirect_to admin_semester_klass_path(@sk), alert: "开课日期无效，请重新选择"
+      return
+    end
+
+    cascade = params[:cascade].to_s.in?(%w[1 true])
+    interval = parse_interval_days
+    later_seqs = @course.later_started_courses.map(&:seq)
+    @course.reschedule!(date, cascade: cascade, interval_days: interval)
+
+    notice = "第 #{@course.seq} 课开课日期已改为 #{date.strftime("%m-%d")}"
+    if cascade && later_seqs.any?
+      last_date = date + later_seqs.size * interval
+      range = later_seqs.size == 1 ? "第 #{later_seqs.first} 课" : "第 #{later_seqs.first}–#{later_seqs.last} 课"
+      notice += "，#{range}已按 #{interval} 天顺延（至 #{last_date.strftime("%m-%d")}）"
+    end
+    redirect_to admin_semester_klass_path(@sk), notice: notice
+  end
+
   private
 
+  # 只接受明确的 YYYY-MM-DD；Date.parse 会放过「60310-02-02」这类串，写库时才炸
+  def parse_date(value)
+    Date.strptime(value.to_s, "%Y-%m-%d")
+  rescue Date::Error, TypeError
+    nil
+  end
+
+  # 批量开课解析失败时回落到今天，不打断整批开课
   def parse_start_date
-    Date.parse(params[:start_date].to_s)
-  rescue Date::Error
-    Date.today
+    parse_date(params[:start_date]) || Date.today
   end
 
   def parse_interval_days

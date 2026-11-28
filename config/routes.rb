@@ -29,6 +29,7 @@ Rails.application.routes.draw do
       resources :courses do
         member do
           put :start, to: "courses#start"
+          patch :reschedule
         end
         collection do
           put :start_through, to: "courses#start_through"

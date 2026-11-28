@@ -42,7 +42,7 @@
   <span class="badge badge-outline <%= @sk.genre_badge_class %> badge-sm"><%= SemesterKlass::GENRE_MAP_REVERSE[@sk.genre] %></span>
 </div>
 
-<div data-controller="transfer-drawer attendance-select">
+<div data-controller="transfer-drawer attendance-select course-date">
 <div class="flex flex-col gap-4 lg:flex-row">
   <div class="wt-surface shrink-0 p-2 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-56 lg:self-start lg:overflow-y-auto">
     <p class="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wider text-base-content/40">班级切换</p>
@@ -109,9 +109,21 @@
           <% @courses.each do |course| %>
             <th class="whitespace-nowrap text-center">
               <span class="block">第 <%= course.seq %> 课</span>
-              <span class="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-base-content/40">
-                <%= course.started? ? course.start_date.strftime("%m-%d") : "未开课" %>
-              </span>
+              <% if course.started? %>
+                <button type="button"
+                        class="mx-auto mt-0.5 block cursor-pointer rounded px-1 text-[10px] font-normal normal-case tracking-normal text-base-content/40 underline decoration-dotted underline-offset-2 hover:bg-base-300 hover:text-primary"
+                        title="修改开课日期" aria-label="修改第 <%= course.seq %> 课开课日期"
+                        data-course-date-target="trigger" data-action="course-date#open"
+                        data-course-date-url="<%= reschedule_admin_semester_klass_course_path(@sk, course) %>"
+                        data-course-date-seq="<%= course.seq %>"
+                        data-course-date-current="<%= course.start_date.iso8601 %>"
+                        data-course-date-current-label="<%= course.start_date.strftime("%Y-%m-%d") %>"
+                        data-course-date-later-seqs="<%= @courses.select { |c| c.started? && c.seq > course.seq }.map(&:seq).join(",") %>">
+                  <%= course.start_date.strftime("%m-%d") %>
+                </button>
+              <% else %>
+                <span class="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-base-content/40">未开课</span>
+              <% end %>
             </th>
           <% end %>
         </tr>
@@ -136,6 +148,7 @@
 <% end %>
 <%= render "admin/semester_klasses/reserve_modal" %>
 <%= render "admin/semester_klasses/remove_modal" %>
+<%= render "admin/semester_klasses/course_date_drawer" %>
 </div>
 
 <% if @left_klass_students.any? %>

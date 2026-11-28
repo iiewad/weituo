@@ -134,4 +134,73 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+  test "reschedule updates a started course date only" do
+    sk = semester_klasses(:sk_math_2)
+    first = sk.courses.find_by!(seq: 1)
+    first.start!(Date.new(2026, 3, 1))
+    second = sk.courses.find_by!(seq: 2)
+    second.start!(Date.new(2026, 3, 8))
+
+    patch reschedule_admin_semester_klass_course_path(sk, first), params: { start_date: "2026-03-02" }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "第 1 课开课日期已改为 03-02", flash[:notice]
+    assert_equal Date.new(2026, 3, 2), first.reload.start_date
+    assert_equal Date.new(2026, 3, 8), second.reload.start_date
+  end
+
+  test "reschedule cascades later started courses by interval" do
+    sk = semester_klasses(:sk_math_2)
+    first = sk.courses.find_by!(seq: 1)
+    first.start!(Date.new(2026, 3, 1))
+    second = sk.courses.find_by!(seq: 2)
+    second.start!(Date.new(2026, 3, 8))
+
+    patch reschedule_admin_semester_klass_course_path(sk, first),
+      params: { start_date: "2026-03-02", cascade: "1", interval_days: 5 }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "第 2 课已按 5 天顺延（至 03-07）", flash[:notice]
+    assert_equal Date.new(2026, 3, 2), first.reload.start_date
+    assert_equal Date.new(2026, 3, 7), second.reload.start_date
+  end
+
+  test "reschedule rejects an unstarted course" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 2)
+
+    patch reschedule_admin_semester_klass_course_path(sk, course), params: { start_date: "2026-03-02" }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "尚未开课", flash[:alert]
+    assert_nil course.reload.start_date
+  end
+
+  test "reschedule rejects an invalid date" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!(Date.new(2026, 3, 1))
+
+    patch reschedule_admin_semester_klass_course_path(sk, course), params: { start_date: "不是日期" }
+
+    assert_redirected_to admin_semester_klass_path(sk)
+    assert_match "开课日期无效", flash[:alert]
+    assert_equal Date.new(2026, 3, 1), course.reload.start_date
+  end
+
+  test "cannot reschedule a class from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
+    sk = SemesterKlass.create!(
+      campuse: other_campuse, semester: other_semester,
+      grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      genre: "TG", seq: 9, times: 1
+    )
+    course = sk.courses.find_by!(seq: 1)
+
+    patch reschedule_admin_semester_klass_course_path(sk, course), params: { start_date: "2026-03-02" }
+
+    assert_response :not_found
+  end
 end
