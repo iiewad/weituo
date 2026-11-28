@@ -2,12 +2,13 @@ class Admin::AttendancesController < AdminController
   include KlassDetailContext
 
   # 可直接从考勤格切换的状态；转出必须走 #transfer 并选择目标班级。
-  # transfer_in 是手动标记的转入（只改当前考勤行，不改报名），自动生成的转入行由模型守卫拒绝改写。
-  MARKABLE_STATUSES = %w[normal absent personal_leave sick_leave filled quit rejoin transfer_in].freeze
+  # transfer_in / transfer_out 是手动标记的转入 / 转出（只改当前考勤行，不改报名），
+  # 自动生成的转入行与真实转出行由模型守卫拒绝改写。
+  MARKABLE_STATUSES = %w[normal absent personal_leave sick_leave filled quit rejoin transfer_in transfer_out].freeze
   # 只改当前考勤行的状态走行级流式替换；退课 / 重新加入会级联报名与花名册，仍整体刷新
   STREAMABLE_STATUSES = (MARKABLE_STATUSES - %w[quit rejoin]).freeze
   STATUS_LABELS = Attendance::STATUS_META.transform_values { |meta| meta[:name] }
-    .merge("rejoin" => "重新加入").freeze
+    .merge("rejoin" => "重新加入", "transfer_out" => "标记为转出").freeze
 
   def mark
     @sk = campuse_semester_klasses.find(params[:semester_klass_id])

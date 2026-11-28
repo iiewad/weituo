@@ -23,16 +23,26 @@ class Attendance < ApplicationRecord
     # 只有在考勤卡里手动标记的转入行可以「恢复正常」，见 mark_transfer_in / manual_transfer_in?。
     state :transfer_in
 
-    # 恢复正常：纠正误点的缺课 / 请假 / 补课，以及撤销手动标记的转入；退课走「重新加入」，转出不可撤销
+    # 恢复正常：纠正误点的缺课 / 请假 / 补课，以及撤销手动标记的转入 / 转出；
+    # 退课走「重新加入」，真实转出不可撤销
     event :mark_normal do
       transitions from: [ :absent, :personal_leave, :sick_leave, :filled ], to: :normal, guard: STARTED_GUARD
       transitions from: [ :transfer_in ], to: :normal, guard: :manual_transfer_in_started?
+      transitions from: [ :transfer ], to: :normal, guard: :manual_transfer_out_started?,
+        after: -> { self.manual_transfer_out = false }
     end
 
     # 手动标记为转入：学员实际是从之后的课次才进入本班，入班前已开课的课次不该记正常 / 缺课 / 请假。
     # 只改当前考勤行，不改报名状态与入班课次，也不级联其它课次。
     event :mark_transfer_in do
       transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :filled ], to: :transfer_in, guard: STARTED_GUARD
+    end
+
+    # 手动标记为转出：学员本课次已不在本班就读，但报名仍在班。
+    # 只改当前考勤行，不改报名状态，也不级联其它课次；与真实转出（mark_transfer）不同，可「恢复正常」撤销。
+    event :mark_transfer_out do
+      transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :filled ], to: :transfer,
+        guard: STARTED_GUARD, after: -> { self.manual_transfer_out = true }
     end
 
     event :mark_personal_leave do
@@ -89,7 +99,8 @@ class Attendance < ApplicationRecord
         # 只同步已开课课次；未开课课次等开课时再按报名状态生成
         course.semester_klass.courses.where("seq > ? AND start_date IS NOT NULL", course.seq).each do |c|
           attendance = c.attendances.find_or_create_by!(klass_student: klass_student)
-          attendance.update!(status: "transfer")
+          # 真实转出覆盖此前的手动标记，级联行不再可「恢复正常」
+          attendance.update!(status: "transfer", manual_transfer_out: false)
         end
       end
       transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :quit, :filled ], to: :transfer, guard: STARTED_GUARD
@@ -105,6 +116,17 @@ class Attendance < ApplicationRecord
   # mark_normal 撤销手动转入的守卫
   def manual_transfer_in_started?
     course.started? && manual_transfer_in?
+  end
+
+  # 是否为考勤卡里手动标记的转出行：报名仍在班，只把这一格标成转出，可「恢复正常」。
+  # 真实转出（转出抽屉 / mark_transfer 级联）由报名状态驱动，不置此标记。
+  def manual_transfer_out?
+    transfer? && self[:manual_transfer_out]
+  end
+
+  # mark_normal 撤销手动转出的守卫
+  def manual_transfer_out_started?
+    course.started? && manual_transfer_out?
   end
 
   # 考勤状态展示：单字用于密集矩阵、全称用于悬停与图例、color 配合 badge-soft 柔和底。

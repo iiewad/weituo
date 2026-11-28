@@ -24,7 +24,14 @@
 
     <% if attendance.present? %>
       <% if attendance.transfer? %>
-        <% if semester_klass_student.transfer? %>
+        <% if attendance.manual_transfer_out? %>
+          <p class="text-[11px] leading-snug text-base-content/50">
+            已标记为转出：本课次学员未在本班就读，不计入出勤。
+          </p>
+          <%= button_to "恢复正常",
+                mark_admin_semester_klass_course_attendance_path(@sk, course, attendance.id, status: "normal"),
+                method: :put, class: "btn btn-xs w-full btn-ghost" %>
+        <% elsif semester_klass_student.transfer? %>
           <p class="text-[11px] leading-snug text-base-content/50">
             已转出，不可撤销；如需回班，请在转入的班级中把学员转出到本班。
           </p>
@@ -96,8 +103,13 @@
           else
             [ [ [ "重新加入", "rejoin", "btn-primary" ] ] ]
           end
-        # 在班学员的课次可手动标记为转入（只改本格）；退课行只能重新加入
-        action_groups << [ [ "标记为转入", "transfer_in", "btn-ghost" ] ] unless attendance.quit?
+        # 标记为转入 / 转出只用于结课后修正考勤表（只改本格），退课行只能重新加入
+        if @klass_ended && !attendance.quit?
+          action_groups << [
+            [ "标记为转入", "transfer_in", "btn-ghost" ],
+            [ "标记为转出", "transfer_out", "btn-ghost" ]
+          ]
+        end
       %>
 
       <% action_groups.each_with_index do |actions, group_index| %>

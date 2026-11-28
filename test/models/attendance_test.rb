@@ -258,6 +258,60 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "normal", attendance_for(later).reload.status
   end
 
+  test "attendance can be marked transfer_out by hand and restored to normal" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_transfer_out!
+
+    assert_equal "transfer", attendance.reload.status
+    assert attendance.manual_transfer_out?
+    # 只改这一格：报名仍在班
+    assert_equal "in", klass_students(:ks_1).reload.status
+
+    attendance.mark_normal!
+    assert_equal "normal", attendance.reload.status
+    assert_not attendance.manual_transfer_out?
+    assert_equal "in", klass_students(:ks_1).reload.status
+  end
+
+  test "mark_transfer_out is rejected from quit, transfer_in and before the course starts" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_quit!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_transfer_out! }
+
+    attendance.mark_rejoin!
+    attendance.mark_transfer_in!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_transfer_out! }
+    assert_equal "transfer_in", attendance.reload.status
+
+    unstarted = later.attendances.create!(klass_student: klass_students(:ks_1))
+    assert_raises(AASM::InvalidTransition) { unstarted.mark_transfer_out! }
+    assert_equal "normal", unstarted.reload.status
+  end
+
+  test "mark_transfer_out does not cascade and a real transfer cannot be restored" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    later.start!
+
+    attendance_for(course).mark_transfer_out!
+
+    assert_equal "transfer", attendance_for(course).reload.status
+    assert_equal "normal", attendance_for(later).reload.status
+    assert_equal "in", klass_students(:ks_1).reload.status
+
+    # 真实转出（级联）不可「恢复正常」
+    attendance_for(later).mark_transfer!
+    assert_raises(AASM::InvalidTransition) { attendance_for(later).mark_normal! }
+  end
+
   test "filled is not allowed from quit or transfer" do
     course = courses(:sk_1_course_1)
     later = courses(:sk_1_course_2)

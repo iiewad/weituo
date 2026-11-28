@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_28_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_28_130000) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_120000) do
     t.datetime "updated_at", null: false
     t.bigint "marked_by_id"
     t.bigint "transfer_target_klass_id"
+    t.boolean "manual_transfer_out", default: false, null: false
     t.index ["course_id", "klass_student_id"], name: "index_attendances_on_course_id_and_klass_student_id", unique: true
     t.index ["klass_student_id"], name: "index_attendances_on_klass_student_id"
     t.index ["marked_by_id"], name: "index_attendances_on_marked_by_id"

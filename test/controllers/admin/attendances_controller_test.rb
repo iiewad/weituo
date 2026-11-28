@@ -132,6 +132,48 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_select "form button", text: "标记为转入", count: 0
   end
 
+test "mark transfer_out streams a row replacement and leaves the enrollment untouched" do
+    attendance = prepared_attendance
+    ks = klass_students(:ks_2)
+
+    put mark_admin_semester_klass_course_attendance_path(
+      attendance.course.semester_klass, attendance.course, attendance
+    ), params: { status: "transfer_out" }, as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action='replace'][target='klass_student_#{ks.id}']"
+    assert_equal "transfer", attendance.reload.status
+    assert attendance.manual_transfer_out?
+    assert_equal users(:one), attendance.marked_by
+    assert_equal "in", ks.reload.status
+    # 手动标记的转出行提供「恢复正常」，不再提供其它操作
+    assert_select "form button", text: "恢复正常"
+    assert_select "form button", text: "标记为转出", count: 0
+  end
+
+  test "mark normal restores a manually marked transfer_out" do
+    attendance = prepared_attendance
+    attendance.mark_transfer_out!
+
+    mark(attendance, "normal")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_equal "normal", attendance.reload.status
+    assert_not attendance.reload.manual_transfer_out?
+  end
+
+  test "mark refuses to restore a real transfer" do
+    attendance = prepared_attendance
+    attendance.mark_transfer!
+
+    mark(attendance, "normal")
+
+    assert_redirected_to admin_semester_klass_path(attendance.course.semester_klass)
+    assert_match "无法改为「正常」", flash[:alert]
+    assert_equal "transfer", attendance.reload.status
+  end
+
+
   test "mark normal restores a manually marked transfer_in" do
     attendance = prepared_attendance
     attendance.update!(status: "transfer_in")
@@ -154,10 +196,12 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "transfer_in", attendance.reload.status
   end
 
-  test "attendance card offers 标记为转入 for in-class rows only" do
+  test "attendance card offers 标记为转入 / 标记为转出 for in-class rows only" do
     sk = semester_klasses(:sk_math_2)
     course = sk.courses.find_by!(seq: 1)
     course.start!
+    # 全部课次结课后才展示标记转入 / 转出的入口
+    sk.courses.where(start_date: nil).update_all(start_date: Date.current)
     in_class = course.attendances.find_by!(klass_student: klass_students(:ks_2))
     quit_ks = KlassStudent.create!(semester_klass: sk, student: students(:student_7_2), status: "out")
     manual_ks = KlassStudent.create!(semester_klass: sk, student: students(:student_7_3), status: "in")
@@ -171,6 +215,49 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     assert_select in_class_card, text: "标记为转入"
     assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, quit, status: "transfer_in")}']", count: 0
     assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, manual, status: "normal")}']", text: "恢复正常"
+
+    transfer_out_card = "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, in_class, status: "transfer_out")}']"
+    assert_select transfer_out_card, text: "标记为转出"
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, quit, status: "transfer_out")}']", count: 0
+  end
+
+  test "attendance card offers 恢复正常 for a manually marked transfer_out only" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+    manual_ks = KlassStudent.create!(semester_klass: sk, student: students(:student_7_3), status: "in")
+    manual = course.attendances.create!(klass_student: manual_ks, status: "transfer", manual_transfer_out: true)
+    real_ks = KlassStudent.create!(semester_klass: sk, student: students(:student_7_2), status: "transfer")
+    real = course.attendances.create!(klass_student: real_ks, status: "transfer")
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, manual, status: "normal")}']", text: "恢复正常"
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, real, status: "normal")}']", count: 0
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, manual, status: "transfer_out")}']", count: 0
+  end
+
+  test "attendance card hides the manual transfer entries until every course has started" do
+    sk = semester_klasses(:sk_math_2)
+    course = sk.courses.find_by!(seq: 1)
+    course.start!
+    attendance = course.attendances.find_by!(klass_student: klass_students(:ks_2))
+
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "transfer_in")}']", count: 0
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "transfer_out")}']", count: 0
+    # 常规状态操作不受影响
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "absent")}']", text: "缺课"
+
+    sk.courses.where(start_date: nil).update_all(start_date: Date.current)
+    get admin_semester_klass_path(sk)
+
+    assert_response :success
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "transfer_in")}']", text: "标记为转入"
+    assert_select "form[action='#{mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "transfer_out")}']", text: "标记为转出"
   end
 
   test "mark streams quit as a redirect so rosters and badges refresh" do

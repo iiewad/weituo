@@ -1,4 +1,4 @@
-<%# 依赖 show / mark 流式响应提供：@sk @courses @attendance_by_cell @next_semester @reserved_student_ids @reservations_by_student_id @placed_student_ids @transfer_target_klasses @enrolled_target_ids_by_student @reserve_grades @reserve_teachers %>
+<%# 依赖 show / mark 流式响应提供：@sk @courses @klass_ended @attendance_by_cell @next_semester @reserved_student_ids @reservations_by_student_id @placed_student_ids @transfer_target_klasses @enrolled_target_ids_by_student @reserve_grades @reserve_teachers %>
 <tr id="<%= dom_id(ks) %>" class="hover:bg-base-200/40" data-attendance-search-target="row"
     data-search-text="<%= [ ks.student.name, ks.student.identity_suffix ].compact.join(" ") %>">
   <td class="text-center">

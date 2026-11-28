@@ -6,6 +6,8 @@ module KlassDetailContext
     def set_klass_row_context
       @klass_students = @sk.klass_students.includes(:student, transfer_source_klass: [ :grade, :subject ]).to_a
       @courses = @sk.courses.order(:seq).to_a
+      # 全部课次结课（都已有开课日期）后才提供「标记为转入 / 转出」的考勤修正入口
+      @klass_ended = @courses.all?(&:started?)
       @attendance_by_cell = Attendance.where(
         course_id: @courses.map(&:id),
         klass_student_id: @klass_students.map(&:id)

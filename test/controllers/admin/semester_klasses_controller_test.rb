@@ -95,9 +95,11 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     get admin_semester_klass_path(sk)
 
     assert_response :success
-    # 缺课 / 事假 / 病假 三项排在同一行，退课 / 转出仍为两列
+    # 缺课 / 事假 / 病假 三项排在同一行，退课 / 转出为两列；课程未全部结课，不提供标记转入 / 转出
     assert_select "[data-floating-card-target='card'] .grid.grid-cols-3", count: 1
     assert_select "[data-floating-card-target='card'] .grid.grid-cols-2", count: 1
+    assert_select "[data-floating-card-target='card'] button", text: "标记为转入", count: 0
+    assert_select "[data-floating-card-target='card'] button", text: "标记为转出", count: 0
     card = Nokogiri::HTML(response.body).at_css("[data-floating-card-target='card']")
     assert_includes card.text, "正常"
     assert_includes card.text, "缺课"
