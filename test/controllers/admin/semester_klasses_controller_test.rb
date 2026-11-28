@@ -16,6 +16,18 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{admin_semester_klass_path(semester_klasses(:sk_math_1))}']", count: 0
   end
 
+  test "index empty semester offers both 开班 and 复制班级" do
+    semesters(:semester_next).update!(current: true)
+
+    get admin_semester_klasses_path
+
+    assert_response :success
+    assert_select "p", text: "当前学期还没有班级"
+    # 顶部操作区与空状态各一个「开班」入口，打开同一个开班抽屉
+    assert_select "label[for='drawer-klass-new']", count: 2, text: "开班"
+    assert_select "a[href='#{copy_admin_semester_klasses_path}']", count: 2
+  end
+
   test "index filters classes by student name" do
     get admin_semester_klasses_path(q: { students_name_cont: "7_学生1" })
 
