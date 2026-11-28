@@ -395,8 +395,12 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[data-controller='klass-times']"
-    assert_select "select[data-klass-times-target='grade'][data-action='change->klass-times#apply']"
-    assert_select "select[name='semester_klass[phase]'] option[selected][value='1']", text: "第一阶段"
+    assert_select "input[type='radio'][data-klass-times-target='grade'][data-action='change->klass-times#apply']", 3
+    assert_select "input[type='radio'][data-klass-times-target='grade'][checked][value='#{grades(:grade_7).id}']", 1
+    assert_select "input[type='radio'][name='semester_klass[genre]'][checked][value='TG']"
+    assert_select "input[type='radio'][name='semester_klass[genre]']", 5
+    assert_select "input[type='radio'][name='semester_klass[phase]'][checked][aria-label='第一阶段']"
+    assert_select "input[type='radio'][name='semester_klass[phase]']", 2
     assert_select "select[data-klass-times-target='teacher'][data-action='change->klass-times#apply']"
     assert_select "input[data-klass-times-target='times']"
 
@@ -626,7 +630,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "label[for='drawer-klass-new'].drawer-button", text: "开班"
     assert_select "#drawer-klass-new"
-    assert_select "form[action='#{admin_semester_klasses_path}'][method='post'] select[name='semester_klass[phase]']"
+    assert_select "form[action='#{admin_semester_klasses_path}'][method='post'] input[type='radio'][name='semester_klass[phase]']"
   end
 
   test "show offers a delete button until the class starts courses" do

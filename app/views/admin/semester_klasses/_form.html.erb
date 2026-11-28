@@ -47,41 +47,66 @@
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <%# 年级为按钮组：只列出当前账号在本校区负责的年级，新建时默认选中序号最靠前的年级 %>
+      <% grades = Current.user.grades_by_campuse(Current.campuse.id).order(:level).to_a %>
+      <% grades << item.grade if item.grade && grades.none? { |grade| grade.id == item.grade_id } %>
+      <% selected_grade_id = item.grade_id || grades.first&.id %>
       <div>
-        <%= form.label :grade_id, "年级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :grade_id,
-              Current.user.grades_by_campuse(Current.campuse.id).includes(:subjects).map { |grade| [ grade.name, grade.id ] },
-              { include_blank: "选择年级", selected: item.grade_id },
-              { class: "select select-sm w-full", required: true, disabled: grade_locked,
-                data: { klass_times_target: "grade", action: "change->klass-times#apply" } } %>
+        <span class="mb-1 block text-xs font-medium text-base-content/60">年级</span>
+        <div id="klass_<%= item.id || "new" %>_semester_klass_grade_id" class="flex flex-wrap gap-1.5">
+          <% grades.each do |grade| %>
+            <%= form.radio_button :grade_id, grade.id,
+                  checked: grade.id == selected_grade_id, disabled: grade_locked, class: "btn btn-xs",
+                  aria: { label: grade.name }, required: grade == grades.first,
+                  data: { klass_times_target: "grade", action: "change->klass-times#apply" } %>
+          <% end %>
+        </div>
         <% if grade_locked %>
           <p class="mt-1 text-[11px] leading-tight text-base-content/40">班级已有学员，年级不可修改。</p>
         <% end %>
       </div>
 
-      <div>
-        <%= form.label :teacher_id, "教师", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+      <%# 教师：可搜索选择器，输入姓名或科目过滤；真实的 select 由 search-select 控制器隐藏并写回 %>
+      <div data-controller="search-select">
+        <label for="klass_<%= item.id || "new" %>_teacher_search" class="mb-1 block text-xs font-medium text-base-content/60">教师</label>
         <%= form.select :teacher_id, grouped_options_for_select(@teacher_groups || [], item.teacher_id),
               { include_blank: "选择教师" },
-              { class: "select select-sm w-full", required: true,
-                data: { klass_times_target: "teacher", action: "change->klass-times#apply" } } %>
+              { class: "select select-sm w-full",
+                data: { klass_times_target: "teacher", action: "change->klass-times#apply", search_select_target: "select" } } %>
+        <div class="relative">
+          <input type="text" id="klass_<%= item.id || "new" %>_teacher_search" class="input input-sm w-full"
+                 autocomplete="off" placeholder="输入教师姓名或科目搜索" required
+                 data-search-select-target="input"
+                 data-action="focus->search-select#open input->search-select#filter keydown->search-select#keydown blur->search-select#close">
+          <div class="absolute z-30 mt-1 hidden max-h-48 w-full overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1 shadow-lg"
+               data-search-select-target="results" data-action="pointerdown->search-select#pick"></div>
+        </div>
         <p class="mt-1 text-[11px] leading-tight text-base-content/40">科目由所选教师自动带出。</p>
       </div>
 
       <div>
-        <%= form.label :genre, "班型", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :genre, SemesterKlass::GENRE_MAP.map { |name, code| [ name, code ] },
-              { selected: item.genre.presence || "TG" }, { class: "select select-sm w-full", required: true } %>
+        <span class="mb-1 block text-xs font-medium text-base-content/60">班型</span>
+        <div class="flex flex-wrap gap-1.5">
+          <% SemesterKlass::GENRE_MAP.each do |name, code| %>
+            <%= form.radio_button :genre, code, checked: (item.genre.presence || "TG") == code,
+                  aria: { label: name }, required: code == SemesterKlass::GENRE_MAP["提高班"],
+                  class: "btn btn-xs" %>
+          <% end %>
+        </div>
       </div>
 
       <div>
-        <%= form.label :phase, "阶段", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= form.select :phase, SemesterKlass::PHASE_MAP.map { |value, label| [ label, value ] },
-              { selected: item.phase || 1 }, { class: "select select-sm w-full", required: true, disabled: phase_locked } %>
+        <span class="mb-1 block text-xs font-medium text-base-content/60">阶段</span>
+        <div class="flex flex-wrap gap-1.5">
+          <% SemesterKlass::PHASE_MAP.each do |value, label| %>
+            <%= form.radio_button :phase, value, checked: (item.phase || 1) == value, disabled: phase_locked,
+                  aria: { label: label }, required: value == 1, class: "btn btn-xs" %>
+          <% end %>
+        </div>
         <% if phase_locked %>
           <p class="mt-1 text-[11px] leading-tight text-base-content/40">班级已有学员，阶段不可修改。</p>
         <% else %>
-          <p class="mt-1 text-[11px] leading-tight text-base-content/40">同一学期两个阶段可重复使用班型与序号。</p>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">同一学期两个阶段可重复使用班型与序号，默认第一阶段。</p>
         <% end %>
       </div>
 

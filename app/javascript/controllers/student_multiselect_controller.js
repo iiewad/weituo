@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="student-multiselect"
-// 搜索多选：勾选后以标签展示，可逐个移除或一键清空；可选按外部年级下拉联动过滤。
+// 搜索多选：勾选后以标签展示，可逐个移除或一键清空；可选按外部年级控件联动过滤。
 export default class extends Controller {
   static targets = ["input", "option", "panel", "empty", "selected", "count", "quickAdd", "quickAddError"]
   static values = { gradeSelector: String, quickAddUrl: String, optionsId: String, csrf: String }
@@ -14,6 +14,7 @@ export default class extends Controller {
 
     document.addEventListener("click", this.handleOutsideClick)
     if (this.hasGradeSelectorValue && this.gradeSelectorValue) {
+      // 年级控件可以是一个 select，也可以是包着一组单选按钮的容器
       this.gradeElement = document.querySelector(this.gradeSelectorValue)
       this.gradeElement?.addEventListener("change", this.handleGradeChange)
     }
@@ -26,6 +27,12 @@ export default class extends Controller {
     this.gradeElement?.removeEventListener("change", this.handleGradeChange)
   }
 
+  gradeValue() {
+    const element = this.gradeElement
+    if (!element) return ""
+    return element.matches("select, input") ? element.value : element.querySelector("input:checked")?.value || ""
+  }
+
   open() {
     this.panelTarget.classList.remove("hidden")
   }
@@ -36,7 +43,7 @@ export default class extends Controller {
 
   filter() {
     const query = this.inputTarget.value.trim().toLowerCase()
-    const gradeId = this.gradeElement?.value || ""
+    const gradeId = this.gradeValue()
     let visible = 0
 
     this.optionTargets.forEach((option) => {
@@ -69,9 +76,9 @@ export default class extends Controller {
       return
     }
 
-    const gradeId = this.gradeElement?.value
+    const gradeId = this.gradeValue()
     if (!gradeId) {
-      this.gradeElement?.reportValidity()
+      this.gradeElement?.querySelector?.("input, select")?.reportValidity()
       return
     }
 

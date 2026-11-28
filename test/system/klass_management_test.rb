@@ -163,12 +163,12 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "七年级", from: "年级"
+      choose_grade "七年级"
       fill_in "搜索学员姓名", with: "新学员"
       assert_text "没有匹配的学员"
       click_button "快速添加学员"
       assert_selector "[data-student-multiselect-target='selected']", text: "新学员", wait: 5
-      select "张", from: "教师"
+      pick_teacher "张"
       fill_in "课次", with: "3"
       click_button "开班"
     end
@@ -186,10 +186,10 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "七年级", from: "年级"
+      choose_grade "七年级"
       choose "粘贴名单"
       fill_in "粘贴名单（每行：姓名,入班课次）", with: "7_学生2,2\n7_学生3\n新粘同学,1\n新粘同学,1"
-      select "张", from: "教师"
+      pick_teacher "张"
       fill_in "课次", with: "3"
       click_button "开班"
     end
@@ -213,10 +213,10 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "第二阶段", from: "阶段"
-      select "提高班", from: "班型"
-      select "七年级", from: "年级"
-      select "张", from: "教师"
+      choose_phase "第二阶段"
+      choose_genre "提高班"
+      choose_grade "七年级"
+      pick_teacher "张"
       fill_in "课次", with: "3"
       click_button "开班"
     end
@@ -244,9 +244,9 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "提高班", from: "班型"
-      select "七年级", from: "年级"
-      select "张", from: "教师"
+      choose_genre "提高班"
+      choose_grade "七年级"
+      pick_teacher "张"
       fill_in "课次", with: "3"
       click_button "开班"
     end
@@ -291,17 +291,17 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "七年级", from: "年级"
-      select "张", from: "教师"
+      choose_grade "七年级"
+      pick_teacher "张"
       assert_field "课次", with: "16"
 
-      select "八年级", from: "年级"
-      select "王", from: "教师"
+      choose_grade "八年级"
+      pick_teacher "王"
       assert_field "课次", with: "12"
 
-      select "七年级", from: "年级"
+      choose_grade "七年级"
       assert_field "课次", with: ""
-      select "张", from: "教师"
+      pick_teacher "张"
       assert_field "课次", with: "16"
     end
   end
@@ -314,9 +314,9 @@ class KlassManagementTest < ApplicationSystemTestCase
     drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      select "精英班", from: "班型"
-      select "七年级", from: "年级"
-      select "张", from: "教师"
+      choose_genre "精英班"
+      choose_grade "七年级"
+      pick_teacher "张"
       assert_field "课次", with: "16"
       fill_in "课次", with: "3"
       click_button "开班"
@@ -326,4 +326,57 @@ class KlassManagementTest < ApplicationSystemTestCase
     assert_text "一期7数精1"
     assert_equal 3, SemesterKlass.order(:id).last.courses.count
   end
+
+  test "开班抽屉默认选中负责的首个年级和提高班，教师可搜索选择" do
+    sign_in
+    visit admin_semester_klasses_path
+
+    find("label[for='drawer-klass-new']").click
+    drawer = find("#drawer-klass-new", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      assert_checked_field "klass_new_semester_klass_grade_id_#{grades(:grade_7).id}"
+      assert_checked_field "klass_new_semester_klass_genre_tg"
+      assert_field "教师", with: ""
+
+      # 按科目搜索：列出该科目的全部教师
+      fill_in "教师", with: "英语"
+      results = find("[data-search-select-target='results']")
+      assert results.has_button?("王")
+      assert results.has_button?("李")
+      assert results.has_no_button?("张")
+
+      # 按姓名搜索后选中，隐藏的 select 同步写入教师 id
+      fill_in "教师", with: "李"
+      within("[data-search-select-target='results']") { click_button "李" }
+      assert_field "教师", with: "李"
+      assert_equal teachers(:eng_teacher_2).id.to_s,
+        find("select[name='semester_klass[teacher_id]']", visible: :all).value
+
+      # 没有匹配项，且不会留下选不中的自由文本
+      fill_in "教师", with: "不存在的老师"
+      assert_text "没有匹配的选项"
+      find("h3", text: "开班", match: :first).click
+      assert_field "教师", with: "李"
+    end
+  end
+
+  private
+    # 开班抽屉里年级、班型、阶段是按钮组，教师是可搜索选择器
+    def choose_grade(name)
+      choose "klass_new_semester_klass_grade_id_#{Grade.find_by!(name:).id}"
+    end
+
+    def choose_genre(name)
+      choose "klass_new_semester_klass_genre_#{SemesterKlass::GENRE_MAP.fetch(name).downcase}"
+    end
+
+    def choose_phase(name)
+      choose "klass_new_semester_klass_phase_#{SemesterKlass::PHASE_MAP.key(name)}"
+    end
+
+    def pick_teacher(name)
+      fill_in "教师", with: name
+      within("[data-search-select-target='results']") { click_button name }
+    end
 end
