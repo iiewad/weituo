@@ -196,16 +196,66 @@ class AttendanceTest < ActiveSupport::TestCase
     assert_equal "transfer", klass_students(:ks_1).reload.status
   end
 
-  test "transfer_in is read-only and rejects every mark transition" do
+  test "an auto-generated transfer_in is read-only and rejects every mark transition" do
     course = courses(:sk_1_course_1)
     course.start!
     attendance = attendance_for(course)
+    # 自动生成的转入行：课次早于入班课次
+    klass_students(:ks_1).update!(transfer_source_klass: semester_klasses(:sk_math_2), transfer_in_seq: 2)
     attendance.update!(status: "transfer_in")
+    assert_not attendance.manual_transfer_in?
 
-    %w[normal absent personal_leave sick_leave filled quit transfer rejoin].each do |status|
+    %w[normal absent personal_leave sick_leave filled quit transfer rejoin transfer_in].each do |status|
       assert_raises(AASM::InvalidTransition) { attendance.public_send("mark_#{status}!") }
     end
     assert_equal "transfer_in", attendance.reload.status
+  end
+
+  test "attendance can be marked transfer_in by hand and restored to normal" do
+    course = courses(:sk_1_course_1)
+    course.start!
+    attendance = attendance_for(course)
+
+    attendance.mark_transfer_in!
+
+    assert_equal "transfer_in", attendance.reload.status
+    assert attendance.manual_transfer_in?
+    # 只改这一格：报名状态与入班课次不变
+    assert_equal "in", klass_students(:ks_1).reload.status
+    assert_nil klass_students(:ks_1).transfer_in_seq
+
+    attendance.mark_normal!
+    assert_equal "normal", attendance.reload.status
+    assert_not attendance.manual_transfer_in?
+  end
+
+  test "mark_transfer_in is rejected from quit and transfer and before the course starts" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    attendance = attendance_for(course)
+    attendance.mark_quit!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_transfer_in! }
+
+    attendance.mark_rejoin!
+    attendance.mark_transfer!
+    assert_raises(AASM::InvalidTransition) { attendance.mark_transfer_in! }
+
+    unstarted = later.attendances.create!(klass_student: klass_students(:ks_1))
+    assert_raises(AASM::InvalidTransition) { unstarted.mark_transfer_in! }
+    assert_equal "normal", unstarted.reload.status
+  end
+
+  test "mark_transfer_in does not cascade to other courses" do
+    course = courses(:sk_1_course_1)
+    later = courses(:sk_1_course_2)
+    course.start!
+    later.start!
+
+    attendance_for(course).mark_transfer_in!
+
+    assert_equal "transfer_in", attendance_for(course).reload.status
+    assert_equal "normal", attendance_for(later).reload.status
   end
 
   test "filled is not allowed from quit or transfer" do

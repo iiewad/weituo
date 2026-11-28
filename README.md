@@ -105,7 +105,7 @@ flowchart LR
 
 ### 4. 考勤状态流转
 
-状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出、`transfer_in` 转入（只读，由转出生成，表示该课次学员尚未转入本班、未在本班就读，不计入出勤/预留次数）。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上，用于在原班提示回班路径；转入来源班与入班课次记录在 `KlassStudent.transfer_source_klass_id` / `transfer_in_seq` 上，用于转入班考勤格的「转入」详情展示。
+状态：`normal` 正常、`absent` 缺课、`filled` 补课销假、`personal_leave` 事假、`sick_leave` 病假、`quit` 退课、`transfer` 转出、`transfer_in` 转入（由转出生成或手动标记，表示该课次学员尚未转入本班、未在本班就读，不计出勤/预留次数）。最后打标人和时间看 `marked_by_id` 与 `updated_at`；转出目标班记录在 `transfer_target_klass_id` 外键上，用于在原班提示回班路径；转入来源班与入班课次记录在 `KlassStudent.transfer_source_klass_id` / `transfer_in_seq` 上，用于转入班考勤格的「转入」详情展示。
 
 | 事件 | 允许从 | 到 | 额外副作用 |
 | --- | --- | --- | --- |
@@ -116,6 +116,7 @@ flowchart LR
 | `mark_quit` | `absent` / `normal` / `personal_leave` / `sick_leave` / `filled` | `quit` | 级联后续课次 + 报名转 `out` |
 | `mark_transfer` | `absent` / `normal` / `personal_leave` / `sick_leave` / `quit` / `filled` | `transfer` | 级联后续课次 + 报名转 `transfer` |
 | `mark_rejoin` | `quit` | `normal` | 当前及后续退课课次恢复 `normal` |
+| `mark_transfer_in` | `absent` / `normal` / `personal_leave` / `sick_leave` / `filled` | `transfer_in` | 手动标记，只改当前考勤行，不改报名、不级联；可再 `mark_normal` 撤销 |
 
 打标入口是 `PUT /admin/semester_klasses/:sk_id/courses/:course_id/attendances/:id/mark?status=...`，控制器按白名单分派 `mark_*!`，未知 status 会被忽略。
 
@@ -137,7 +138,7 @@ stateDiagram-v2
 
 `transfer` 是终态，不可撤销；要回原班，需在转入班的考勤格再次 `transfer` 到原班（控制器允许目标班存在 `transfer` 状态的报名，并以 `join_klass(..., reinstate: true)` 恢复在班）。
 
-`transfer_in`（转入）不在上表/图中，因为它没有 `mark_*` 事件——它由转出动作对目标班入班课次之前的已开课次直接 `update!(status:)` 生成，入班前课次在转入后才补开课时由 `Course#start!` 同样生成，是只读状态：对 `transfer_in` 行调用任何 `mark_*!` 都会触发 `AASM::InvalidTransition`，控制器回退提示，天然不可改。
+自动生成的 `transfer_in`（转入）不在上表/图中，因为它没有 `mark_*` 事件——它由转出动作对目标班入班课次之前的已开课次直接 `update!(status:)` 生成，入班前课次在转入后才补开课时由 `Course#start!` 同样生成，是只读状态：对这类行调用任何 `mark_*!` 都会触发 `AASM::InvalidTransition`，控制器回退提示，天然不可改。另有手动标记的转入：考勤卡对在班学员的课次提供「标记为转入」（`mark_transfer_in`，只改这一格、不改报名、不级联），可通过 `mark_normal` 撤销；`Attendance#manual_transfer_in?` 以「课次不早于 `KlassStudent.transfer_in_seq`」区分手动标记与自动生成。
 
 ### 5. 退课 / 转出的级联
 

@@ -555,7 +555,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "button[disabled][title*='暂无可转入的班级']", text: "转出"
-    assert_select "form[action*='status=transfer']", count: 0
+    assert_select "form[action$='status=transfer']", count: 0
   end
 
   test "statement keeps the filter selections after searching" do

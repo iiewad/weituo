@@ -19,12 +19,20 @@ class Attendance < ApplicationRecord
     state :quit
     state :transfer
     # 转入：目标班入班课次之前的课次标记，表示该课次学员尚未转入本班、未在本班就读。
-    # 只读——不声明任何进出 transfer_in 的事件，所有 mark_* 的 from 都不含它，改写一律非法迁移。
+    # 自动生成的转入行（课次早于入班课次）只读——不声明任何进出它的迁移，所有 mark_* 的 from 都不含它；
+    # 只有在考勤卡里手动标记的转入行可以「恢复正常」，见 mark_transfer_in / manual_transfer_in?。
     state :transfer_in
 
-    # 恢复正常：纠正误点的缺课 / 请假 / 补课；退课走「重新加入」，转出不可撤销
+    # 恢复正常：纠正误点的缺课 / 请假 / 补课，以及撤销手动标记的转入；退课走「重新加入」，转出不可撤销
     event :mark_normal do
       transitions from: [ :absent, :personal_leave, :sick_leave, :filled ], to: :normal, guard: STARTED_GUARD
+      transitions from: [ :transfer_in ], to: :normal, guard: :manual_transfer_in_started?
+    end
+
+    # 手动标记为转入：学员实际是从之后的课次才进入本班，入班前已开课的课次不该记正常 / 缺课 / 请假。
+    # 只改当前考勤行，不改报名状态与入班课次，也不级联其它课次。
+    event :mark_transfer_in do
+      transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :filled ], to: :transfer_in, guard: STARTED_GUARD
     end
 
     event :mark_personal_leave do
@@ -86,6 +94,17 @@ class Attendance < ApplicationRecord
       end
       transitions from: [ :absent, :normal, :personal_leave, :sick_leave, :quit, :filled ], to: :transfer, guard: STARTED_GUARD
     end
+  end
+
+  # 是否为考勤卡里手动标记的转入行。自动生成的转入行一定早于入班课次（transfer_in_seq，
+  # 由 join_klass 记录），其余转入行只能是手动标记的。
+  def manual_transfer_in?
+    transfer_in? && (klass_student.transfer_in_seq.nil? || course.seq >= klass_student.transfer_in_seq)
+  end
+
+  # mark_normal 撤销手动转入的守卫
+  def manual_transfer_in_started?
+    course.started? && manual_transfer_in?
   end
 
   # 考勤状态展示：单字用于密集矩阵、全称用于悬停与图例、color 配合 badge-soft 柔和底。
