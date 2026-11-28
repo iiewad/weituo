@@ -87,12 +87,12 @@ Rails.application.routes.draw do
     resources :grades, only: [ :create, :update, :destroy ]
     resources :subjects, only: [ :create, :update, :destroy ]
     resources :users, only: [ :index, :create, :update ]
-    resources :schools, only: [ :index, :update ] do
-      resources :semesters do
-        member do
-          get :switch_thread_semester
-        end
+    resources :semesters, only: [ :index, :create, :update, :destroy ] do
+      member do
+        get :switch_thread_semester
       end
+    end
+    resources :schools, only: [ :index, :update ] do
       resources :campuses do
         member do
           get :switch_thread_campuse

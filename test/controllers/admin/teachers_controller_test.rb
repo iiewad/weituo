@@ -32,7 +32,8 @@ class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
 
   test "index only lists teachers in the current campus" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
-    Teacher.create!(name: "别区老师", subject: subjects(:math), campuse: other)
+    other_subject = other.subjects.create!(name: "数学", code: "MATH")
+    Teacher.create!(name: "别区老师", subject: other_subject, campuse: other)
 
     get admin_teachers_path
 
@@ -159,7 +160,8 @@ class Admin::TeachersControllerTest < ActionDispatch::IntegrationTest
 
   test "update cannot modify a teacher from another campus" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
-    outsider = Teacher.create!(name: "别区老师", subject: subjects(:math), campuse: other)
+    other_subject = other.subjects.create!(name: "数学", code: "MATH")
+    outsider = Teacher.create!(name: "别区老师", subject: other_subject, campuse: other)
 
     put admin_teacher_path(outsider), params: { teacher: { name: "被篡改" } }
 

@@ -45,7 +45,7 @@ module KlassDetailContext
 
     def reserve_grade_ids
       ids = [ @sk.grade_id ]
-      next_grade = Grade.find_by(level: @sk.grade.level + 1)
+      next_grade = @sk.campuse.grades.find_by(level: @sk.grade.level + 1)
       ids << next_grade.id if next_grade
       ids
     end

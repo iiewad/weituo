@@ -12,6 +12,14 @@ class Admin::GradesControllerTest < ActionDispatch::IntegrationTest
     assert_match "年级已添加", flash[:notice]
   end
 
+  test "create grants the new grade to campus admins" do
+    post admin_grades_path, params: { grade: { level: 10, name: "十年级" } }
+
+    grade = Grade.find_by!(name: "十年级")
+    user_campuse = UserCampuse.find_by!(user: users(:one), campuse: campuses(:campuse_1))
+    assert_includes user_campuse.reload.grade_ids, grade.id
+  end
+
   test "create rejects duplicate level" do
     assert_no_difference -> { Grade.count } do
       post admin_grades_path, params: { grade: { level: grades(:grade_7).level, name: "重复年级" } }
@@ -41,7 +49,7 @@ class Admin::GradesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "cannot delete a grade used by user authorization" do
-    grade = Grade.create!(level: 11, name: "十一年级")
+    grade = Grade.create!(level: 11, name: "十一年级", campuse: campuses(:campuse_1))
     user_campuse = UserCampuse.find_by!(user: users(:one), campuse: campuses(:campuse_1))
     user_campuse.update!(grade_ids: [ grade.id ])
 
@@ -53,7 +61,7 @@ class Admin::GradesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "deletes an unused grade" do
-    grade = Grade.create!(level: 12, name: "十二年级")
+    grade = Grade.create!(level: 12, name: "十二年级", campuse: campuses(:campuse_1))
 
     assert_difference -> { Grade.count }, -1 do
       delete admin_grade_path(grade)

@@ -40,12 +40,13 @@ class TeacherTest < ActiveSupport::TestCase
     assert Teacher.find_by(name: "新老师", subject_id: subjects(:math).id)
   end
 
-  test "rejects a subject not offered by the school" do
-    subject = Subject.create!(name: "物理", code: "PHY")
-    teacher = Teacher.new(name: "物理老师", subject:, campuse: campuses(:campuse_1))
+  test "rejects a subject not offered by the campuse" do
+    subject = Subject.create!(name: "物理", code: "PHY", campuse: campuses(:campuse_1))
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    teacher = Teacher.new(name: "物理老师", subject:, campuse: other_campuse)
 
     assert_not teacher.valid?
-    assert_includes teacher.errors[:subject_id], "未在该学校开设"
+    assert_includes teacher.errors[:subject_id], "未在该校区开设"
   end
 
   test "add by text supports tabs, headers and duplicate skipping" do

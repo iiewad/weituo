@@ -15,7 +15,7 @@ class ReservationBatchTest < ApplicationSystemTestCase
     first = Reservation.create!(student: students(:student_7_1), **attrs)
     second = Reservation.create!(student: students(:student_7_2), **attrs)
 
-    visit switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
+    visit switch_thread_semester_admin_semester_path(semesters(:semester_next))
     visit admin_reservations_path
 
     find("input[data-reservation-select-target='rowCheckbox'][value='#{first.id}']").check

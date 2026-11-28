@@ -8,8 +8,7 @@ class User < ApplicationRecord
   # normalizes :email_address, with: ->(e) { e.strip.downcase }
   def subjects_by_campuse(campuse_id)
     campuse = Campuse.find(campuse_id)
-    Subject.where(id: campuse.school.grade_subjects.map(&:subject_id))
-    # campuse.school.grade_subjects.map(&:subject)
+    Subject.where(id: campuse.grade_subjects.select(:subject_id))
   end
 
   def grade_ids_by_campuse(campuse_id)

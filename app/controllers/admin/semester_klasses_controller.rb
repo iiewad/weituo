@@ -19,7 +19,7 @@ class Admin::SemesterKlassesController < AdminController
       reserve_min_attendances: @reserve_min_attendances)
     @rows = report.rows
     @summary = report.summary
-    @semesters = Semester.where(school_id: Current.school.id)
+    @semesters = Current.campuse.semesters
   end
 
   # 班级预留报表：调整本校区「预留」的最少上课次数
@@ -149,9 +149,7 @@ class Admin::SemesterKlassesController < AdminController
     ).order(
       "semesters.seq desc, grades.level asc, subjects.name asc, semester_klasses.genre asc, semester_klasses.seq asc"
     )
-    @semesters = Semester.where(
-      school_id: Current.school.id
-    ).where(
+    @semesters = Current.campuse.semesters.where(
       "semesters.seq < ?", @target_semester.seq,
     )
     @active_counts = KlassStudent.active.where(semester_klass_id: @sks.map(&:id), status: "in").group(:semester_klass_id).count
@@ -334,13 +332,13 @@ class Admin::SemesterKlassesController < AdminController
   end
 
   def configured_times_for(grade_id, subject_id)
-    Current.school.grade_subjects.find_by(
+    Current.campuse.grade_subjects.find_by(
       semester_id: Current.semester.id, grade_id: grade_id, subject_id: subject_id
     )&.times || 16
   end
 
   def set_grade_subject_times_defaults
-    grade_subjects = Current.school.grade_subjects.where(semester_id: Current.semester.id)
+    grade_subjects = Current.campuse.grade_subjects.where(semester_id: Current.semester.id)
     @grade_subject_times = grade_subjects.pluck(:grade_id, :subject_id, :times)
       .to_h { |grade_id, subject_id, times| [ "#{grade_id}-#{subject_id}", times ] }
     @teacher_subjects = Current.campuse.teachers.active.pluck(:id, :subject_id)
@@ -457,13 +455,13 @@ class Admin::SemesterKlassesController < AdminController
   def copy_target_semester
     return Current.semester if params[:target_semester_id].blank?
 
-    Semester.where(school_id: Current.school.id)
+    Current.campuse.semesters
       .where("seq >= ?", Current.semester.seq)
       .find_by(id: params[:target_semester_id]) || Current.semester
   end
 
   def copy_target_semesters
-    Semester.where(school_id: Current.school.id)
+    Current.campuse.semesters
       .where("seq >= ?", Current.semester.seq)
       .order(:seq, :id)
   end

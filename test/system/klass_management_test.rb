@@ -48,15 +48,27 @@ class KlassManagementTest < ApplicationSystemTestCase
     # 预留只登记，不直接建班
     assert_equal 0, SemesterKlass.where(semester: semesters(:semester_next)).count
 
-    visit switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
+    # 学员年级与班级年级一致才可进班：生成班级前先把学员升级到预留的目标年级
+    students(:student_7_1).update!(grade: grades(:grade_8))
+
+    visit switch_thread_semester_admin_semester_path(semesters(:semester_next))
     visit admin_reservations_path
     assert_text "待分班"
-    accept_confirm(/生成班级/) { click_button "生成班级" }
 
-    assert_text "已生成班级"
+    reservation = Reservation.find_by!(student: students(:student_7_1), semester: semesters(:semester_next))
+    find("input[data-reservation-select-target='rowCheckbox'][value='#{reservation.id}']").check
+    click_button "批量进班"
+
+    within("#batch-enroll-drawer") do
+      key = reservation.group_key_string
+      # 预留时未指定教师，生成前需在抽屉里为分组选择本科目教师
+      within("[data-batch-group='#{key}']") { select "张", from: "教师" }
+      click_button "确认进班"
+    end
+
+    assert_text "已生成 1 个班级"
     target = SemesterKlass.where(semester: semesters(:semester_next)).order(:id).last
     assert_equal grades(:grade_8), target.grade
-    assert_equal grades(:grade_7), students(:student_7_1).reload.grade
     assert target.klass_students.exists?(student_id: students(:student_7_1).id)
   end
 
@@ -255,7 +267,8 @@ class KlassManagementTest < ApplicationSystemTestCase
 
     assert_text "已开第 1–3 课"
     assert_equal 3, sk.courses.where.not(start_date: nil).count
-    assert_text "开第 4 课"
+    # 「开第 N 课」单节按钮已移除；批量开课后「开课到」默认选中下一个未开课课次
+    assert_selector "select#through_seq option[selected]", text: "第 4 课"
   end
 
   test "未开课的班级可以删除" do

@@ -19,7 +19,7 @@ class SemesterKlass < ApplicationRecord
   validates :times, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :genre, inclusion: { in: %w[TG JY XZ XQ CC] }
   validates :phase, inclusion: { in: [ 1, 2 ] }
-  validate :campuse_and_semester_share_school
+  validate :campuse_and_semester_match
   validate :subject_matches_teacher
   validate :grade_locked_when_students_exist, on: :update
   validate :phase_locked_when_students_exist, on: :update
@@ -141,10 +141,10 @@ class SemesterKlass < ApplicationRecord
   end
 
   private
-    def campuse_and_semester_share_school
-      return if campuse.blank? || semester.blank? || campuse.school_id == semester.school_id
+    def campuse_and_semester_match
+      return if campuse.blank? || semester.blank? || campuse_id == semester.campuse_id
 
-      errors.add(:campuse_id, "与学期不属于同一学校")
+      errors.add(:campuse_id, "与学期不属于同一校区")
     end
 
     def subject_matches_teacher

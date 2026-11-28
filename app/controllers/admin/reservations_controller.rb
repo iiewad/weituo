@@ -1,8 +1,8 @@
 class Admin::ReservationsController < AdminController
   # 预留表：只列出目标学期为当前所选学期的预留，可按学员姓名 / 年级 / 科目 / 班型 / 教师 / 状态筛选
   def index
-    @grades = Grade.order(:level)
-    @subjects = Subject.order(:id)
+    @grades = Current.campuse.grades.order(:level)
+    @subjects = Current.campuse.subjects.order(:id)
     @teachers = Current.campuse.teachers.includes(:subject).order(:name)
     @status = params[:status].presence_in(%w[pending generated all]) || "all"
 
@@ -176,7 +176,7 @@ class Admin::ReservationsController < AdminController
     # 读取弹窗里该分组自定义的班级信息，缺省时回退到预留本身的取值
     def klass_settings_for(sample)
       settings = params.dig(:groups, sample.group_key_string) || {}
-      grade = Grade.find_by(id: settings[:grade_id]) || sample.grade
+      grade = Current.campuse.grades.find_by(id: settings[:grade_id]) || sample.grade
       genre = settings[:genre].presence_in(SemesterKlass::GENRE_MAP.values) || sample.genre
       phase = settings[:phase].to_i
       phase = sample.phase unless SemesterKlass::PHASE_PREFIX.key?(phase)
@@ -268,7 +268,7 @@ class Admin::ReservationsController < AdminController
     end
 
     def configured_times(semester, grade, subject)
-      Current.school.grade_subjects.find_by(
+      Current.campuse.grade_subjects.find_by(
         semester_id: semester.id, grade_id: grade.id, subject_id: subject.id
       )&.times || 16
     end

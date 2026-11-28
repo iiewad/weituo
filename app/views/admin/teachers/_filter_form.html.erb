@@ -3,7 +3,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 shrink-0 opacity-60"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
     <%= f.search_field :name_cont, placeholder: "姓名搜索", class: "grow" %>
   </label>
-  <%= f.select :subject_id_eq, (@subjects || Subject.order(:id)).map { |s| [s.name, s.id] }, { prompt: "全部科目" }, class: "select select-sm rounded-field" %>
+  <%= f.select :subject_id_eq, (@subjects || Current.campuse.subjects.order(:id)).map { |s| [s.name, s.id] }, { prompt: "全部科目" }, class: "select select-sm rounded-field" %>
   <%= select_tag :status,
         options_for_select([ [ "在任", "active" ], [ "已存档", "archived" ], [ "全部", "all" ] ], @status),
         id: "teacher_status", class: "select select-sm rounded-field", aria: { label: "教师状态" } %>

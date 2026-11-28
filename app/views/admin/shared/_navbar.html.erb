@@ -47,9 +47,9 @@
           <% end %>
           <% if campuse %>
             <li class="menu-title">切换学期</li>
-            <% campuse.school.semesters.order(:seq).each do |s| %>
+            <% campuse.semesters.order(:seq).each do |s| %>
               <li>
-                <%= link_to s.name, switch_thread_semester_admin_school_semester_path(school_id: campuse.school_id, id: s.id), data: { turbo_prefetch: false }, class: ("active" if s == semester) %>
+                <%= link_to s.name, switch_thread_semester_admin_semester_path(id: s.id), data: { turbo_prefetch: false }, class: ("active" if s == semester) %>
               </li>
             <% end %>
           <% end %>

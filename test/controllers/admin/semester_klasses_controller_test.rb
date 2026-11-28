@@ -265,7 +265,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
     )
     KlassStudent.create!(semester_klass: sk, student: students(:student_7_1), status: "in")
     # 班级属于下学期，先切到该学期再操作
-    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
+    get switch_thread_semester_admin_semester_path(semesters(:semester_next))
 
     post reserve_admin_semester_klass_path(sk), params: { student_ids: [ students(:student_7_1).id ] }
 
@@ -356,7 +356,8 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "class form only lists teachers from the current campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
-    other_teacher = Teacher.create!(name: "外校老师", campuse: other_campuse, subject: subjects(:math))
+    other_subject = other_campuse.subjects.create!(name: "数学", code: "MATH")
+    other_teacher = Teacher.create!(name: "外校老师", campuse: other_campuse, subject: other_subject)
 
     get admin_semester_klasses_path
 
@@ -968,7 +969,7 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "create always uses the current campus and semester" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
-    other_semester = School.find(schools(:school_1).id).semesters.create!(
+    other_semester = other_campuse.semesters.create!(
       name: "其他学期", seq: 88
     )
 
@@ -1016,8 +1017,9 @@ class Admin::SemesterKlassesControllerTest < ActionDispatch::IntegrationTest
 
   test "cannot view a class from another campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
     sk = SemesterKlass.create!(
-      campuse: other_campuse, semester: semesters(:semester_current),
+      campuse: other_campuse, semester: other_semester,
       grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
       genre: "TG", seq: 9, times: 1
     )

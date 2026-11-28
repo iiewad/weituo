@@ -43,7 +43,8 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     campuse = Campuse.find_by!(name: "新校区")
     user_campuse = users(:one).user_campuses.find_by!(campuse: campuse)
     assert_equal "admin", user_campuse.role
-    assert_equal Grade.order(:level).ids, user_campuse.grade_ids.sort
+    # 新校区还没有自己的年级字典，grade_ids 为空
+    assert_empty user_campuse.grade_ids
     assert_match "新校区", flash[:notice]
 
     get admin_schools_path
@@ -86,8 +87,8 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
     assert_nil Campuse.find_by(id: campuse.id)
   end
 
-  test "update adds a nested semester" do
-    assert_difference -> { Semester.count }, 1 do
+  test "update ignores nested semester attributes" do
+    assert_no_difference -> { Semester.count } do
       put admin_school_path(schools(:school_1)), params: {
         school: { semesters_attributes: { "0" => {
           name: "新学期", seq: 9
@@ -95,16 +96,6 @@ class Admin::SchoolsControllerTest < ActionDispatch::IntegrationTest
       }
     end
     assert_redirected_to admin_schools_path
-  end
-
-  test "update sets the chosen current semester" do
-    school = schools(:school_1)
-
-    put admin_school_path(school), params: { school: { current_semester_id: semesters(:semester_next).id } }
-
-    assert_redirected_to admin_schools_path
-    assert_equal semesters(:semester_next), school.reload.current_semester
-    assert_not semesters(:semester_current).reload.current?
   end
 
   test "update with a blank name fails without raising" do

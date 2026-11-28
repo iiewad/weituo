@@ -1,6 +1,13 @@
 class AdminController < ApplicationController
   before_action :set_current_context, if: :authenticated?
   before_action :require_campuse_access, if: :authenticated?
+  before_action :require_semester_context, if: :authenticated?
+
+  # 不依赖学期上下文的页面：新校区还没有学期时仍可访问（配置页与看板）
+  SEMESTER_OPTIONAL_CONTROLLERS = %w[
+    admin/dashboards admin/schools admin/campuses admin/semesters
+    admin/users admin/day_schools admin/teachers
+  ].freeze
 
   def index;end
 
@@ -62,13 +69,26 @@ class AdminController < ApplicationController
       Current.school = campuse.school
       session[:current_school_id] = campuse.school_id
 
-      semesters = campuse.school.semesters
+      semesters = campuse.semesters
       semester = semesters.find_by(id: session[:current_semester_id])
       unless semester
-        semester = Semester.current(campuse.school.id) || semesters.order(:seq).last
+        semester = Semester.current(campuse.id) || semesters.order(:seq).last
         session[:current_semester_id] = semester&.id
       end
       Current.semester = semester
+    end
+
+    # 新建校区在创建学期之前没有 Current.semester，依赖学期的页面统一引导去「学期管理」，
+    # 避免各页面裸引用 Current.semester.id 直接 500
+    def require_semester_context
+      return if Current.semester || Current.campuse.nil?
+      return if SEMESTER_OPTIONAL_CONTROLLERS.include?(controller_path)
+
+      if Current.user.has_role_by_campuse_id(Current.campuse.id, "admin")
+        redirect_to admin_semesters_path, alert: "当前校区还没有学期，请先创建学期"
+      else
+        redirect_to root_path, alert: "当前校区还没有学期，请联系超级管理员先创建学期"
+      end
     end
 
     def require_campuse_access

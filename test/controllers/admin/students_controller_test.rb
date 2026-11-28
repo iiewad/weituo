@@ -69,7 +69,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     KlassStudent.create!(semester_klass: next_klass, student: student, status: "in")
 
     # 切换到比学校 current 标记（semester_current, seq=2）更新的学期（semester_next, seq=3）
-    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_next))
+    get switch_thread_semester_admin_semester_path(semesters(:semester_next))
     get admin_students_path
 
     assert_response :success
@@ -122,13 +122,13 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_match "授权范围", flash[:alert]
   end
 
-  test "cannot assign a semester from another school" do
-    other_school = School.create!(name: "其他学校")
-    other_semester = other_school.semesters.create!(name: "其他学期", seq: 1)
+  test "cannot assign a semester from another campus" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
 
     assert_no_difference -> { Student.count } do
       post admin_students_path, params: { student: {
-        name: "跨校学员", grade_id: grades(:grade_7).id, in_semester_id: other_semester.id
+        name: "跨校区学员", grade_id: grades(:grade_7).id, in_semester_id: other_semester.id
       } }
     end
 

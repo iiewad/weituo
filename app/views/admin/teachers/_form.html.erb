@@ -17,7 +17,7 @@
 
     <div>
       <%= f.label :subject_id, "科目", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-      <%= f.select :subject_id, (@subjects || Subject.order(:id)).map { |subject| [subject.name, subject.id] }, { prompt: "请选择科目" }, class: "select select-sm w-full", required: true %>
+      <%= f.select :subject_id, (@subjects || Current.campuse.subjects.order(:id)).map { |subject| [subject.name, subject.id] }, { prompt: "请选择科目" }, class: "select select-sm w-full", required: true %>
     </div>
 
     <div class="pt-1">

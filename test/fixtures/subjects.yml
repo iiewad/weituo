@@ -6,10 +6,12 @@
 #
 math:
   id: 1
+  campuse_id: 1
   code: 'MATH'
   name: '数学'
 
 eng:
   id: 2
+  campuse_id: 1
   code: 'ENG'
   name: '英语'

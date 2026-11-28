@@ -122,8 +122,9 @@ class Admin::CoursesControllerTest < ActionDispatch::IntegrationTest
 
   test "cannot start a class from another campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
     sk = SemesterKlass.create!(
-      campuse: other_campuse, semester: semesters(:semester_current),
+      campuse: other_campuse, semester: other_semester,
       grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
       genre: "TG", seq: 9, times: 1
     )

@@ -48,7 +48,7 @@
       <div>
         <%= f.label :in_semester_id, "入学学期", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= f.select :in_semester_id,
-              (@semesters || Current.school.semesters.order(seq: :desc)).map { |semester| [ semester.name, semester.id ] },
+              (@semesters || Current.campuse.semesters.order(seq: :desc)).map { |semester| [ semester.name, semester.id ] },
               { prompt: "请选择学期", selected: item.new_record? ? (item.in_semester_id || Current.semester&.id) : item.in_semester_id },
               class: "select select-sm w-full" %>
       </div>

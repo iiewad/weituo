@@ -10,7 +10,7 @@ class GradeSubjectsTest < ApplicationSystemTestCase
     click_button "保存配置"
 
     assert_text "已更新 1 个年级科目组合"
-    assert schools(:school_1).grade_subjects.exists?(grade_id: grades(:grade_9).id, subject_id: subjects(:math).id)
+    assert campuses(:campuse_1).grade_subjects.exists?(grade_id: grades(:grade_9).id, subject_id: subjects(:math).id)
   end
 
   test "设置课次并保存" do

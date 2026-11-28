@@ -1,7 +1,7 @@
 class Admin::TeachersController < AdminController
   def index
     @q = Teacher.ransack(params[:q])
-    @subjects = Subject.order(:id)
+    @subjects = Current.campuse.subjects.order(:id)
     @status = params[:status].presence_in(%w[active archived all]) || "active"
     scope = @q.result.includes(:subject, :campuse).where(campuse_id: Current.campuse.id)
     scope = case @status

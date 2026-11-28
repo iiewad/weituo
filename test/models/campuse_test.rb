@@ -8,6 +8,20 @@ class CampuseTest < ActiveSupport::TestCase
     assert_includes campuse.teachers, teachers(:math_teacher_1)
   end
 
+  test "owns semesters, grades, subjects and grade_subjects" do
+    campuse = campuses(:campuse_1)
+    assert_includes campuse.semesters, semesters(:semester_current)
+    assert_includes campuse.grades, grades(:grade_7)
+    assert_includes campuse.subjects, subjects(:math)
+    assert_includes campuse.grade_subjects, grade_subjects(:one)
+  end
+
+  test "current and history semesters" do
+    campuse = campuses(:campuse_1)
+    assert_equal semesters(:semester_current), campuse.current_semester
+    assert_equal [ semesters(:semester_previous) ], campuse.history_semesters.to_a
+  end
+
   test "destroy cascades all resources under the campuse" do
     campuse = campuses(:campuse_1)
     student = students(:student_7_1)
@@ -31,7 +45,11 @@ class CampuseTest < ActiveSupport::TestCase
       -> { Attendance.count } => -Attendance.count,
       -> { Teacher.count } => -campuse.teachers.count,
       -> { DaySchool.count } => -campuse.day_schools.count,
-      -> { UserCampuse.count } => -campuse.user_campuses.count do
+      -> { UserCampuse.count } => -campuse.user_campuses.count,
+      -> { Semester.count } => -campuse.semesters.count,
+      -> { GradeSubject.count } => -campuse.grade_subjects.count,
+      -> { Grade.count } => -campuse.grades.count,
+      -> { Subject.count } => -campuse.subjects.count do
       campuse.destroy!
     end
   end

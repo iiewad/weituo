@@ -53,15 +53,15 @@ class Admin::DashboardsController < AdminController
     def guide_steps
       admin = Current.user.has_role_by_campuse_id(Current.campuse.id, "admin")
       grade_subjects_ready = Current.semester.present? &&
-        Current.school.grade_subjects.where(semester_id: Current.semester.id).exists?
+        Current.campuse.grade_subjects.where(semester_id: Current.semester.id).exists?
 
       steps = [
         {
           title: "确认校区与学期",
-          description: "用顶栏确认当前校区和学期。还没有新学期时，先到学校管理里创建学期并填写起止日期与序号。",
+          description: "用顶栏确认当前校区和学期。还没有新学期时，先到学期管理里创建学期并填写名称与序号。",
           done: Current.semester.present?,
-          link: admin ? admin_schools_path : nil,
-          link_text: "学校与学期"
+          link: admin ? admin_semesters_path : nil,
+          link_text: "学期管理"
         },
         {
           title: "配置年级科目与课次",

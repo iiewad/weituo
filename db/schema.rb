@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_28_120000) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -47,13 +47,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
 
   create_table "grade_subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "grade_id", null: false
-    t.bigint "school_id", null: false
     t.bigint "subject_id", null: false
     t.bigint "semester_id", null: false
     t.integer "times", default: 16, null: false
+    t.bigint "campuse_id", null: false
+    t.index ["campuse_id", "semester_id", "grade_id", "subject_id"], name: "index_grade_subjects_on_campuse_semester_grade_subject", unique: true
     t.index ["grade_id"], name: "index_grade_subjects_on_grade_id"
-    t.index ["school_id", "semester_id", "grade_id", "subject_id"], name: "index_grade_subjects_on_school_semester_grade_subject", unique: true
-    t.index ["school_id"], name: "index_grade_subjects_on_school_id"
     t.index ["semester_id"], name: "index_grade_subjects_on_semester_id"
     t.index ["subject_id"], name: "index_grade_subjects_on_subject_id"
   end
@@ -61,6 +60,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   create_table "grades", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "level", null: false
     t.string "name", null: false
+    t.bigint "campuse_id", null: false
+    t.index ["campuse_id", "level"], name: "index_grades_on_campuse_id_and_level", unique: true
+    t.index ["campuse_id", "name"], name: "index_grades_on_campuse_id_and_name", unique: true
   end
 
   create_table "guardians", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -133,11 +135,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
 
   create_table "semesters", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
-    t.bigint "school_id", null: false
     t.integer "seq"
     t.boolean "current", default: false, null: false
-    t.index ["school_id", "seq"], name: "index_semesters_on_school_id_and_seq", unique: true
-    t.index ["school_id"], name: "index_semesters_on_school_id"
+    t.bigint "campuse_id", null: false
+    t.index ["campuse_id", "seq"], name: "index_semesters_on_campuse_id_and_seq", unique: true
   end
 
   create_table "sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -185,6 +186,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   create_table "subjects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "code", null: false
     t.string "name", null: false
+    t.bigint "campuse_id", null: false
+    t.index ["campuse_id", "code"], name: "index_subjects_on_campuse_id_and_code", unique: true
+    t.index ["campuse_id", "name"], name: "index_subjects_on_campuse_id_and_name", unique: true
   end
 
   create_table "teachers", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -227,10 +231,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   add_foreign_key "campuses", "schools"
   add_foreign_key "courses", "semester_klasses"
   add_foreign_key "day_schools", "campuses"
+  add_foreign_key "grade_subjects", "campuses"
   add_foreign_key "grade_subjects", "grades"
-  add_foreign_key "grade_subjects", "schools"
   add_foreign_key "grade_subjects", "semesters"
   add_foreign_key "grade_subjects", "subjects"
+  add_foreign_key "grades", "campuses"
   add_foreign_key "guardians", "students"
   add_foreign_key "klass_students", "semester_klasses"
   add_foreign_key "klass_students", "semester_klasses", column: "transfer_source_klass_id", on_delete: :nullify
@@ -248,7 +253,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   add_foreign_key "semester_klasses", "semesters"
   add_foreign_key "semester_klasses", "subjects"
   add_foreign_key "semester_klasses", "teachers"
-  add_foreign_key "semesters", "schools"
+  add_foreign_key "semesters", "campuses"
   add_foreign_key "sessions", "users"
   add_foreign_key "student_referrals", "students", column: "referred_id"
   add_foreign_key "student_referrals", "students", column: "referrer_id"
@@ -257,6 +262,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   add_foreign_key "students", "grades"
   add_foreign_key "students", "semesters", column: "in_semester_id", on_delete: :nullify
   add_foreign_key "teachers", "campuses"
+  add_foreign_key "subjects", "campuses"
   add_foreign_key "teachers", "subjects"
   add_foreign_key "user_campuses", "campuses"
   add_foreign_key "user_campuses", "schools"

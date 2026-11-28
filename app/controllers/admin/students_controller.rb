@@ -143,7 +143,7 @@ class Admin::StudentsController < AdminController
 
     Student.transaction do
       students.group_by(&:grade).each do |grade, group|
-        next_grade = Grade.find_by(level: grade.level + 1)
+        next_grade = Current.campuse.grades.find_by(level: grade.level + 1)
         unless next_grade && allowed_grade_ids.include?(next_grade.id)
           skipped += group.size
           next
@@ -217,7 +217,7 @@ class Admin::StudentsController < AdminController
       in_semester_id = params.dig(:student, :in_semester_id)
       grade_ok = grade_id.blank? || Current.user.grades_by_campuse(Current.campuse.id).exists?(id: grade_id)
       day_school_ok = day_school_id.blank? || Current.campuse.day_schools.exists?(id: day_school_id)
-      in_semester_ok = in_semester_id.blank? || Current.school&.semesters&.exists?(id: in_semester_id)
+      in_semester_ok = in_semester_id.blank? || Current.campuse.semesters.exists?(id: in_semester_id)
 
       grade_ok && day_school_ok && in_semester_ok
     end

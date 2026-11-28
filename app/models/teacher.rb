@@ -3,7 +3,7 @@ class Teacher < ApplicationRecord
   belongs_to :campuse
 
   validates :name, presence: true
-  validate :subject_offered_by_school
+  validate :subject_offered_by_campuse
 
   scope :active, -> { where(archived_at: nil) }
   scope :archived, -> { where.not(archived_at: nil) }
@@ -30,7 +30,7 @@ class Teacher < ApplicationRecord
       next if IMPORT_HEADERS.include?(parts.first)
 
       subject_name, name, phone = parts
-      subject = Subject.find_by(name: subject_name)
+      subject = Subject.find_by(name: subject_name, campuse_id: campuse_id)
       if subject.blank? || name.blank?
         skipped += 1
         next
@@ -70,10 +70,10 @@ class Teacher < ApplicationRecord
   end
 
   private
-    def subject_offered_by_school
+    def subject_offered_by_campuse
       return if subject.blank? || campuse.blank?
-      return if campuse.school.subjects.exists?(id: subject_id)
+      return if campuse.subjects.exists?(id: subject_id)
 
-      errors.add(:subject_id, "未在该学校开设")
+      errors.add(:subject_id, "未在该校区开设")
     end
 end

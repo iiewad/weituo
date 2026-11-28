@@ -34,15 +34,16 @@ class Reservation < ApplicationRecord
     semester_klass_id.present?
   end
 
-  # 可修改的目标年级：来源班级还在时为来源年级或升一年级，否则不限
+  # 可修改的目标年级：来源班级还在时为来源年级或升一年级，否则不限（均限学员所在校区）
   def editable_grades
+    grades = student&.campuse&.grades || Grade.none
     source = source_semester_klass
-    return Grade.order(:level) if source.blank?
+    return grades.order(:level) if source.blank?
 
     ids = [ source.grade_id ]
-    next_grade = Grade.find_by(level: source.grade.level + 1)
+    next_grade = grades.find_by(level: source.grade.level + 1)
     ids << next_grade.id if next_grade
-    Grade.where(id: ids).order(:level)
+    grades.where(id: ids).order(:level)
   end
 
   # 生成的班级沿用来源班级的阶段

@@ -1,4 +1,4 @@
-<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses semesters" }) do |form| %>
+<%= form_with(model: item, url: admin_school_path(item), method: :put, data: { controller: "campuses" }) do |form| %>
   <div class="wt-surface mb-4 flex flex-wrap items-end gap-3 p-4">
     <div class="min-w-48 flex-1">
       <%= form.label :name, "学校名称", class: "mb-1 block text-xs font-medium text-base-content/60" %>
@@ -37,8 +37,8 @@
         添加校区
       </button>
       <p class="mt-2 text-[11px] leading-tight text-base-content/40">
-        新增校区会自动为当前账号开通该校区的超级管理员权限（全部年级）；其他账号的校区授权请在「用户管理」中分配。<br>
-        删除校区会连同该校区下所有学员、教师、日校、班级、课次、考勤与预留数据一并删除，保存后不可恢复。
+        新增校区会自动为当前账号开通该校区的超级管理员权限；学期、年级、科目按校区分别维护。其他账号的校区授权请在「用户管理」中分配。<br>
+        删除校区会连同该校区下所有学员、教师、日校、学期、班级、课次、考勤、年级、科目与预留数据一并删除，保存后不可恢复。
       </p>
       <template data-campuses-target="template">
         <%= form.fields_for :campuses, Campuse.new, child_index: "new_campus" do |campus_form| %>
@@ -47,64 +47,6 @@
             <td><%= campus_form.text_field :name, class: "input input-sm w-full", placeholder: "校区名称", required: true %></td>
             <td class="text-right">
               <button type="button" data-action="campuses#deleteRow" class="btn btn-xs btn-square btn-ghost text-error" title="删除" aria-label="删除校区">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </button>
-            </td>
-          </tr>
-        <% end %>
-      </template>
-    </div>
-  </details>
-
-  <details class="collapse collapse-arrow mb-3 rounded-box border border-base-300 bg-base-100">
-    <summary class="collapse-title flex items-center gap-2 font-semibold">
-      学期管理 <span class="badge badge-ghost badge-sm"><%= item.semesters.size %></span>
-    </summary>
-    <div class="collapse-content">
-      <div class="overflow-x-auto">
-        <table class="table table-sm">
-          <thead>
-            <tr><th class="w-10"></th><th>学期名称</th><th class="text-center">当前学期</th><th>序号</th><th class="text-right">操作</th></tr>
-          </thead>
-          <tbody data-semesters-target="tbody">
-            <%= form.fields_for :semesters, item.semesters do |semester_form| %>
-              <tr id="semester-<%= semester_form.object.id %>">
-                <td><%= semester_form.hidden_field :id %><%= semester_form.hidden_field :_destroy, value: "false" %></td>
-                <td><%= semester_form.text_field :name, class: "input input-sm", placeholder: "学期名称", required: true %></td>
-                <td class="text-center">
-                  <%= radio_button_tag "school[current_semester_id]", semester_form.object.id,
-                        semester_form.object.current?,
-                        id: "semester_current_#{semester_form.object.id}",
-                        class: "radio radio-xs radio-primary",
-                        aria: { label: "设为当前学期" } %>
-                </td>
-                <td><%= semester_form.number_field :seq, class: "input input-sm w-20", required: true %></td>
-                <td class="text-right">
-                  <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-square btn-ghost text-error" title="删除" aria-label="删除学期">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  </button>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-      <p class="mt-2 text-[11px] leading-snug text-base-content/40">
-        「当前学期」用于顶栏默认学期与报表口径；删除当前学期后会自动把序号最小的学期设为当前。
-      </p>
-      <button type="button" data-action="semesters#addRow" class="btn btn-sm btn-outline btn-primary mt-3">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-        添加学期
-      </button>
-      <template data-semesters-target="template">
-        <%= form.fields_for :semesters, Semester.new, child_index: "new_semester" do |semester_form| %>
-          <tr id="semester-new">
-            <td><%= semester_form.hidden_field :id %><%= semester_form.hidden_field :_destroy %></td>
-            <td><%= semester_form.text_field :name, class: "input input-sm", placeholder: "学期名称", required: true %></td>
-            <td class="text-center"><span class="text-[11px] text-base-content/30">保存后可选</span></td>
-            <td><%= semester_form.number_field :seq, class: "input input-sm w-20", required: true %></td>
-            <td class="text-right">
-              <button type="button" data-action="semesters#deleteRow" class="btn btn-xs btn-square btn-ghost text-error" title="删除" aria-label="删除学期">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
               </button>
             </td>

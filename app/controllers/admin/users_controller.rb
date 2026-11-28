@@ -4,14 +4,12 @@ class Admin::UsersController < AdminController
   def index
     @users = users_in_current_school.includes(user_campuses: :campuse).order(:name)
     @campuses = Current.school.campuses.order(:name, :id)
-    @grades = Grade.order(:level).to_a
+    @grades = Grade.where(campuse_id: @campuses.select(:id)).order(:level).to_a
     @grades_by_id = @grades.index_by(&:id)
-    @grade_school_ids = GradeSubject.pluck(:grade_id, :school_id)
-      .group_by(&:first)
-      .transform_values { |pairs| pairs.map(&:last).uniq }
   end
 
   def create
+    sanitize_grade_ids!
     unless user_campuses_within_school?
       redirect_to admin_users_path, alert: "无权授予其他学校的校区权限"
       return
@@ -26,6 +24,7 @@ class Admin::UsersController < AdminController
   end
 
   def update
+    sanitize_grade_ids!
     unless user_campuses_within_school?
       redirect_to admin_users_path, alert: "无权授予其他学校的校区权限"
       return
@@ -40,6 +39,22 @@ class Admin::UsersController < AdminController
   end
 
   private
+    # 年级按校区隔离：前端 chip 过滤可被绕过，服务端再按行所属校区剔除越界的年级 id
+    def sanitize_grade_ids!
+      rows = params.dig(:user, :user_campuses_attributes)
+      return unless rows
+
+      rows.each_value do |row|
+        next if row[:grade_ids].blank?
+
+        campuse_id = row[:campuse_id].presence || UserCampuse.find_by(id: row[:id])&.campuse_id
+        next if campuse_id.blank?
+
+        allowed = Grade.where(campuse_id:).pluck(:id)
+        row[:grade_ids] = Array(row[:grade_ids]).map(&:to_i).select { |id| allowed.include?(id) }
+      end
+    end
+
     def users_in_current_school
       User.where(id: UserCampuse.where(school_id: Current.school.id).select(:user_id))
     end

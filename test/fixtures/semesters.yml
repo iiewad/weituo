@@ -2,21 +2,21 @@
 
 semester_previous:
   id: 1
-  school_id: 1
+  campuse_id: 1
   name: 'current previous'
   seq: 1
   current: false
 
 semester_current:
   id: 2
-  school_id: 1
+  campuse_id: 1
   name: 'current'
   seq: 2
   current: true
 
 semester_next:
   id: 3
-  school_id: 1
+  campuse_id: 1
   name: 'current next'
   seq: 3
   current: false

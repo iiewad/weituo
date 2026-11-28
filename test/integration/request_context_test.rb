@@ -28,9 +28,10 @@ class RequestContextTest < ActionDispatch::IntegrationTest
   test "切换校区后班级列表按校区过滤" do
     other = Campuse.create!(name: "第二校区", school: schools(:school_1))
     UserCampuse.create!(user: users(:one), school: schools(:school_1), campuse: other, role: "admin", grade_ids: [ "7" ])
+    other_semester = other.semesters.create!(name: "第二校区学期", seq: 1)
     other_sk = SemesterKlass.create!(
       campuse: other, subject: subjects(:math), teacher: teachers(:math_teacher_2),
-      semester: semesters(:semester_current), grade: grades(:grade_7), genre: "JY", seq: 55, times: 2
+      semester: other_semester, grade: grades(:grade_7), genre: "JY", seq: 55, times: 2
     )
 
     get switch_thread_campuse_admin_school_campuse_path(schools(:school_1), other), headers: { "HTTP_REFERER" => root_path }
@@ -44,7 +45,7 @@ class RequestContextTest < ActionDispatch::IntegrationTest
 
   private
     def switch_to_semester(semester)
-      get switch_thread_semester_admin_school_semester_path(schools(:school_1), semester), headers: { "HTTP_REFERER" => root_path }
+      get switch_thread_semester_admin_semester_path(semester), headers: { "HTTP_REFERER" => root_path }
       assert_redirected_to root_path
     end
 end

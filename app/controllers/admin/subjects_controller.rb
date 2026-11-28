@@ -2,7 +2,7 @@ class Admin::SubjectsController < AdminController
   before_action :require_admin
 
   def create
-    subject = Subject.new(subject_params)
+    subject = Current.campuse.subjects.new(subject_params)
 
     if subject.save
       redirect_to admin_grade_subjects_path, notice: "科目已添加"
@@ -12,7 +12,7 @@ class Admin::SubjectsController < AdminController
   end
 
   def update
-    subject = Subject.find(params[:id])
+    subject = Current.campuse.subjects.find(params[:id])
 
     if subject.update(subject_params)
       redirect_to admin_grade_subjects_path, notice: "科目已更新"
@@ -22,7 +22,7 @@ class Admin::SubjectsController < AdminController
   end
 
   def destroy
-    subject = Subject.find(params[:id])
+    subject = Current.campuse.subjects.find(params[:id])
     blockers = []
 
     blockers << "教师" if Teacher.exists?(subject_id: subject.id)

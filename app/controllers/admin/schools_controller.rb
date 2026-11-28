@@ -4,7 +4,7 @@ class Admin::SchoolsController < AdminController
   def index
     # 引导模式（无校区）下没有当前学校上下文，列出全部学校供配置
     scope = Current.school ? School.where(id: Current.school.id) : School.all
-    @schools = scope.includes(:campuses, :semesters, :grade_subjects, :user_campuses)
+    @schools = scope.includes(:campuses, :user_campuses)
   end
 
   def update
@@ -27,15 +27,14 @@ class Admin::SchoolsController < AdminController
   private
     # 校区授权在「用户管理」维护，但新建校区后当前超管会自动获得该校区权限，
     # 否则新校区不会出现在顶栏的校区切换菜单里，也无法进入配置。
+    # 新校区还没有自己的年级字典，grade_ids 先为空，创建年级后在用户管理里勾选。
     def grant_access_to_new_campuses(known_campus_ids)
-      grade_ids = Grade.order(:level).ids
-
       @school.campuses.where.not(id: known_campus_ids).filter_map do |campuse|
         user_campuse = Current.user.user_campuses.find_or_initialize_by(campuse_id: campuse.id)
         next if user_campuse.persisted?
 
         user_campuse.role = "admin"
-        user_campuse.grade_ids = grade_ids
+        user_campuse.grade_ids = campuse.grades.order(:level).ids
         user_campuse.save!
         campuse.name
       end
@@ -44,9 +43,8 @@ class Admin::SchoolsController < AdminController
     def school_params
       params
         .require(:school)
-        .permit(:name, :current_semester_id,
+        .permit(:name,
           campuses_attributes: [ :id, :name, :_destroy ],
-          semesters_attributes: [ :id, :name, :seq, :_destroy ],
         )
     end
 end

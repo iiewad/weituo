@@ -21,7 +21,7 @@ class Admin::SubjectsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "update changes a subject" do
-    subject = Subject.create!(code: "BIO", name: "生物")
+    subject = Subject.create!(code: "BIO", name: "生物", campuse: campuses(:campuse_1))
 
     patch admin_subject_path(subject), params: { subject: { code: "BIO2", name: "生物学" } }
 
@@ -42,7 +42,7 @@ class Admin::SubjectsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "deletes an unused subject" do
-    subject = Subject.create!(code: "BIO", name: "生物")
+    subject = Subject.create!(code: "BIO", name: "生物", campuse: campuses(:campuse_1))
 
     assert_difference -> { Subject.count }, -1 do
       delete admin_subject_path(subject)

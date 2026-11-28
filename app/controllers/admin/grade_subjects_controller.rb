@@ -2,8 +2,8 @@ class Admin::GradeSubjectsController < AdminController
   before_action :require_admin
 
   def index
-    @grades = Grade.order(:level).to_a
-    @subjects = Subject.order(:id).to_a
+    @grades = Current.campuse.grades.order(:level).to_a
+    @subjects = Current.campuse.subjects.order(:id).to_a
     @grade_subjects = current_grade_subjects
     @enabled = @grade_subjects.pluck(:grade_id, :subject_id)
     @times_by_combination = @grade_subjects.pluck(:grade_id, :subject_id, :times)
@@ -22,7 +22,7 @@ class Admin::GradeSubjectsController < AdminController
 
     GradeSubject.transaction do
       to_add.each do |grade_id, subject_id|
-        Current.school.grade_subjects.create!(
+        Current.campuse.grade_subjects.create!(
           semester_id: Current.semester.id,
           grade_id: grade_id,
           subject_id: subject_id,
@@ -49,12 +49,12 @@ class Admin::GradeSubjectsController < AdminController
 
   private
     def current_grade_subjects
-      Current.school.grade_subjects.where(semester_id: Current.semester.id)
+      Current.campuse.grade_subjects.where(semester_id: Current.semester.id)
     end
 
     def normalize_selection(values)
-      grade_ids = Grade.pluck(:id)
-      subject_ids = Subject.pluck(:id)
+      grade_ids = Current.campuse.grades.pluck(:id)
+      subject_ids = Current.campuse.subjects.pluck(:id)
 
       Array(values).filter_map do |value|
         grade_id, subject_id = value.to_s.split("-").map(&:to_i)

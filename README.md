@@ -20,7 +20,7 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 
 单独检查：`bin/rubocop`、`bin/bundler-audit`、`bin/importmap audit`、`bin/brakeman`、`bin/rails tailwindcss:build`。
 
-本地 MySQL 通过 `/tmp/mysql.sock` 以 root 免密连接，库为 `weituo_development` / `weituo_test`；`db/seeds.rb` 会先清空业务数据，再生成覆盖学校/校区/学期、班级、课次、考勤与授权账号的演示数据（2 个校区、4 个学期、180 名学员）。测试用 `fixtures :all`，认证用 `sign_in_as(users(:one))`。
+本地 MySQL 通过 `/tmp/mysql.sock` 以 root 免密连接，库为 `weituo_development` / `weituo_test`；`db/seeds.rb` 会先清空业务数据，再生成覆盖学校/校区/学期、班级、课次、考勤与授权账号的演示数据（2 个校区，每校区各有 4 个学期、自己的年级/科目字典，共 180 名学员）。测试用 `fixtures :all`，认证用 `sign_in_as(users(:one))`。
 
 演示账号密码均为 `password`：`admin`（超级管理员，两个校区）、`user1`（城东校区管理员，七/八年级）、`user2`（城西校区管理员，全部年级）、`user3`（城东校区管理员，仅九年级）、`pending`（未分配校区）。
 
@@ -28,12 +28,12 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 
 | 角色 | `UserCampuse.role` | 可见范围 |
 | --- | --- | --- |
-| 超级管理员 | `admin` | 全部菜单，含用户管理、学校管理、年级科目管理 |
+| 超级管理员 | `admin` | 全部菜单，含用户管理、学校管理、学期管理、年级科目管理 |
 | 管理员 | `manager` | 按 `grade_ids` 限定的年级与科目 |
 
 用户通过 `UserCampuse` 关联到校区，一个用户可有多个校区授权，每个授权带一份 JSON `grade_ids`。`Current.user.grades_by_campuse` / `subjects_by_campuse` 决定筛选与表单里可选的年级、科目。
 
-**当前上下文**：登录后 `AdminController#set_current_context` 把当前校区、学校、学期写入 `Current` 并记在 session 里；顶栏可切换校区/学期。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取学校标记的「当前学期」（`semesters.current`），没有标记则回退到 `seq` 最大的学期。
+**当前上下文**：登录后 `AdminController#set_current_context` 把当前校区、学校、学期写入 `Current` 并记在 session 里；顶栏可切换校区/学期（学期切换器只列当前校区的学期）。所有列表与详情都按这三个上下文过滤，切换后看到的是另一套数据。学期默认取当前校区标记的「当前学期」（`semesters.current`，每校区唯一，由模型回调保证）。
 
 账号以用户名 + 密码登录（`users` 表无邮箱字段），不提供自助邮件重置密码；需要重置时由管理员在「用户管理」中修改。
 
@@ -41,10 +41,10 @@ bin/rails data:integrity  # 约束迁移前检查重复/孤儿数据
 
 | 业务名词 | 模型 / 表 | 说明 |
 | --- | --- | --- |
-| 学校 | `School` / `schools` | 顶层组织 |
-| 校区 | `Campuse` / `campuses` | 模型名是刻意的单数拼写，勿改 |
-| 学期 | `Semester` / `semesters` | 按 `seq` 排序；`current` 标记当前学期（每校唯一） |
-| 年级、科目 | `Grade` / `Subject` / `GradeSubject` | 学校可开设的年级科目组合 |
+| 学校 | `School` / `schools` | 登录/分组壳，只维护校区与用户校区授权，不挂业务数据 |
+| 校区 | `Campuse` / `campuses` | 模型名是刻意的单数拼写，勿改；学期、年级、科目、班级、学员、教师、日校均按校区隔离 |
+| 学期 | `Semester` / `semesters` | 属于校区，按 `seq` 排序；`current` 标记当前学期（每校区唯一） |
+| 年级、科目 | `Grade` / `Subject` / `GradeSubject` | 按校区维护的字典（校区内 level/name、code/name 唯一）；`GradeSubject` 是校区某学期开设的年级科目组合 |
 | 日校 | `DaySchool` | 学员就读的全日制学校 |
 | 教师 | `Teacher` | 属于校区，带科目 |
 | 学员、监护人 | `Student` / `Guardian` | 属于校区，可带年级、日校、家庭住址；监护人可带关系与职业 |
@@ -186,7 +186,8 @@ stateDiagram-v2
 | `/admin/reservations` | 预留表（所有预留学员名单，按学期 / 年级 / 科目 / 班型 / 教师 / 状态筛选，一键生成分班） |
 | `/admin/teachers` | 教师管理 |
 | `/admin/users` | 用户管理 |
-| `/admin/schools` | 学校管理（校区、学期；年级科目已独立） |
+| `/admin/schools` | 学校管理（学校名称与校区） |
+| `/admin/semesters` | 学期管理（按校区维护学期与「当前学期」标记，校区超管专属） |
 | `/admin/grade_subjects` | 年级科目管理（按学期启用/取消组合并设置课次） |
 | `/admin/day_schools` | 日校管理（按校区维护日校名单） |
 | `/session/new` | 登录 |

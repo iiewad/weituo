@@ -2,6 +2,11 @@ require "application_system_test_case"
 
 class UsersTest < ApplicationSystemTestCase
   test "创建用户时按所选校区过滤可授权年级，并保存授权" do
+    # 年级归属校区：再建一个校区和它自己的年级，用于验证切换校区时按 data-campuse-id 过滤
+    other = Campuse.create!(name: "区2", school: schools(:school_1))
+    other_grade = other.grades.create!(name: "十年级", level: 10)
+    UserCampuse.create!(user: users(:one), school: schools(:school_1), campuse: other, role: "admin", grade_ids: [])
+
     sign_in
     visit admin_users_path
     assert_text "用户管理"
@@ -16,8 +21,9 @@ class UsersTest < ApplicationSystemTestCase
 
         within(all(".nested-fields").last) do
           select "校1 · 区1", from: "校区"
-          # 校1 未开设九年级，选中校区后该年级应被禁用
-          assert find("input[value='9']", visible: :all).disabled?
+          # 选中区1后：其它校区的年级被禁用，区1 自己的年级（含九年级）可选
+          assert find("input[value='#{other_grade.id}']", visible: :all).disabled?
+          assert_not find("input[value='#{grades(:grade_9).id}']", visible: :all).disabled?
 
           check "七年级"
           select "管理员", from: "角色"

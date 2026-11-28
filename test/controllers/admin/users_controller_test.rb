@@ -17,8 +17,8 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[data-controller='user-campuses']", minimum: 1
-    assert_select "select[data-user-campuses-target='campuse'] option[data-school-id]"
-    assert_select "input[type='checkbox'][name$='[grade_ids][]'][data-school-ids]", minimum: 1
+    assert_select "select[data-user-campuses-target='campuse'] option[value='#{campuses(:campuse_1).id}']"
+    assert_select "input[type='checkbox'][name$='[grade_ids][]'][data-campuse-id]", minimum: 1
   end
 
   test "create" do
@@ -44,6 +44,22 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal schools(:school_1), user_campuse.school
     assert_equal [ 7, 8 ], user_campuse.grade_ids
     assert_equal "manager", user_campuse.role
+  end
+
+  test "create filters out grade ids from another campus" do
+    other = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_grade = other.grades.create!(level: 7, name: "其他七年级")
+
+    post admin_users_path, params: { user: {
+      name: "cross_grade_user", password: "password",
+      user_campuses_attributes: { "0" => {
+        campuse_id: campuses(:campuse_1).id, role: "manager",
+        grade_ids: [ "", grades(:grade_7).id.to_s, other_grade.id.to_s ]
+      } }
+    } }
+
+    user_campuse = User.find_by!(name: "cross_grade_user").user_campuses.sole
+    assert_equal [ grades(:grade_7).id ], user_campuse.grade_ids
   end
 
   test "create ignores authorization rows without a campus" do
@@ -79,16 +95,17 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
   test "update adds and revokes campus authorizations" do
     user = users(:two)
     other_campus = schools(:school_1).campuses.create!(name: "区2")
+    other_grade = other_campus.grades.create!(level: 9, name: "九年级")
 
     assert_difference -> { user.user_campuses.count }, 1 do
       put admin_user_path(user), params: { user: {
-        user_campuses_attributes: { "0" => { campuse_id: other_campus.id, role: "admin", grade_ids: [ "9" ] } }
+        user_campuses_attributes: { "0" => { campuse_id: other_campus.id, role: "admin", grade_ids: [ other_grade.id.to_s ] } }
       } }
     end
 
     added = user.user_campuses.find_by!(campuse: other_campus)
     assert_equal schools(:school_1).id, added.school_id
-    assert_equal [ 9 ], added.grade_ids
+    assert_equal [ other_grade.id ], added.grade_ids
 
     assert_difference -> { user.user_campuses.count }, -1 do
       put admin_user_path(user), params: { user: {

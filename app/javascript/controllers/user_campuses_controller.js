@@ -35,18 +35,17 @@ export default class extends Controller {
     this.filterRow(event.currentTarget.closest(".nested-fields"))
   }
 
-  // 校区决定可选年级：只保留该校所属学校开设的年级
+  // 校区决定可选年级：年级归属校区，只保留所选校区自己的年级
   filterRow(row) {
     if (!row) return
     const campus = row.querySelector('[data-user-campuses-target="campuse"]')
     const grades = row.querySelector('[data-user-campuses-target="grades"]')
     if (!campus || !grades) return
 
-    const schoolId = campus.selectedOptions[0]?.dataset.schoolId
+    const campuseId = campus.value
     grades.querySelectorAll("[data-grade-option]").forEach((chip) => {
       const checkbox = chip.querySelector("input[type='checkbox']")
-      const schoolIds = (checkbox.dataset.schoolIds || "").split(",")
-      const allowed = !schoolId || schoolIds.includes(schoolId)
+      const allowed = !campuseId || checkbox.dataset.campuseId === campuseId
 
       checkbox.disabled = !allowed
       if (!allowed) checkbox.checked = false

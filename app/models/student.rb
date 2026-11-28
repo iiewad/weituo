@@ -115,7 +115,7 @@ class Student < ApplicationRecord
   end
 
   def update_grade
-    target_grade = Grade.find_by(level: grade.level.to_i + 1)
+    target_grade = campuse.grades.find_by(level: grade.level.to_i + 1)
     update!(grade_id: target_grade.id) if target_grade.present?
   end
 
@@ -159,10 +159,10 @@ class Student < ApplicationRecord
         guardian_rows = row.drop(IMPORT_STUDENT_COLUMNS).each_slice(IMPORT_GUARDIAN_COLUMNS).map do |group|
           group.map { |value| value.to_s.strip }
         end
-        grade = Grade.find_by(level: grade_level)
+        grade = campuse.grades.find_by(level: grade_level)
         day_school = campuse.day_schools.find_by(name: day_school_name)
-        # 入学学期按名称匹配所在学校的学期；留空或匹配不到时不填，不影响建档
-        in_semester = campuse.school.semesters.find_by(name: in_semester_name) if in_semester_name.present?
+        # 入学学期按名称匹配本校区的学期；留空或匹配不到时不填，不影响建档
+        in_semester = campuse.semesters.find_by(name: in_semester_name) if in_semester_name.present?
 
         if name.blank? || grade.blank? || day_school.blank? || (grade_ids && !grade_ids.include?(grade.id))
           skipped += 1

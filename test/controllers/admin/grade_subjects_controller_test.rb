@@ -22,7 +22,7 @@ class Admin::GradeSubjectsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to admin_grade_subjects_path
-    added = schools(:school_1).grade_subjects.find_by!(
+    added = campuses(:campuse_1).grade_subjects.find_by!(
       semester: semesters(:semester_current), grade_id: grades(:grade_7).id, subject_id: subjects(:eng).id
     )
     assert_equal 16, added.times
@@ -44,7 +44,7 @@ class Admin::GradeSubjectsControllerTest < ActionDispatch::IntegrationTest
       put sync_admin_grade_subjects_path, params: { combinations: [ "7-1" ] }
     end
 
-    assert_not schools(:school_1).grade_subjects.exists?(
+    assert_not campuses(:campuse_1).grade_subjects.exists?(
       semester: semesters(:semester_current), grade_id: grades(:grade_8).id, subject_id: subjects(:eng).id
     )
   end
@@ -54,7 +54,7 @@ class Admin::GradeSubjectsControllerTest < ActionDispatch::IntegrationTest
       put sync_admin_grade_subjects_path, params: { combinations: [ "8-2" ] }
     end
 
-    assert schools(:school_1).grade_subjects.exists?(
+    assert campuses(:campuse_1).grade_subjects.exists?(
       semester: semesters(:semester_current), grade_id: grades(:grade_7).id, subject_id: subjects(:math).id
     )
     assert_match "已有班级", flash[:notice]
@@ -68,15 +68,15 @@ class Admin::GradeSubjectsControllerTest < ActionDispatch::IntegrationTest
     assert_not GradeSubject.exists?(grade_id: 999, subject_id: 999)
   end
 
-  test "sync only changes the current school and semester" do
-    other_school = School.create!(name: "其他学校")
-    other_semester = other_school.semesters.create!(
-      name: "其他学期", seq: 1
+  test "sync only changes the current campus and semester" do
+    other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_grade = other_campuse.grades.create!(name: "七年级", level: 7)
+    other_subject = other_campuse.subjects.create!(name: "英语", code: "ENG")
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
+    other = other_campuse.grade_subjects.create!(
+      semester: other_semester, grade: other_grade, subject: other_subject, times: 12
     )
-    other = other_school.grade_subjects.create!(
-      semester: other_semester, grade: grades(:grade_7), subject: subjects(:eng), times: 12
-    )
-    next_semester = schools(:school_1).grade_subjects.create!(
+    next_semester = campuses(:campuse_1).grade_subjects.create!(
       semester: semesters(:semester_next), grade: grades(:grade_9), subject: subjects(:math), times: 10
     )
 

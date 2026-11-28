@@ -179,7 +179,7 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
     course.start!
     attendance = course.attendances.find_by!(klass_student_id: klass_students(:ks_1).id)
 
-    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semesters(:semester_previous))
+    get switch_thread_semester_admin_semester_path(semesters(:semester_previous))
     put mark_admin_semester_klass_course_attendance_path(sk, course, attendance, status: "absent")
 
     assert_redirected_to admin_semester_klass_path(sk)
@@ -188,8 +188,9 @@ class Admin::AttendancesControllerTest < ActionDispatch::IntegrationTest
 
   test "cannot mark attendance from another campus" do
     other_campuse = Campuse.create!(name: "其他校区", school: schools(:school_1))
+    other_semester = other_campuse.semesters.create!(name: "其他学期", seq: 1)
     sk = SemesterKlass.create!(
-      campuse: other_campuse, semester: semesters(:semester_current),
+      campuse: other_campuse, semester: other_semester,
       grade: grades(:grade_7), subject: subjects(:math), teacher: teachers(:math_teacher_1),
       genre: "TG", seq: 9, times: 1
     )

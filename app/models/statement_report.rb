@@ -25,7 +25,7 @@ class StatementReport
     @semester_klasses = semester_klasses.to_a
     @campuse = campuse
     @reserve_min_attendances = (reserve_min_attendances || campuse.reserve_min_attendances).to_i
-    @semesters = Semester.where(school_id: campuse.school_id).to_a
+    @semesters = campuse.semesters.to_a
     @semesters_by_id = @semesters.index_by(&:id)
     build_semester_index
   end

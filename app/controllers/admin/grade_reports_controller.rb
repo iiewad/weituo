@@ -4,7 +4,7 @@ class Admin::GradeReportsController < AdminController
     @rows = @report.rows
     @groups = @report.semester_groups
     @summary = @report.summary
-    @semesters = Semester.where(school_id: Current.school.id).order(seq: :desc)
+    @semesters = Current.campuse.semesters.order(seq: :desc)
   end
 
   def export
@@ -28,7 +28,7 @@ class Admin::GradeReportsController < AdminController
     end
 
     def filter_summary
-      semester = Current.school.semesters.find_by(id: params[:semester_id])
+      semester = Current.campuse.semesters.find_by(id: params[:semester_id])
       semester ? "学期：#{semester.name}" : "全部学期"
     end
 end

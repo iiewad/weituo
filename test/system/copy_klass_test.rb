@@ -43,6 +43,10 @@ class CopyKlassTest < ApplicationSystemTestCase
 
   test "从历史班级复制到当前学期并跳到新班级" do
     sign_in
+    # student_7_1 已在当前学期的数学班（sk_math_2），同学期同科目只能在一个班，复制时会被跳过；
+    # student_7_2 只出现在历史班，复制后应进入新班级
+    KlassStudent.create!(semester_klass: semester_klasses(:sk_math_1), student: students(:student_7_2), status: "in")
+
     visit admin_semester_klasses_path
     first(:link, "复制班级").click
 
@@ -62,6 +66,7 @@ class CopyKlassTest < ApplicationSystemTestCase
 
     assert_text "复制成功"
     assert_current_path admin_semester_klass_path(SemesterKlass.order(:id).last)
-    assert_text students(:student_7_1).name
+    assert_text students(:student_7_2).name
+    assert_no_text students(:student_7_1).name
   end
 end

@@ -31,7 +31,7 @@ class GradeReport
     @campuse = campuse
     @grade_ids = grade_ids
     @semester_filter = semester_id&.to_i
-    @semesters = Semester.where(school_id: campuse.school_id).to_a.sort_by(&:seq)
+    @semesters = campuse.semesters.to_a.sort_by(&:seq)
     @semesters_by_id = @semesters.index_by(&:id)
     build_semester_index
   end

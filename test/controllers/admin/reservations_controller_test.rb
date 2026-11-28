@@ -18,7 +18,7 @@ class Admin::ReservationsControllerTest < ActionDispatch::IntegrationTest
 
   # 预留表只列出当前所选学期的预留；切换学期后其它学期的预留才会出现
   def switch_to_semester(semester)
-    get switch_thread_semester_admin_school_semester_path(schools(:school_1), semester)
+    get switch_thread_semester_admin_semester_path(semester)
   end
 
   test "index lists reservations targeting the selected semester" do

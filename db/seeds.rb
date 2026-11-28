@@ -57,27 +57,39 @@ oldest_start = (previous_start - 5.months).beginning_of_month
 future_start = current_end + 1.day
 future_end = (future_start + 2.months) - 1.day
 
-# 日期只用来生成演示用的学期名称与课次日期，不再写入学期表
+# 日期只用来生成演示用的学期名称与课次日期，不再写入学期表；学期/年级/科目按校区各自独立
 term_starts = [ oldest_start, previous_start, current_start, future_start ]
-semesters = term_starts.each_with_index.map do |start_date, index|
-  school.semesters.create!(name: term_name(start_date), seq: index + 1, current: index == 2)
+semesters_by = campuses.to_h do |campuse|
+  [ campuse.id, term_starts.each_with_index.map { |start_date, index|
+      campuse.semesters.create!(name: term_name(start_date), seq: index + 1, current: index == 2)
+  } ]
 end
-current_semester = semesters[2]
+current_semester_by = semesters_by.transform_values { |list| list[2] }
 
 puts "创建年级、科目与教师…"
-grades = (7..9).map { |level| Grade.create!(level:, name: "#{level}年级") }
-subjects = { "数学" => "MATH", "英语" => "ENG", "物理" => "PHY", "化学" => "CHEM" }.to_h do |name, code|
-  [ name, Subject.create!(name:, code:) ]
+grades_by = campuses.to_h do |campuse|
+  [ campuse.id, (7..9).map { |level| campuse.grades.create!(level:, name: "#{level}年级") } ]
 end
-curriculum = {
-  grades[0] => %w[数学 英语],
-  grades[1] => %w[数学 英语 物理],
-  grades[2] => %w[数学 英语 物理 化学]
-}
-curriculum.each do |grade, subject_names|
+subjects_by = campuses.to_h do |campuse|
+  [ campuse.id, { "数学" => "MATH", "英语" => "ENG", "物理" => "PHY", "化学" => "CHEM" }.to_h { |name, code|
+      [ name, campuse.subjects.create!(name:, code:) ]
+  } ]
+end
+curriculums_by = campuses.to_h do |campuse|
+  grades = grades_by[campuse.id]
+  subjects = subjects_by[campuse.id]
+  [ campuse.id, {
+    grades[0] => %w[数学 英语],
+    grades[1] => %w[数学 英语 物理],
+    grades[2] => %w[数学 英语 物理 化学]
+  }.transform_values { |names| names.map { |name| subjects[name] } } ]
+end
+campuses.each do |campuse|
   # 当前学期与下学期都配置年级科目，切换到下学期排班/生成班级时课次有默认值
-  [ current_semester, semesters[3] ].each do |semester|
-    subject_names.each { |name| GradeSubject.create!(school:, semester:, grade:, subject: subjects[name], times: 16) }
+  [ current_semester_by[campuse.id], semesters_by[campuse.id][3] ].each do |semester|
+    curriculums_by[campuse.id].each do |grade, subject_list|
+      subject_list.each { |subject| GradeSubject.create!(campuse:, semester:, grade:, subject:, times: 16) }
+    end
   end
 end
 
@@ -88,7 +100,7 @@ end
 teacher_names = %w[张伟 王芳 李娜 刘洋 陈静 杨磊 赵敏 黄强 周涛 吴丹 徐晶 孙浩 马丽 朱军 胡雪 郭鹏]
 teachers = {}
 campuses.each_with_index do |campuse, campus_index|
-  subjects.each_with_index do |(_subject_name, subject), subject_index|
+  subjects_by[campuse.id].each_with_index do |(_subject_name, subject), subject_index|
     2.times do |n|
       name = teacher_names[(campus_index * 8 + subject_index * 2 + n) % teacher_names.size]
       teacher = campuse.teachers.create!(
@@ -102,20 +114,19 @@ campuses.each_with_index do |campuse, campus_index|
 end
 
 puts "创建账号与校区授权…"
-grade_ids = grades.map(&:id)
 admin = User.create!(name: "admin", password: "password")
 campuses.each do |campuse|
-  UserCampuse.create!(user: admin, school:, campuse:, role: "admin", grade_ids:)
+  UserCampuse.create!(user: admin, school:, campuse:, role: "admin", grade_ids: grades_by[campuse.id].map(&:id))
 end
 
 user1 = User.create!(name: "user1", password: "password")
-UserCampuse.create!(user: user1, school:, campuse: campuses[0], role: "manager", grade_ids: grades.first(2).map(&:id))
+UserCampuse.create!(user: user1, school:, campuse: campuses[0], role: "manager", grade_ids: grades_by[campuses[0].id].first(2).map(&:id))
 
 user2 = User.create!(name: "user2", password: "password")
-UserCampuse.create!(user: user2, school:, campuse: campuses[1], role: "manager", grade_ids:)
+UserCampuse.create!(user: user2, school:, campuse: campuses[1], role: "manager", grade_ids: grades_by[campuses[1].id].map(&:id))
 
 user3 = User.create!(name: "user3", password: "password")
-UserCampuse.create!(user: user3, school:, campuse: campuses[0], role: "manager", grade_ids: [ grades[2].id ])
+UserCampuse.create!(user: user3, school:, campuse: campuses[0], role: "manager", grade_ids: [ grades_by[campuses[0].id][2].id ])
 
 User.create!(name: "pending", password: "password")
 
@@ -125,7 +136,7 @@ given_names = %w[子涵 雨轩 一凡 欣怡 浩然 思远 佳琪 明哲 梓萱 
 students_by = {}
 
 campuses.each_with_index do |campuse, campus_index|
-  grades.each do |grade|
+  grades_by[campuse.id].each do |grade|
     pool = 24.times.map do |index|
       name = "#{surnames[index % surnames.size]}#{given_names[(index + grade.level + campus_index) % given_names.size]}"
       student = campuse.students.create!(
@@ -135,7 +146,7 @@ campuses.each_with_index do |campuse, campus_index|
         phone: format("138%08d", campus_index * 10_000 + grade.level * 1_000 + index),
         grade:,
         layer: "#{(index % 5) + 1}层",
-        in_semester: semesters.first,
+        in_semester: semesters_by[campuse.id].first,
         day_school: day_schools[campuse.id][index % day_schools[campuse.id].size],
         day_school_class_name: "#{grade.level}年级#{(index % 6) + 1}班",
         remark: (index % 7).zero? ? "家长要求每节课后反馈学习情况" : nil
@@ -163,7 +174,7 @@ end
 # 本学期才入学的学员，用于让新增率不为 0
 newcomers_by = {}
 campuses.each_with_index do |campuse, campus_index|
-  grades.each do |grade|
+  grades_by[campuse.id].each do |grade|
     newcomers_by[[ campuse.id, grade.id ]] = 6.times.map do |index|
       student = campuse.students.create!(
         name: "#{surnames[24 + index]}#{given_names[(index + grade.level) % given_names.size]}",
@@ -172,7 +183,7 @@ campuses.each_with_index do |campuse, campus_index|
         phone: format("135%08d", campus_index * 10_000 + grade.level * 1_000 + index),
         grade:,
         layer: "#{(index % 5) + 1}层",
-        in_semester: current_semester,
+        in_semester: current_semester_by[campuse.id],
         day_school: day_schools[campuse.id][(index + 1) % day_schools[campuse.id].size],
         day_school_class_name: "#{grade.level}年级#{(index % 6) + 1}班"
       )
@@ -189,8 +200,8 @@ end
 
 puts "创建推荐关系…"
 campuses.each do |campuse|
-  grades.each_with_index do |grade, grade_index|
-    referrer_grade = grade_index.zero? ? grade : grades[grade_index - 1]
+  grades_by[campuse.id].each_with_index do |grade, grade_index|
+    referrer_grade = grade_index.zero? ? grade : grades_by[campuse.id][grade_index - 1]
     referrer_pool = students_by[[ campuse.id, referrer_grade.id ]]
     students_by[[ campuse.id, grade.id ]].first(3).each_with_index do |student, index|
       referrer = referrer_pool[(index + 4) % referrer_pool.size]
@@ -202,20 +213,22 @@ campuses.each do |campuse|
 end
 
 puts "创建历史、当前与未来学期的班级…"
-class_specs = curriculum.flat_map do |grade, subject_names|
-  subject_names.flat_map do |subject_name|
-    specs = [ { grade:, subject: subjects[subject_name], genre: "TG", seq: 1 } ]
-    specs << { grade:, subject: subjects[subject_name], genre: "JY", seq: 2 } if subject_name == "数学"
-    specs
+class_specs_by = curriculums_by.transform_values do |curriculum|
+  curriculum.flat_map do |grade, subject_list|
+    subject_list.flat_map do |subject|
+      specs = [ { grade:, subject:, genre: "TG", seq: 1 } ]
+      specs << { grade:, subject:, genre: "JY", seq: 2 } if subject.name == "数学"
+      specs
+    end
   end
 end
 
 rosters = {}
 classes = []
 
-semesters.each_with_index do |semester, semester_index|
-  campuses.each do |campuse|
-    class_specs.each_with_index do |spec, spec_index|
+campuses.each do |campuse|
+  semesters_by[campuse.id].each_with_index do |semester, semester_index|
+    class_specs_by[campuse.id].each_with_index do |spec, spec_index|
       pool = students_by[[ campuse.id, spec[:grade].id ]]
       key = [ campuse.id, spec[:grade].id, spec[:subject].id, spec[:genre] ]
       roster = rosters[key] ||= pool.rotate(spec_index * 3).first(13 + (spec_index % 4))
@@ -234,7 +247,7 @@ semesters.each_with_index do |semester, semester_index|
       end
 
       # 留一个没有学员的当前学期班级，用于验证空考勤与添加学员流程
-      if semester == current_semester && campuse == campuses[1] && spec[:grade] == grades[2] && spec[:subject].name == "化学"
+      if semester == current_semester_by[campuse.id] && campuse == campuses[1] && spec[:grade] == grades_by[campuse.id][2] && spec[:subject].name == "化学"
         roster = []
       end
 
@@ -300,7 +313,7 @@ end
 attendance_rows.each_slice(1_000) { |rows| Attendance.insert_all(rows) }
 
 # 从来源学期的班级学员生成目标学期预留；每 5 个班留一组已生成状态，每 4 个班留一组教师待定
-def seed_reservations(classes, rng, source_index:, target_semester:)
+def seed_reservations(classes, rng, source_index:, target_semester_by:)
   created = 0
   generated = 0
 
@@ -308,7 +321,8 @@ def seed_reservations(classes, rng, source_index:, target_semester:)
     students = sk.klass_students.where(status: "in").includes(:student).map(&:student)
     next if students.empty?
 
-    next_grade = Grade.find_by(level: sk.grade.level + 1) || sk.grade
+    target_semester = target_semester_by[sk.campuse.id]
+    next_grade = sk.campuse.grades.find_by(level: sk.grade.level + 1) || sk.grade
     target_klass = if (class_index % 5).zero?
       SemesterKlass.find_by(campuse: sk.campuse, semester: target_semester, grade: next_grade, subject: sk.subject, genre: sk.genre)
     end
@@ -337,8 +351,9 @@ end
 puts "创建预留记录…"
 # 上学期 → 当前学期：默认进入预留表即可看到上学期登记的待分班数据
 # 当前学期 → 下学期：切换学期后查看/演示生成班级
-current_count, current_generated = seed_reservations(classes, rng, source_index: 1, target_semester: current_semester)
-next_count, next_generated = seed_reservations(classes, rng, source_index: 2, target_semester: semesters[3])
+current_count, current_generated = seed_reservations(classes, rng, source_index: 1, target_semester_by: current_semester_by)
+next_count, next_generated = seed_reservations(classes, rng, source_index: 2,
+  target_semester_by: semesters_by.transform_values { |list| list[3] })
 
 puts <<~SUMMARY
   种子数据已生成：
@@ -348,5 +363,5 @@ puts <<~SUMMARY
     班级 #{SemesterKlass.count} 个 / 课次 #{Course.count} 节 / 考勤 #{Attendance.count} 条
     预留 #{Reservation.count} 条（当前学期 #{current_count} 条、已生成 #{current_generated} 条；下学期 #{next_count} 条、已生成 #{next_generated} 条）
   账号：admin、user1、user2、user3（密码 password）；pending 为未授权账号。
-  提示：当前学期的预留表已有上学期登记的待分班数据；另有指向 #{semesters[3].name} 的预留，在顶栏切换学期后可查看并生成班级。
+  提示：当前学期的预留表已有上学期登记的待分班数据；另有指向 #{term_name(future_start)} 的预留，在顶栏切换学期后可查看并生成班级。
 SUMMARY
