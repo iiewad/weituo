@@ -97,7 +97,7 @@ class Admin::StudentsController < AdminController
       end
 
       begin
-        created, skipped = Student.add_by_xlsx(Current.campuse.id, params[:students_file], grade_ids: grade_ids)
+        created, skipped, failures = Student.add_by_xlsx(Current.campuse.id, params[:students_file], grade_ids: grade_ids)
       rescue Roo::Error, Zip::Error, Errno::ENOENT
         redirect_to admin_students_path, alert: "Excel 文件读取失败，请确认文件内容与格式"
         return
@@ -109,17 +109,16 @@ class Admin::StudentsController < AdminController
         return
       end
 
-      created, skipped = Student.add_by_text(Current.campuse.id, text, grade_ids: grade_ids)
+      created, skipped, failures = Student.add_by_text(Current.campuse.id, text, grade_ids: grade_ids)
     end
 
     message = "新增 #{created} 名学员"
-    message += "，跳过 #{skipped} 行（年级或日校不匹配、或已存在）" if skipped.positive?
+    message += "，#{skipped} 行未导入" if skipped.positive?
 
-    if created.positive?
-      redirect_to admin_students_path, notice: message
-    else
-      redirect_to admin_students_path, alert: message
-    end
+    # 未导入的学员逐行列在提示下方；明细存缓存，flash 里只放令牌（cookie session 放不下长明细）
+    flash_options = { (created.positive? ? :notice : :alert) => message }
+    flash_options[:details_token] = FlashDetails.store(failures) if failures.present?
+    redirect_to admin_students_path, flash: flash_options
   rescue ActiveRecord::ActiveRecordError
     redirect_to admin_students_path, alert: "导入失败，本批数据已全部回滚，请检查数据后重试"
   end

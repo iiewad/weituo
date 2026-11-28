@@ -213,13 +213,13 @@ class StudentTest < ActiveSupport::TestCase
   test "import stores trailing digits as the name sequence and dedupes by the stripped name" do
     text = "导入重名5,男,2000-01-01,7,1,current,三中"
 
-    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    created, skipped, = Student.add_by_text(campuses(:campuse_1).id, text)
     assert_equal 1, created
     assert_equal 0, skipped
     student = Student.find_by!(name: "导入重名")
     assert_equal 5, student.name_seq
 
-    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    created, skipped, = Student.add_by_text(campuses(:campuse_1).id, text)
     assert_equal 0, created
     assert_equal 1, skipped
     assert_equal 1, Student.where(name: "导入重名").count
@@ -255,7 +255,7 @@ class StudentTest < ActiveSupport::TestCase
       "导入甲,男,2000-01-01,7,1,current,三中,,,家长甲,13800000001,父亲"
     ].join("\n")
 
-    created, skipped = Student.add_by_text(
+    created, skipped, = Student.add_by_text(
       campuses(:campuse_1).id,
       text,
       grade_ids: [ grades(:grade_7).id ]
@@ -284,7 +284,7 @@ class StudentTest < ActiveSupport::TestCase
       "无监护人学员,女,2000-02-02,7,1,current,三中"
     ].join("\n")
 
-    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    created, skipped, = Student.add_by_text(campuses(:campuse_1).id, text)
 
     assert_equal 2, created
     assert_equal 0, skipped
@@ -304,7 +304,7 @@ class StudentTest < ActiveSupport::TestCase
   test "import by text creates multiple guardians from grouped columns" do
     text = "多监护人,男,2000-01-01,7,1,current,三中,,,张建国,13800000000,父亲,工程师,李梅,13900000001,母亲,医生"
 
-    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    created, skipped, = Student.add_by_text(campuses(:campuse_1).id, text)
 
     assert_equal 1, created
     assert_equal 0, skipped
@@ -316,6 +316,44 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal [ "工程师", "医生" ], guardians.map(&:occupation)
   end
 
+  test "import reports the name and reason of every skipped row" do
+    campuse = campuses(:campuse_1)
+    Student.create!(name: "已建档学员", campuse:, grade: grades(:grade_7), birthday: Date.new(2000, 1, 1))
+    text = [
+      "新学员,男,2000-01-01,7,1,current,三中",
+      ",男,2000-01-01,7,1,current,三中",
+      "缺年级,男,2000-01-01,,1,current,三中",
+      "坏年级,男,2000-01-01,99,1,current,三中",
+      "缺日校,男,2000-01-01,7,1,current,",
+      "坏日校,男,2000-01-01,7,1,current,不存在",
+      "越权年级,男,2000-01-01,8,1,current,三中",
+      "已建档学员,女,2000-01-01,7,2,current,三中"
+    ].join("\n")
+
+    created, skipped, failures = Student.add_by_text(campuse.id, text, grade_ids: [ grades(:grade_7).id ])
+
+    assert_equal 1, created
+    assert_equal 7, skipped
+    assert_equal [
+      "第 2 行：未填姓名",
+      "第 3 行 缺年级：未填年级",
+      "第 4 行 坏年级：年级 99 在本校区不存在",
+      "第 5 行 缺日校：未填日校",
+      "第 6 行 坏日校：日校「不存在」在本校区不存在",
+      "第 7 行 越权年级：年级 8 不在当前账号授权范围内",
+      "第 8 行 已建档学员：已存在（同校区姓名与生日相同）"
+    ], failures
+  end
+
+  test "import reports duplicates without a birthday as matched by grade" do
+    text = "无生日学员,男,,7,1,,三中\n无生日学员,男,,7,2,,三中"
+
+    created, skipped, failures = Student.add_by_text(campuses(:campuse_1).id, text)
+
+    assert_equal 1, created
+    assert_equal [ "第 2 行 无生日学员：已存在（同校区姓名与年级相同）" ], failures
+  end
+
   test "import dedupes by name and birthday even when other fields change" do
     campuse = campuses(:campuse_1)
     DaySchool.create!(name: "二中", campuse:)
@@ -325,7 +363,7 @@ class StudentTest < ActiveSupport::TestCase
       "跨届学员,男,2000/1/1,8,2,current previous,二中"
     ].join("\n")
 
-    created, skipped = Student.add_by_text(campuse.id, text)
+    created, skipped, = Student.add_by_text(campuse.id, text)
 
     assert_equal 1, created
     assert_equal 1, skipped
@@ -339,7 +377,7 @@ class StudentTest < ActiveSupport::TestCase
       "同名不同人,男,2001-01-01,7,1,current,三中"
     ].join("\n")
 
-    created, skipped = Student.add_by_text(campuse.id, text)
+    created, skipped, = Student.add_by_text(campuse.id, text)
 
     assert_equal 2, created
     assert_equal 0, skipped
@@ -354,7 +392,7 @@ class StudentTest < ActiveSupport::TestCase
       "无生日,男,,8,1,,三中"
     ].join("\n")
 
-    created, skipped = Student.add_by_text(campuse.id, text)
+    created, skipped, = Student.add_by_text(campuse.id, text)
 
     assert_equal 2, created
     assert_equal 1, skipped

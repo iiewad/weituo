@@ -129,7 +129,8 @@ class Student < ApplicationRecord
   IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
 
   # 按 CSV 行导入学员：前 9 列为学员信息（姓名,性别,生日,年级level,层级,入学学期,日校,日校班级,家庭住址），
-  # 之后每 4 列一位监护人（姓名,电话,关系,职业），可写多名；返回 [新增人数, 跳过行数]。
+  # 之后每 4 列一位监护人（姓名,电话,关系,职业），可写多名；返回 [新增人数, 跳过行数, 未导入明细]，
+  # 明细为「第 N 行 姓名：原因」，按原文件行号计。
   IMPORT_STUDENT_COLUMNS = 9
   IMPORT_GUARDIAN_COLUMNS = 4
   def self.add_by_text(campuse_id, str, grade_ids: nil)
@@ -148,9 +149,10 @@ class Student < ApplicationRecord
     campuse = Campuse.find(campuse_id)
     created = 0
     skipped = 0
+    failures = []
 
     transaction do
-      rows.each do |row|
+      rows.each_with_index do |row, index|
         next if row.all? { |value| value.to_s.strip.blank? }
         next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
@@ -164,8 +166,25 @@ class Student < ApplicationRecord
         # 入学学期按名称匹配本校区的学期；留空或匹配不到时不填，不影响建档
         in_semester = campuse.semesters.find_by(name: in_semester_name) if in_semester_name.present?
 
-        if name.blank? || grade.blank? || day_school.blank? || (grade_ids && !grade_ids.include?(grade.id))
+        # 年级、日校必须匹配本校区字典，且年级在授权范围内；不满足的行跳过并记录原因
+        reason = case
+        when name.blank?
+          "未填姓名"
+        when grade_level.blank?
+          "未填年级"
+        when grade.blank?
+          "年级 #{grade_level} 在本校区不存在"
+        when day_school_name.blank?
+          "未填日校"
+        when day_school.blank?
+          "日校「#{day_school_name}」在本校区不存在"
+        when grade_ids && !grade_ids.include?(grade.id)
+          "年级 #{grade_level} 不在当前账号授权范围内"
+        end
+
+        if reason
           skipped += 1
+          failures << import_failure(index, name, reason)
           next
         end
 
@@ -188,6 +207,7 @@ class Student < ApplicationRecord
 
         if student.new_record? && !student.save
           skipped += 1
+          failures << import_failure(index, name, student.errors.full_messages.join("；"))
           next
         end
 
@@ -201,12 +221,22 @@ class Student < ApplicationRecord
           end
         end
 
-        student.previously_new_record? ? created += 1 : skipped += 1
+        if student.previously_new_record?
+          created += 1
+        else
+          skipped += 1
+          failures << import_failure(index, name, "已存在（同校区姓名与#{birthday.present? ? "生日" : "年级"}相同）")
+        end
       end
     end
 
-    [ created, skipped ]
+    [ created, skipped, failures ]
   end
+
+  def self.import_failure(index, name, reason)
+    "第 #{index + 1} 行#{name.present? ? " #{name}" : ""}：#{reason}"
+  end
+  private_class_method :import_failure
 
   # 姓名尾部数字视为重名序号：「张三2」拆为姓名「张三」与序号 2；无尾部数字时序号为 nil。
   # 全数字姓名不拆分，避免把名字整个吞掉。

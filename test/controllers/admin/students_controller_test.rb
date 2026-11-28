@@ -192,15 +192,19 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
       "坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
     ].join("\n")
 
-    assert_difference -> { Student.count }, 2 do
-      assert_difference -> { Guardian.count }, 1 do
-        post import_admin_students_path, params: { students_text: text }
+    with_memory_cache do
+      assert_difference -> { Student.count }, 2 do
+        assert_difference -> { Guardian.count }, 1 do
+          post import_admin_students_path, params: { students_text: text }
+        end
       end
+
+      assert_equal [ "第 3 行 坏日校：日校「不存在」在本校区不存在" ], FlashDetails.load(flash[:details_token])
     end
 
     assert_redirected_to admin_students_path
     assert_match "新增 2 名学员", flash[:notice]
-    assert_match "跳过 1 行", flash[:notice]
+    assert_match "1 行未导入", flash[:notice]
     assert_equal "初三(2)班", Student.find_by!(name: "导入甲").day_school_class_name
     assert_equal "家长甲", Student.find_by!(name: "导入甲").guardians.sole.name
   end
@@ -237,6 +241,67 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "初三(2)班", student.day_school_class_name
     assert_equal "1", Student.find_by!(name: "表格乙").layer
     assert_equal "家长甲", student.guardians.sole.name
+  end
+
+  test "import lists skipped students with reasons in the flash" do
+    text = [
+      "重复学员,男,2000-01-01,7,1,2026-01-01,三中",
+      "重复学员,男,2000-01-01,7,1,2026-01-01,三中",
+      "坏年级,男,2000-01-01,99,1,2026-01-01,三中"
+    ].join("\n")
+
+    with_memory_cache do
+      post import_admin_students_path, params: { students_text: text }
+
+      assert_redirected_to admin_students_path
+      assert_equal "新增 1 名学员，2 行未导入", flash[:notice]
+      assert_equal [
+        "第 2 行 重复学员：已存在（同校区姓名与生日相同）",
+        "第 3 行 坏年级：年级 99 在本校区不存在"
+      ], FlashDetails.load(flash[:details_token])
+
+      get admin_students_path
+      assert_select "li", text: "第 2 行 重复学员：已存在（同校区姓名与生日相同）"
+      assert_select "li", text: "第 3 行 坏年级：年级 99 在本校区不存在"
+    end
+  end
+
+  test "import with many skipped rows keeps the session cookie small" do
+    text = (1..300).map { |index| "坏学员#{index},男,2000-01-01,99,1,2026-01-01,不存在" }.join("\n")
+
+    with_memory_cache do
+      post import_admin_students_path, params: { students_text: text }
+
+      assert_redirected_to admin_students_path
+      assert_equal "新增 0 名学员，300 行未导入", flash[:alert]
+      assert_equal 300, FlashDetails.load(flash[:details_token]).size
+      assert_operator flash.to_session_value.to_s.bytesize, :<, 1000
+
+      get admin_students_path
+    assert_select "[role=alert] li", count: 300
+    end
+  end
+
+  test "expired flash details show an expired note" do
+    with_memory_cache do
+      post import_admin_students_path, params: { students_text: "坏年级,男,2000-01-01,99,1,2026-01-01,三中" }
+      Rails.cache.clear
+
+      get admin_students_path
+      assert_select "[role=alert] li", count: 0
+      assert_select "[role=alert] span", text: "明细已过期，请重新操作查看"
+    end
+  end
+
+  test "import with only skipped rows alerts with the failure details" do
+    with_memory_cache do
+      post import_admin_students_path, params: { students_text: "坏年级,男,2000-01-01,99,1,2026-01-01,三中" }
+
+      assert_equal [ "第 1 行 坏年级：年级 99 在本校区不存在" ], FlashDetails.load(flash[:details_token])
+    end
+
+    assert_redirected_to admin_students_path
+    assert_equal "新增 0 名学员，1 行未导入", flash[:alert]
   end
 
   test "downloads the xlsx import template" do
@@ -444,6 +509,15 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    # 测试环境默认 null_store，明细存不进缓存；涉及 flash 明细的用例临时换成内存缓存
+    def with_memory_cache
+      original_cache = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      yield
+    ensure
+      Rails.cache = original_cache
+    end
+
     def xlsx_upload(rows)
       package = Axlsx::Package.new
       package.workbook.add_worksheet(name: "学员") do |sheet|
