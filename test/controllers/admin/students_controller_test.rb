@@ -187,7 +187,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students from pasted csv text" do
     text = [
-      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,,家长甲,13800000001,父亲",
+      "导入甲,男,2000-01-01,7,1,2026-01-01,三中,初三(2)班,,家长甲,13800000001,父亲",
       "导入乙,女,2000-01-01,7,1,2026-01-01,三中",
       "坏日校,男,2000-01-01,7,1,2026-01-01,不存在"
     ].join("\n")
@@ -201,6 +201,8 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_students_path
     assert_match "新增 2 名学员", flash[:notice]
     assert_match "跳过 1 行", flash[:notice]
+    assert_equal "初三(2)班", Student.find_by!(name: "导入甲").day_school_class_name
+    assert_equal "家长甲", Student.find_by!(name: "导入甲").guardians.sole.name
   end
 
   test "import without text redirects with an alert" do
@@ -214,8 +216,8 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
 
   test "import creates students and guardians from an xlsx file" do
     rows = [
-      [ "姓名", "性别", "生日", "年级", "层级", "入学学期", "日校", "家庭住址", "监护人1姓名", "监护人1电话", "监护人1关系", "监护人1职业" ],
-      [ "表格甲", "男", Date.new(2000, 1, 1), 7, "提高", "current", "三中", "", "家长甲", "13800000001", "父亲" ],
+      [ "姓名", "性别", "生日", "年级", "层级", "入学学期", "日校", "日校班级", "家庭住址", "监护人1姓名", "监护人1电话", "监护人1关系", "监护人1职业" ],
+      [ "表格甲", "男", Date.new(2000, 1, 1), 7, "提高", "current", "三中", "初三(2)班", "", "家长甲", "13800000001", "父亲" ],
       [ "表格乙", "女", Date.new(2000, 1, 1), 7, 1, "current", "三中" ]
     ]
 
@@ -232,6 +234,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.new(2000, 1, 1), student.birthday
     assert_equal semesters(:semester_current), student.in_semester
     assert_equal "提高", student.layer
+    assert_equal "初三(2)班", student.day_school_class_name
     assert_equal "1", Student.find_by!(name: "表格乙").layer
     assert_equal "家长甲", student.guardians.sole.name
   end
@@ -247,6 +250,7 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     workbook = Zip::File.open_buffer(StringIO.new(response.body))
     strings = workbook.read("xl/sharedStrings.xml").force_encoding("UTF-8")
     assert_includes strings, "姓名"
+    assert_includes strings, "日校班级"
     assert_includes strings, "监护人1姓名"
     assert_includes strings, "监护人2电话"
     assert_includes strings, "职业"

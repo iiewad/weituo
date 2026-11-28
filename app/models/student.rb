@@ -128,9 +128,9 @@ class Student < ApplicationRecord
 
   IMPORT_HEADERS = [ "姓名", "name", "学生姓名", "学员姓名" ].freeze
 
-  # 按 CSV 行导入学员：前 8 列为学员信息（姓名,性别,生日,年级level,层级,入学学期,日校,家庭住址），
+  # 按 CSV 行导入学员：前 9 列为学员信息（姓名,性别,生日,年级level,层级,入学学期,日校,日校班级,家庭住址），
   # 之后每 4 列一位监护人（姓名,电话,关系,职业），可写多名；返回 [新增人数, 跳过行数]。
-  IMPORT_STUDENT_COLUMNS = 8
+  IMPORT_STUDENT_COLUMNS = 9
   IMPORT_GUARDIAN_COLUMNS = 4
   def self.add_by_text(campuse_id, str, grade_ids: nil)
     rows = str.to_s.split("\n").map { |line| normalize_import_row(line.split(",", -1)) }
@@ -154,7 +154,7 @@ class Student < ApplicationRecord
         next if row.all? { |value| value.to_s.strip.blank? }
         next if IMPORT_HEADERS.include?(row.first.to_s.strip)
 
-        name, gender, birthday, grade_level, layer, in_semester_name, day_school_name, address =
+        name, gender, birthday, grade_level, layer, in_semester_name, day_school_name, day_school_class_name, address =
           row.first(IMPORT_STUDENT_COLUMNS).map { |value| value.to_s.strip }
         guardian_rows = row.drop(IMPORT_STUDENT_COLUMNS).each_slice(IMPORT_GUARDIAN_COLUMNS).map do |group|
           group.map { |value| value.to_s.strip }
@@ -182,6 +182,7 @@ class Student < ApplicationRecord
           layer: layer,
           in_semester_id: in_semester&.id,
           day_school_id: day_school.id,
+          day_school_class_name: day_school_class_name.presence,
           address: address.presence
         })
 

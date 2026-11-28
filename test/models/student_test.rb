@@ -248,11 +248,11 @@ class StudentTest < ActiveSupport::TestCase
 
   test "import by text maps genders and reports created and skipped rows" do
     text = [
-      "导入甲,男,2000-01-01,7,1,current,三中,,家长甲,13800000001,父亲",
+      "导入甲,男,2000-01-01,7,1,current,三中,,,家长甲,13800000001,父亲",
       "导入乙,女,2000-01-01,7,1,不存在学期,三中",
       "坏日校,男,2000-01-01,7,1,current,不存在",
       "未授权年级,男,2000-01-01,9,1,current,三中",
-      "导入甲,男,2000-01-01,7,1,current,三中,,家长甲,13800000001,父亲"
+      "导入甲,男,2000-01-01,7,1,current,三中,,,家长甲,13800000001,父亲"
     ].join("\n")
 
     created, skipped = Student.add_by_text(
@@ -269,6 +269,7 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal day_schools(:one), Student.find_by!(name: "导入甲").day_school
     assert_equal semesters(:semester_current), Student.find_by!(name: "导入甲").in_semester
     assert_nil Student.find_by!(name: "导入乙").in_semester
+    assert_nil Student.find_by!(name: "导入甲").day_school_class_name
 
     guardian = Student.find_by!(name: "导入甲").guardians.sole
     assert_equal "家长甲", guardian.name
@@ -277,9 +278,9 @@ class StudentTest < ActiveSupport::TestCase
     assert_empty Student.find_by!(name: "导入乙").guardians
   end
 
-  test "import by text stores the address and a nameless guardian's occupation" do
+  test "import by text stores the day school class and address with a nameless guardian's occupation" do
     text = [
-      "住址学员,男,2000-01-01,7,1,current,三中,幸福路 1 号,,13900000000,,医生",
+      "住址学员,男,2000-01-01,7,1,current,三中,初三(2)班,幸福路 1 号,,13900000000,,医生",
       "无监护人学员,女,2000-02-02,7,1,current,三中"
     ].join("\n")
 
@@ -290,6 +291,8 @@ class StudentTest < ActiveSupport::TestCase
 
     student = Student.find_by!(name: "住址学员")
     assert_equal "幸福路 1 号", student.address
+    assert_equal "初三(2)班", student.day_school_class_name
+    assert_nil Student.find_by!(name: "无监护人学员").day_school_class_name
 
     guardian = student.guardians.sole
     assert guardian.name.blank?
@@ -299,7 +302,7 @@ class StudentTest < ActiveSupport::TestCase
   end
 
   test "import by text creates multiple guardians from grouped columns" do
-    text = "多监护人,男,2000-01-01,7,1,current,三中,,张建国,13800000000,父亲,工程师,李梅,13900000001,母亲,医生"
+    text = "多监护人,男,2000-01-01,7,1,current,三中,,,张建国,13800000000,父亲,工程师,李梅,13900000001,母亲,医生"
 
     created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
 
