@@ -180,6 +180,51 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal 2, renamed.name_seq
   end
 
+  test "trailing digits in the name are stored as the name sequence" do
+    campuse = campuses(:campuse_1)
+    student = Student.create!(name: "重名2", campuse:, grade: grades(:grade_7))
+
+    assert_equal "重名", student.name
+    assert_equal 2, student.name_seq
+    assert_equal "序号 2", student.identity_suffix
+  end
+
+  test "digit sequence falls back to the next free one when taken" do
+    campuse = campuses(:campuse_1)
+    first = Student.create!(name: "占号", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "占号2", campuse:, grade: grades(:grade_7))
+    third = Student.create!(name: "占号2", campuse:, grade: grades(:grade_7))
+
+    assert_equal [ 1, 2, 3 ], [ first, second, third ].map { |s| s.reload.name_seq }
+  end
+
+  test "renaming with trailing digits moves to that sequence" do
+    campuse = campuses(:campuse_1)
+    first = Student.create!(name: "改号", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "别人", campuse:, grade: grades(:grade_7))
+
+    second.update!(name: "改号3")
+
+    assert_equal "改号", second.name
+    assert_equal 3, second.name_seq
+    assert_equal 1, first.name_seq
+  end
+
+  test "import stores trailing digits as the name sequence and dedupes by the stripped name" do
+    text = "导入重名5,男,2000-01-01,7,1,current,三中"
+
+    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    assert_equal 1, created
+    assert_equal 0, skipped
+    student = Student.find_by!(name: "导入重名")
+    assert_equal 5, student.name_seq
+
+    created, skipped = Student.add_by_text(campuses(:campuse_1).id, text)
+    assert_equal 0, created
+    assert_equal 1, skipped
+    assert_equal 1, Student.where(name: "导入重名").count
+  end
+
   test "assigning referrer id creates and clears the referral" do
     student = students(:student_7_5)
     referrer = students(:student_9_2)

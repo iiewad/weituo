@@ -21,6 +21,7 @@ class Student < ApplicationRecord
 
   attr_writer :referrer_id
   after_save :sync_referrer, unless: -> { @referrer_id.nil? }
+  before_save :strip_name_seq_digits, if: :will_save_change_to_name?
   before_save :assign_name_seq, if: :name_seq_needs_assignment?
 
   def self.ransackable_attributes(auth_object = nil)
@@ -206,10 +207,21 @@ class Student < ApplicationRecord
     [ created, skipped ]
   end
 
+  # 姓名尾部数字视为重名序号：「张三2」拆为姓名「张三」与序号 2；无尾部数字时序号为 nil。
+  # 全数字姓名不拆分，避免把名字整个吞掉。
+  def self.split_trailing_digits(raw_name)
+    stripped = raw_name.to_s.strip
+    match = stripped.match(/\A(.*?)(\d+)\z/)
+    return [ stripped, nil ] if match.nil? || match[1].blank?
+
+    [ match[1], match[2].to_i ]
+  end
+
   # 导入去重键：校区 + 姓名 + 生日；生日缺失时退回 校区 + 姓名 + 年级。
   # 年级、日校、入学学期等会变化的属性不参与比对，避免同一学员重复建档。
   def self.import_student(campuse_id, attributes)
-    scope = where(campuse_id: campuse_id, name: attributes[:name])
+    name, = split_trailing_digits(attributes[:name])
+    scope = where(campuse_id: campuse_id, name: name)
     scope = if attributes[:birthday].present?
       scope.where(birthday: attributes[:birthday])
     else
@@ -245,7 +257,16 @@ class Student < ApplicationRecord
 
   private
     def name_seq_needs_assignment?
-      new_record? || will_save_change_to_name? || will_save_change_to_campuse_id?
+      new_record? || will_save_change_to_name? || will_save_change_to_campuse_id? || will_save_change_to_name_seq?
+    end
+
+    # 新增/编辑/导入时姓名尾部数字表示重名学员：「张三2」存为姓名「张三」、name_seq 2
+    def strip_name_seq_digits
+      stripped, seq = self.class.split_trailing_digits(name)
+      return if seq.nil?
+
+      self.name = stripped
+      self.name_seq = seq
     end
 
     # 同名序号在同一校区内唯一。锁住校区行再比对，避免并发建档拿到相同序号。
