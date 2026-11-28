@@ -17,7 +17,7 @@ class GradeReportModelTest < ActiveSupport::TestCase
     students(:student_7_3).join_klass(semester_klasses(:sk_math_1))
     students(:student_7_3).join_klass(semester_klasses(:sk_math_2))
     students(:student_7_3).join_klass(eng_klass)
-    # 换科（上学期数学、当前学期只学英语）：不算拓科，归入延续
+    # 换科（上学期数学、当前学期只学英语）：同样算拓科
     students(:student_7_4).join_klass(semester_klasses(:sk_math_1))
     students(:student_7_4).join_klass(eng_klass)
     # student_7_1 由 fixtures 提供：上学期数学、当前学期数学 → 延续
@@ -25,11 +25,14 @@ class GradeReportModelTest < ActiveSupport::TestCase
     row = report_row(@current)
 
     assert_equal [ students(:student_7_2).identity_label ], row.new_students.map(&:name)
-    assert_equal [ students(:student_7_3).identity_label ], row.expand_students.map(&:name)
+    assert_equal [ students(:student_7_3), students(:student_7_4) ].map(&:identity_label).sort, row.expand_students.map(&:name)
     assert_empty row.return_students
-    # fixtures 的 student_7_1 + 换科的 student_7_4
-    assert_equal 2, row.active_count - row.new_count - row.expand_count - row.return_count
-    assert_includes row.expand_students.first.detail, "新增科目：英语"
+    # fixtures 的 student_7_1 是唯一的延续学员
+    assert_equal 1, row.active_count - row.new_count - row.expand_count - row.return_count
+    assert_includes row.expand_students.find { |entry| entry.name == students(:student_7_3).identity_label }.detail, "新增科目：英语"
+    switched = row.expand_students.find { |entry| entry.name == students(:student_7_4).identity_label }.detail
+    assert_includes switched, "新增科目：英语"
+    assert_not_includes switched, "延续："
   end
 
   test "classifies returning students against the previous semester" do
@@ -44,6 +47,19 @@ class GradeReportModelTest < ActiveSupport::TestCase
     assert_includes row.return_students.first.detail, "最近入班：#{@previous.name}"
     # student_7_1 上学期在班 → 不是回流
     assert_not_includes row.return_students.map(&:name), students(:student_7_1).identity_label
+  end
+
+  test "returning counts after a gap of several semesters" do
+    # 隔多个学期：上学期（seq 1）入班，中间隔了两个学期，第四个学期重新入班 → 仍是回流
+    later = Semester.create!(campuse: @campuse, name: "later", seq: 4)
+    later_klass = create_klass(semester: later, subject: subjects(:math), teacher: teachers(:math_teacher_1), seq: 10)
+    students(:student_7_2).join_klass(semester_klasses(:sk_math_1))
+    students(:student_7_2).join_klass(later_klass)
+
+    row = report_row(later)
+
+    assert_equal [ students(:student_7_2).identity_label ], row.return_students.map(&:name)
+    assert_includes row.return_students.first.detail, "最近入班：#{@previous.name}"
   end
 
   test "counts and rates are internally consistent" do

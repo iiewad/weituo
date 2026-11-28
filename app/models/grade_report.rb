@@ -148,11 +148,9 @@ class GradeReport
       )
     end
 
-    # 拓科：延续上学期至少一个科目，且本学期出现上学期没学过的科目（只换科不算）
+    # 拓科：上学期有入班记录，且本学期出现上学期没学过的科目（换科也算）
     def expand?(student_id, semester_id, previous_id)
-      previous_subjects = @student_semester_subjects[[ previous_id, student_id ]]
-      current_subjects = @student_semester_subjects[[ semester_id, student_id ]]
-      (current_subjects - previous_subjects).any? && (current_subjects & previous_subjects).any?
+      (@student_semester_subjects[[ semester_id, student_id ]] - @student_semester_subjects[[ previous_id, student_id ]]).any?
     end
 
     def totals_row(semester, group_rows)
@@ -216,9 +214,9 @@ class GradeReport
 
         detail = [
           "上学期（#{previous_name}）：#{subject_labels(previous_subjects).join("、")}",
-          "延续：#{continued.join("、")}",
+          ("延续：#{continued.join("、")}" if continued.any?),
           "新增科目：#{added.join("、")}"
-        ].join(" · ")
+        ].compact.join(" · ")
 
         Entry.new(name: student.identity_label, detail:)
       }.sort_by(&:name)

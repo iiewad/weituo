@@ -69,6 +69,39 @@ class StatementReportModelTest < ActiveSupport::TestCase
     assert_includes row.unreserved_students.map(&:detail).join(" "), "已上 1 次，未达 2 次"
   end
 
+  test "quitting the next semester class after reaching the threshold still counts as reserved" do
+    @campuse.update!(reserve_min_attendances: 2)
+    current = semester_klasses(:sk_math_2)
+    next_class = SemesterKlass.create!(
+      campuse: @campuse, subject: subjects(:math), teacher: teachers(:math_teacher_1),
+      semester: semesters(:semester_next), grade: grades(:grade_7), genre: "TG", seq: 9, times: 3
+    )
+    quitter = students(:student_7_6)
+    early = students(:student_7_1)
+    [ quitter, early ].each { |student| student.join_klass(current) }
+    [ quitter, early ].each { |student| student.join_klass(next_class) }
+
+    next_class.courses.order(:seq).each(&:start!)
+    # quitter 上满 2 次（达标）后在第 3 课退课
+    quitter_ks = next_class.klass_students.find_by!(student_id: quitter.id)
+    next_class.courses.find_by!(seq: 3).attendances.find_by!(klass_student_id: quitter_ks.id).mark_quit!
+    assert quitter_ks.reload.out?
+
+    # early 只上了 1 次（未达标）就在第 2 课退课
+    early_ks = next_class.klass_students.find_by!(student_id: early.id)
+    next_class.courses.find_by!(seq: 2).attendances.find_by!(klass_student_id: early_ks.id).mark_quit!
+    assert early_ks.reload.out?
+
+    row = StatementReport.new(SemesterKlass.where(id: current.id), campuse: @campuse).rows.first
+
+    assert_equal 2, row.active_count
+    assert_equal 1, row.reserve_count
+    assert_equal 1, row.unreserved_count
+    assert_equal [ quitter.identity_label ], row.reserve_students.map(&:name)
+    assert_includes row.reserve_students.first.detail, "已上 2 次"
+    assert_equal [ early.identity_label ], row.unreserved_students.map(&:name)
+  end
+
   test "unreserved detail tells a pending reservation apart from not enrolled" do
     current = semester_klasses(:sk_math_2)
     Reservation.create!(

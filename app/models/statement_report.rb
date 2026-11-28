@@ -63,7 +63,7 @@ class StatementReport
       end
     end
 
-    # 一次取回本校区所有在班报名，避免逐班级查询学员与历史数据
+    # 一次取回本校区所有未移出的报名，避免逐班级查询学员与历史数据
     def load_student_data
       @active_student_ids = Hash.new { |hash, key| hash[key] = [] }
       @semester_subject_student_ids = Hash.new { |hash, key| hash[key] = [] }
@@ -73,14 +73,16 @@ class StatementReport
         .index_by(&:id)
 
       KlassStudent.active.joins(:semester_klass)
-        .where(semester_klasses: { campuse_id: @campuse.id }, status: "in")
+        .where(semester_klasses: { campuse_id: @campuse.id })
         .pluck(
           "semester_klasses.semester_id",
           "semester_klasses.subject_id",
           "klass_students.semester_klass_id",
-          "klass_students.student_id"
-        ).each do |semester_id, subject_id, semester_klass_id, student_id|
-          @active_student_ids[semester_klass_id] << student_id
+          "klass_students.student_id",
+          "klass_students.status"
+        ).each do |semester_id, subject_id, semester_klass_id, student_id, status|
+          # 分母：当前班只算在班学员；下学期同科目班退课 / 转出的报名同样算「报过」，达标后离班不回滚
+          @active_student_ids[semester_klass_id] << student_id if status == "in"
           @semester_subject_student_ids[[ semester_id, subject_id ]] << student_id
           @student_semester_subject_classes[[ semester_id, subject_id, student_id ]] << semester_klass_id
         end
