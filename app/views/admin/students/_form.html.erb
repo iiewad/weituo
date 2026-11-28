@@ -12,6 +12,15 @@
         <%= f.text_field :name, class: "input input-sm w-full", placeholder: "请输入学员姓名", required: true, maxlength: 50, autocomplete: "off" %>
       </div>
 
+      <%# 新建时序号自动分配，只有编辑已有学员时可以手动改 %>
+      <% unless item.new_record? %>
+        <div>
+          <%= f.label :name_seq, "重名序号", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+          <%= f.number_field :name_seq, min: 1, step: 1, class: "input input-sm w-full", required: true %>
+          <p class="mt-1 text-[11px] leading-tight text-base-content/40">同校区同名的学员用序号区分，序号大于 1 时姓名后显示「序号 N」；不能与同名学员已用的序号相同。</p>
+        </div>
+      <% end %>
+
       <div>
         <%= f.label :phone, "电话", class: "mb-1 block text-xs font-medium text-base-content/60" %>
         <%= f.text_field :phone, class: "input input-sm w-full", placeholder: "选填", autocomplete: "off" %>

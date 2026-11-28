@@ -409,6 +409,39 @@ class Admin::StudentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal referrer, student.referrer
   end
 
+  test "update changes the name sequence when it is free" do
+    student = Student.create!(name: "手改序号", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+
+    put admin_student_path(student), params: { student: { name: student.name, name_seq: 7, grade_id: grades(:grade_7).id } }
+
+    assert_redirected_to admin_students_path
+    assert_equal 7, student.reload.name_seq
+    assert_equal "序号 7", student.identity_suffix
+  end
+
+  test "update rejects a name sequence taken by a same-name student" do
+    student = Student.create!(name: "占序号", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+    Student.create!(name: "占序号", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+
+    put admin_student_path(student), params: { student: { name: student.name, name_seq: 2, grade_id: grades(:grade_7).id } }
+
+    assert_redirected_to admin_students_path
+    assert_match "已被同名的其他学员使用", flash[:alert]
+    assert_equal 1, student.reload.name_seq
+  end
+
+  test "edit form exposes name_seq but the new form does not" do
+    get admin_students_path
+
+    assert_response :success
+    # 新建表单不出现序号输入框；每个已有学员的编辑表单都有，且带当前序号
+    assert_select "form[action='/admin/students'][method='post'] input[name='student[name_seq]']", count: 0
+    assert_select "form input[type='number'][name='student[name_seq]']" do
+      assert_select "[value]", minimum: 1
+    end
+    assert_select "form input[type='number'][name='student[name_seq]'][value='#{students(:student_7_1).name_seq}']"
+  end
+
   test "update saves the address and a guardian without a name" do
     student = students(:student_7_1)
 

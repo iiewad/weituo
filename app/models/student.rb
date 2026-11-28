@@ -1,6 +1,13 @@
 class Student < ApplicationRecord
   paginates_per 30
   validates :name, presence: true
+  validates :name_seq, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+  # 编辑时手动填写的重名序号不能与同校区同名的其他学员重复；姓名尾部数字带出的序号仍由 assign_name_seq 自动顺延
+  validate :name_seq_available, if: -> { will_save_change_to_name_seq? && !name_seq_from_trailing_digits? }
+
+  def self.human_attribute_name(attribute, options = {})
+    attribute == :name_seq ? "重名序号" : super
+  end
 
   scope :active, -> { where(deleted_at: nil) }
   scope :deleted, -> { where.not(deleted_at: nil) }
@@ -287,6 +294,17 @@ class Student < ApplicationRecord
   end
 
   private
+    # 序号是否来自本次提交的姓名尾部数字（「张三2」→ 2）
+    def name_seq_from_trailing_digits?
+      will_save_change_to_name? && self.class.split_trailing_digits(name)[1] == name_seq
+    end
+
+    def name_seq_available
+      return if name_seq.blank?
+
+      taken = self.class.where(campuse_id: campuse_id, name: name).where.not(id: id).exists?(name_seq: name_seq)
+      errors.add(:name_seq, "#{name_seq} 已被同名的其他学员使用") if taken
+    end
     def name_seq_needs_assignment?
       new_record? || will_save_change_to_name? || will_save_change_to_campuse_id? || will_save_change_to_name_seq?
     end

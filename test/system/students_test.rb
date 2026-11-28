@@ -9,15 +9,34 @@ class StudentsTest < ApplicationSystemTestCase
     drawer = find("#drawer-student-import", visible: :all).ancestor(".drawer-end")
 
     within(drawer) do
-      fill_in "学员数据", with: "批量学员,男,2013-05-01,7,3,current,三中,幸福路 2 号,批量家长,13800000000,父亲"
+      fill_in "学员数据", with: "批量学员,男,2013-05-01,7,3,current,三中,初三(1)班,幸福路 2 号,批量家长,13800000000,父亲"
       click_button "开始导入"
     end
 
     assert_text "新增 1 名学员"
     student = Student.find_by!(name: "批量学员")
+    assert_equal "初三(1)班", student.day_school_class_name
     assert_equal "幸福路 2 号", student.address
     assert_equal "批量家长", student.guardians.sole.name
     assert_equal "父亲", student.guardians.sole.relationship
+  end
+
+  test "编辑学员时可以修改重名序号" do
+    sign_in
+    visit admin_students_path
+
+    student = students(:student_7_1)
+    within("#student-row-#{student.id}") { find("label.btn", text: "详情").click }
+    drawer = find("#drawer-student-detail-#{student.id}", visible: :all).ancestor(".drawer-end")
+
+    within(drawer) do
+      fill_in "重名序号", with: "6"
+      click_button "保存"
+    end
+
+    assert_text "学员信息更新成功"
+    assert_equal 6, student.reload.name_seq
+    assert_text "序号 6"
   end
 
   test "新增学员时可以选择推荐人" do

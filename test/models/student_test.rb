@@ -198,6 +198,52 @@ class StudentTest < ActiveSupport::TestCase
     assert_equal [ 1, 2, 3 ], [ first, second, third ].map { |s| s.reload.name_seq }
   end
 
+  test "name_seq can be edited by hand to a number no same-name student uses" do
+    campuse = campuses(:campuse_1)
+    Student.create!(name: "手改序号", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "手改序号", campuse:, grade: grades(:grade_7))
+
+    second.update!(name_seq: 5)
+
+    assert_equal 5, second.reload.name_seq
+    assert_equal "序号 5", second.identity_suffix
+    # 另一位同名学员不受影响
+    assert_equal 1, Student.where(name: "手改序号").where.not(id: second.id).sole.name_seq
+  end
+
+  test "an edited name_seq taken by a same-name student is rejected" do
+    campuse = campuses(:campuse_1)
+    Student.create!(name: "占序号", campuse:, grade: grades(:grade_7))
+    second = Student.create!(name: "占序号", campuse:, grade: grades(:grade_7))
+
+    second.name_seq = 1
+    assert_not second.valid?
+    assert second.errors[:name_seq].any? { |message| message.include?("已被同名的其他学员使用") }
+    assert_equal 2, second.reload.name_seq
+  end
+
+  test "the same name_seq is allowed for a different name or campus" do
+    Student.create!(name: "序号复用", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+    other_campuse = Campuse.create!(name: "序号校区", school: schools(:school_1))
+    other_grade = other_campuse.grades.create!(level: 7, name: "七年级")
+    student = Student.create!(name: "另一个名字", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+
+    student.update!(name_seq: 1)
+    Student.create!(name: "序号复用", campuse: other_campuse, grade: other_grade, name_seq: 1)
+
+    assert_equal 1, student.reload.name_seq
+  end
+
+  test "name_seq must be a positive integer" do
+    student = Student.create!(name: "非法序号", campuse: campuses(:campuse_1), grade: grades(:grade_7))
+
+    [ 0, -1, 1.5 ].each do |value|
+      student.name_seq = value
+      assert_not student.valid?, "name_seq = #{value} 应不合法"
+      assert student.errors[:name_seq].any?
+    end
+  end
+
   test "renaming with trailing digits moves to that sequence" do
     campuse = campuses(:campuse_1)
     first = Student.create!(name: "改号", campuse:, grade: grades(:grade_7))
