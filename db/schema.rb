@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_28_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_28_110000) do
   create_table "attendances", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "course_id", null: false
     t.bigint "klass_student_id"
@@ -165,7 +165,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_090000) do
     t.bigint "day_school_id"
     t.string "gender"
     t.bigint "grade_id"
-    t.integer "layer"
+    t.string "layer"
     t.string "name", null: false
     t.string "phone"
     t.datetime "updated_at", null: false
@@ -174,6 +174,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_28_090000) do
     t.string "address"
     t.datetime "deleted_at"
     t.bigint "in_semester_id"
+    t.string "day_school_class_name"
     t.index ["campuse_id", "name", "name_seq"], name: "index_students_on_campuse_id_and_name_and_name_seq", unique: true
     t.index ["campuse_id"], name: "index_students_on_campuse_id"
     t.index ["day_school_id"], name: "index_students_on_day_school_id"

@@ -37,6 +37,10 @@
         <dd class="mt-0.5 font-medium"><%= item.day_school&.name || "—" %></dd>
       </div>
       <div>
+        <dt class="text-base-content/50">日校班级</dt>
+        <dd class="mt-0.5 font-medium"><%= item.day_school_class_name.presence || "—" %></dd>
+      </div>
+      <div>
         <dt class="text-base-content/50">学员分层</dt>
         <dd class="mt-0.5 font-medium"><%= item.layer.presence || "—" %></dd>
       </div>

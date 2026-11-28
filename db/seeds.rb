@@ -134,9 +134,10 @@ campuses.each_with_index do |campuse, campus_index|
         birthday: Date.new(2021 - grade.level, (index % 12) + 1, (index % 27) + 1),
         phone: format("138%08d", campus_index * 10_000 + grade.level * 1_000 + index),
         grade:,
-        layer: (index % 5) + 1,
+        layer: "#{(index % 5) + 1}层",
         in_semester: semesters.first,
         day_school: day_schools[campuse.id][index % day_schools[campuse.id].size],
+        day_school_class_name: "#{grade.level}年级#{(index % 6) + 1}班",
         remark: (index % 7).zero? ? "家长要求每节课后反馈学习情况" : nil
       )
       Guardian.create!(
@@ -170,9 +171,10 @@ campuses.each_with_index do |campuse, campus_index|
         birthday: Date.new(2021 - grade.level, (index % 12) + 1, (index % 27) + 1),
         phone: format("135%08d", campus_index * 10_000 + grade.level * 1_000 + index),
         grade:,
-        layer: (index % 5) + 1,
+        layer: "#{(index % 5) + 1}层",
         in_semester: current_semester,
-        day_school: day_schools[campuse.id][(index + 1) % day_schools[campuse.id].size]
+        day_school: day_schools[campuse.id][(index + 1) % day_schools[campuse.id].size],
+        day_school_class_name: "#{grade.level}年级#{(index % 6) + 1}班"
       )
       Guardian.create!(
         student:,

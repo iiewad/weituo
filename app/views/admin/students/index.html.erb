@@ -69,6 +69,7 @@
         <th>性别</th>
         <th>年级</th>
         <th>日校</th>
+        <th>日校班级</th>
         <th>层级</th>
         <th>生日</th>
         <th>电话</th>
@@ -113,6 +114,7 @@
           </td>
           <td><span class="badge badge-outline badge-primary badge-sm"><%= student.grade&.name || "—" %></span></td>
           <td class="text-base-content/70"><%= student.day_school&.name || "—" %></td>
+          <td class="text-base-content/70"><%= student.day_school_class_name.presence || "—" %></td>
           <td><span class="badge badge-ghost badge-sm"><%= student.layer.presence || "—" %></span></td>
           <td class="whitespace-nowrap text-base-content/70"><%= student.birthday&.strftime("%Y-%m-%d") || "—" %></td>
           <td class="whitespace-nowrap text-base-content/70"><%= student.phone.presence || "—" %></td>

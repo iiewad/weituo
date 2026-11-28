@@ -36,8 +36,13 @@
       </div>
 
       <div>
+        <%= f.label :day_school_class_name, "日校班级", class: "mb-1 block text-xs font-medium text-base-content/60" %>
+        <%= f.text_field :day_school_class_name, class: "input input-sm w-full", placeholder: "选填，如 初三(2)班", maxlength: 50, autocomplete: "off" %>
+      </div>
+
+      <div>
         <%= f.label :layer, "学员分层", class: "mb-1 block text-xs font-medium text-base-content/60" %>
-        <%= f.select :layer, (1..7).map { |layer| [ layer, layer ] }, { prompt: "请选择分层" }, class: "select select-sm w-full" %>
+        <%= f.text_field :layer, class: "input input-sm w-full", placeholder: "选填，如 A / 提高", maxlength: 20, autocomplete: "off" %>
       </div>
 
       <div>
